@@ -205,3 +205,38 @@ First exact-head run38364872660 on0b232147 completed all original build/min-API/
 Separate helper-only recovery commit `f6bc1d6d87b9618bc35354f33103504c753c7f6a`: parser represents omitted test versionCode as None; target APK still requires positive code, diagnostic version suffix and exact manifest version. Both APK digests/packages/signers/source requirements stay enforced. Nine helper fixtures pass, including observed AGP badging and rejection of absent target version. Actual local exact-source APK pair rebuilt and helper create/verify passes; this local debug-key pair is validation only and is not the hosted frozen candidate. Luna High bounded two-file follow-up PASS confirms provenance checks preserved. No Android/production/transport/workflow code changed in recovery.
 
 New exact-head run38366296490 dispatched on the new identical workflow/source headf6bc1d6d. Old-head APK/check evidence does not qualify its source identity. Final artifact and exact-head gates remain pending. Main remains4b2d3e67; phone remains revoked/untouched since revocation.
+
+
+## Exact hosted diagnostic candidate verified (full debug UI gate still running)
+
+New exact-head candidate job PASSED on `f6bc1d6d87b9618bc35354f33103504c753c7f6a`, workflow `.github/workflows/android-ci-exact-head.yml`, dispatch run38366296490 attempt1. GitHub artifact11797477044, `JA11-convergence-candidate-f6bc1d6d87b9618bc35354f33103504c753c7f6a`, created2026-10-13T08:06:10Z, expiry2027-01-11T08:00:02Z; API workflow_run binds branch/source/run exactly. Downloaded ZIP SHA256 independently equals GitHub digest `c784db08afd11a460b5a3d947749187122f2c8220f959dfe591a82efc7572598`; CRC and exact three-file membership pass. Host helper independently verifies signed APK pair, embedded source, exact package/version/code and shared signer; zipalign checks target4-byte/16KiB native-page alignment successfully.
+
+Target `app-ja11Diagnostic.apk` SHA256 `4b00ab3e1c23e435b6ca848a1a0123068ac65e41a00f2fdbae1b1cb6fae796f9`; package `com.weekssa.opraeqforuapp.ja11trace`, version `0.8.1-ja11trace`, code12; signer SHA256 `5857646924badad4df93d8f953a57792cff75662c99d3af808d910d4081170fc`, normal hosted Gradle debug key, APK v2 verification passes. This is not the official pinned release signer. Test APK SHA256 `a7d79771f54d933cf217e854f3fa39b09da2d9ebb477cc64979cc77d82b52612`, package `.ja11trace.test`, same signer, intentionally omitted version fields.
+
+Both hosted diagnostic API26 and35 jobs PASSED using these same unchanged uploaded APK bytes. Downloaded test logs independently confirm OK(6 tests) each; runtime app-produced reports embed exactf6bc source/package/version12, records22/23 respectively, zero dropped events. These tests cover existing report retention/share, explicit convergence Save/privacy/runtime provenance and Activity recreation versus retained ViewModel lifetime. Simulated/hosted evidence only, no hardware claim. Reports artifacts11797665040(API26),11796329646(API35) ZIP digests verified independently. Hosted full diagnostic JVM report788 tests, zero failures/errors/skips (artifact11797492112 verified ZIP digest).
+
+Exact new-head diagnostic CodeQL analysis API id1941674168 has category `/language:java-kotlin/ja11-convergence-diagnostic`, exactf6bc head ref, empty error and zero results. Standard PR Analyze Kotlin run38366271164/CodeQL passes too; new-head catalog38366271170, priority-community38366271403 and dependency38366265528 pass. Exact-head build and API26 minified release launch jobs pass. Full API35 debug UI64 gate is still running; final candidate READY is not yet claimed.
+
+
+## Final diagnostic qualification and physical stop
+
+Exact-head run38366296490 completed SUCCESS: all seven real jobs PASS onf6bc1d6d source/workflow head. Downloaded full debug API35 UI artifact11796774105 has independently verified ZIP digest556fc458ce60a926795e2d96f9173789c7ece70ddd7060f4d802ad8fdbd29c4c; XML confirms64 tests/0 failures/0 errors/0 skipped. No original zero-job normal-workflow failure or skipped downstream diagnostic job is counted as pass. Final PR #93 remains OPEN/DRAFT and exact headf6bc1d6d; no merge/publication was attempted. Live remote main is still4b2d3e67, public latest releasev0.8.1 id411100198 and its assets unchanged.
+
+After all gates passed, verified candidate files plus original GitHub artifact ZIP copied to `/Users/stephenweeks/Downloads/JA11-convergence-diagnostic-f6bc1d6d87b9618bc35354f33103504c753c7f6a/`. Independent helper verification passed again on the final copy, target digest unchanged; files/directories made read-only. No rebuild or re-sign occurred during freeze. Candidate identity above is the final diagnostic tuple. No hardware evidence/root/fix claim transfers from these gates.
+
+| Diagnostic gate | Outcome |
+| --- | --- |
+| D01 Owner-approved bounded source scope, production JA11 policy preserved | MET |
+| D02 Structural privacy, bounded recorder, explicit-only file export | MET |
+| D03 Debug/release binding disabled, release APK diagnostic UI absent | MET |
+| D04 Retry/cancellation/session/generation behavior equivalence and real wiring | MET |
+| D05 Focused/full JVM checks (785 debug /788 diagnostic) | MET |
+| D06 Lint/assemblies/R8 | MET |
+| D07 Fresh Luna High review and bounded recovery follow-up | MET |
+| D08 Exact-source/workflow hosted CI, seven real successful jobs | MET |
+| D09 API26/35 exact-pair six tests each, mainUI64/minAPI release launch | MET |
+| D10 Exact diagnostic CodeQL zero findings plus standard PR analysis | MET |
+| D11 Catalog/community/dependency/helper9/actionlint | MET |
+| D12 Exact APK/package/version/signer/source/artifact integrity and durable freeze | MET |
+
+Diagnostic totals12 MET/0 UNMET/0 abandoned. Original final-fix gates remain8 MET/15 UNMET; root confidence below95%, faithful physical-failure regression and minimal correct production fix are not achieved. Task stops at the owner-authorized diagnostic physical gate, not at release readiness. MORNING_HANDOFF begins the exact newly required heading. Canonical RUNBOOK now includes the direct owner overrides/new unlock at its top, preserving original text as history. No local ADB/emulator server, phone discovery/query/install/launch, Flash or setting action occurred after revocation; earlier authorized fresh-Activity baseline remains separately classified.

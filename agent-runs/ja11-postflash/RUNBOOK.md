@@ -1,5 +1,19 @@
 # OPRA EQ for UAPP — JA11 Post-Flash Convergence Autonomous Runbook
 
+## Current explicit owner overrides — 2026-10-13
+
+These direct owner instructions supersede conflicting original wording below; the original mission/fix gates remain in force elsewhere.
+
+- Phone access was briefly authorized and then expressly revoked. The sole new unlock is `OWNER PRESENT — AUTHORIZE PHONE ACCESS AGAIN`. Until then, no Pixel/JA11 discovery, query, connection, installation, launch, Flash, setting change or other interaction is permitted, including wireless ADB discovery. Do not check whether the phone is online.
+- The owner approved bounded diagnostic-only acquisition/lifecycle tracing, including shared-source observation hooks before the 95% root-cause gate. This exception permits no speculative production fix, retry-policy change, added USB mutation, timing/session/cancellation policy change or signing-security bypass. Release recorder binding stays disabled.
+- Continue all safe off-phone diagnostic implementation, focused/full tests, lint/assembly, emulator/API checks, exact-head hosted CI, CodeQL, independent review, artifact provenance/freeze and checkpoint pushes. Resolve recoverable engineering blockers autonomously; do not ask routine questions or wake the owner.
+- Stop when the exact diagnostic candidate is fully ready for the required owner-controlled phone session or a genuine hard blocker requires owner input. A diagnostic candidate is observation evidence, not a proven fix or qualified release. Never publish a release or install overnight.
+- At the physical gate, `MORNING_HANDOFF.md` and the final response must begin with `PHYSICAL PHONE ACCESS REQUIRED — WAITING FOR OWNER`, followed by the unresolved decision, exact source SHA, APK SHA-256, package/version/code, signer/provenance and all off-phone validation. This replaces the original section32 heading requirement for this diagnostic continuation.
+
+The source runbook below is retained for mission history; its earlier phone phrase and unamended shared-source prohibition cannot override this addendum.
+
+---
+
 **Repository:** `weekssa/OPRA-EQ-for-UAPP`\
 **Primary orchestrator:** Codex Sol 6.1\
 **Sub-agents:** Luna 6.0, using the lowest thinking level sufficient for each task\
