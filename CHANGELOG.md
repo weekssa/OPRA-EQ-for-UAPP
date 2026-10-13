@@ -12,6 +12,14 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 - Select and verify User 1 before Flash, editor, or Reset EQ writes. A late detach after Save can continue with final readback only.
 - Keep JA11 serial optional for continuity and fail closed when multiple supported candidates are connected. Required physical acceptance is complete for the tested candidate; this entry makes no general power-cycle PEQ persistence or public hardware-support claim.
 
+## [0.8.1] - 2026-10-12
+
+### FiiO JA11 capability boundary
+
+- Recorded the final proven capability matrix: Mic, USB Audio Class, and saved User 1 custom EQ/global gain persist across true JA11 power loss.
+- Recorded that playback volume and the active EQ program/preset are runtime-only across true power loss. Both return to the established device defaults; no additional Save behavior is required.
+- Published the exact signed candidate from source `d0b6fe143957012c138613d153896923d6d76369` with APK SHA-256 `36b54063f6193eeb7e7b1ac0486b5094bf088a02442d8ea6d0a67d8b6acc8303`.
+
 ## [0.8.0] - 2026-10-08
 
 ### EQ Library modernization
