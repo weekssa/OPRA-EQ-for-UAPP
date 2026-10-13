@@ -86,6 +86,7 @@ import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -1935,13 +1936,15 @@ class EqLibraryViewModel(
         return result
     }
 
-    private suspend fun flashFiioJa11AndRefresh(profile: OpraEqProfile): Kt02h20FlashResult {
+    // Save can change Automatic output and dispose the initiating detail screen. The same
+    // ViewModel must own final readback/publication; clearing it still cancels this work.
+    private suspend fun flashFiioJa11AndRefresh(profile: OpraEqProfile): Kt02h20FlashResult = viewModelScope.async {
         val result = hardwareRepository.flashFiioJa11(profile)
         if (hardwareRepository.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
             refreshFiioJa11DeviceState()
         }
-        return result
-    }
+        result
+    }.await()
 
     private suspend fun resetFiioJa11AndRefresh(): Kt02h20FlatResetResult {
         val result = hardwareRepository.resetFiioJa11()
