@@ -1,3 +1,9 @@
+OWNER APPROVED MERGE/BUILD — EXACT-MAIN VALIDATION RUNNING
+
+Owner approved the merge and candidate build. PR94 is merged as `9983edf0b7fe437aeeec9ac3dcb3864705afa16a`. Exact-main run38473044839 is running; official signing follows actual gate completion. Sol orchestrates/integrates/persists canonical state; bounded Luna workhorses execute checks and validation-tooling work. No publication or physical action authorized by this approval.
+
+The prior pre-merge package below is preserved for context; its approval blocker is superseded. Current machine state is STATE.md and append-only evidence is EVIDENCE.md.
+
 OWNER MERGE APPROVAL REQUIRED — SIGNED CANDIDATE BLOCKED
 
 The JA11 architectural cause is established at >=95% confidence, the original failure state is reproduced automatically, the minimal production fix is implemented, fresh adversarial Luna High review approves it, and all pre-merge automated checks pass. The remaining blocker is explicit owner approval to merge [PR #94](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/94) and run the existing main-only candidate signer. No release, public tag, phone installation or further JA11 action has occurred during this software work.
