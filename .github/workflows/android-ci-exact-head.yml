@@ -1,0 +1,271 @@
+name: Android CI Exact Head
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact commit SHA to test
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out requested source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source_sha }}
+
+      - name: Assert and record tested source
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          printf 'Requested source SHA: %s\nChecked-out source SHA: %s\n' "$SOURCE_SHA" "$actual_sha"
+          printf '## Exact-head Android CI\n\n- Requested source SHA: `%s`\n- Checked-out source SHA: `%s`\n' "$SOURCE_SHA" "$actual_sha" >> "$GITHUB_STEP_SUMMARY"
+          test "$actual_sha" = "$SOURCE_SHA"
+
+      - name: Test exact-candidate release promotion contract
+        run: |
+          python3 -m unittest discover -s tools -p 'test_promote_release_candidate.py' -v
+          python3 tools/promote_release_candidate.py check-contract
+
+      - name: Test qualified beta prerelease publisher contract
+        run: |
+          python3 tools/test_publish_beta_prerelease.py
+          python3 tools/publish_beta_prerelease.py check-contract --project-root .
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle 9.4.1
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: "9.4.1"
+          cache-provider: basic
+
+      - name: Run unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Run Android lint
+        run: gradle :app:lintDebug --stacktrace
+
+      - name: Upload Android lint reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-exact-head-lint-reports
+          path: app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Assemble debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Assemble release APK
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Verify minified release output
+        run: bash tools/verify-r8-mapping.sh
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: EQ-Library-exact-head-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  emulator-ui-test:
+    name: emulator-ui-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out requested source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source_sha }}
+
+      - name: Assert and record tested source
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          printf 'Requested source SHA: %s\nChecked-out source SHA: %s\n' "$SOURCE_SHA" "$actual_sha"
+          printf '## Exact-head Android UI test\n\n- Requested source SHA: `%s`\n- Checked-out source SHA: `%s`\n' "$SOURCE_SHA" "$actual_sha" >> "$GITHUB_STEP_SUMMARY"
+          test "$actual_sha" = "$SOURCE_SHA"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Set up Gradle 9.4.1
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: "9.4.1"
+          cache-provider: basic
+
+      - name: Install emulator image
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-35;google_apis;x86_64"
+          avd_home="$RUNNER_TEMP/android-avd"
+          mkdir -p "$avd_home"
+          printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
+          ANDROID_AVD_HOME="$avd_home" avdmanager create avd --force --name opra_ci_api_35 --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          test -f "$avd_home/opra_ci_api_35.ini"
+
+      - name: Start emulator and run connected UI tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_35 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 60); do
+            kill -0 "$emulator_pid" 2>/dev/null || { cat "$RUNNER_TEMP/emulator.log"; exit 1; }
+            adb get-state 2>/dev/null | grep -qx device && break
+            [[ "$attempt" -eq 60 ]] && { cat "$RUNNER_TEMP/emulator.log"; exit 1; }
+            sleep 2
+          done
+          for attempt in $(seq 1 48); do
+            [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]] && break
+            [[ "$attempt" -eq 48 ]] && { cat "$RUNNER_TEMP/emulator.log"; exit 1; }
+            sleep 5
+          done
+          adb shell input keyevent 82
+          avd_config="$ANDROID_AVD_HOME/opra_ci_api_35.avd/config.ini"
+          grep '^hw.keyboard=' "$avd_config"
+          adb shell settings put secure show_ime_with_hard_keyboard 1
+          test "$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')" = "1"
+          adb logcat -c
+          gradle :app:connectedDebugAndroidTest --stacktrace
+
+      - name: Upload emulator diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-exact-head-emulator-reports
+          path: |
+            ${{ runner.temp }}/emulator.log
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  min-api-smoke:
+    name: min-api-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out requested source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source_sha }}
+
+      - name: Assert and record tested source
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          printf 'Requested source SHA: %s\nChecked-out source SHA: %s\n' "$SOURCE_SHA" "$actual_sha"
+          printf '## Exact-head API 26 smoke\n\n- Requested source SHA: `%s`\n- Checked-out source SHA: `%s`\n' "$SOURCE_SHA" "$actual_sha" >> "$GITHUB_STEP_SUMMARY"
+          test "$actual_sha" = "$SOURCE_SHA"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Set up Gradle 9.4.1
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: "9.4.1"
+          cache-provider: basic
+
+      - name: Assemble and verify release APK
+        run: |
+          gradle :app:assembleRelease --stacktrace
+          bash tools/verify-r8-mapping.sh
+
+      - name: Install API 26 emulator and smoke launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" "emulator" "system-images;android-26;google_apis;x86_64"
+          avd_home="$RUNNER_TEMP/android-avd-api-26"
+          mkdir -p "$avd_home"
+          printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
+          ANDROID_AVD_HOME="$avd_home" avdmanager create avd --force --name opra_ci_api_26 --package "system-images;android-26;google_apis;x86_64" --device pixel_2
+          test -f "$avd_home/opra_ci_api_26.ini"
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_26 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator-api-26.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 60); do
+            kill -0 "$emulator_pid" 2>/dev/null || { cat "$RUNNER_TEMP/emulator-api-26.log"; exit 1; }
+            adb get-state 2>/dev/null | grep -qx device && break
+            [[ "$attempt" -eq 60 ]] && { cat "$RUNNER_TEMP/emulator-api-26.log"; exit 1; }
+            sleep 2
+          done
+          for attempt in $(seq 1 60); do
+            [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]] && break
+            [[ "$attempt" -eq 60 ]] && { cat "$RUNNER_TEMP/emulator-api-26.log"; exit 1; }
+            sleep 5
+          done
+          test "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "26"
+          test "$(adb shell getprop ro.product.cpu.abi | tr -d '\r')" = "x86_64"
+          release_apk="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$release_apk"
+          adb install "$release_apk"
+          adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity | tee "$RUNNER_TEMP/min-api-launch.txt"
+          grep -q '^Status: ok$' "$RUNNER_TEMP/min-api-launch.txt"
+
+      - name: Upload API 26 diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-exact-head-api26-reports
+          path: |
+            ${{ runner.temp }}/emulator-api-26.log
+            ${{ runner.temp }}/min-api-launch.txt
+          if-no-files-found: ignore
+          retention-days: 14
