@@ -158,3 +158,7 @@ The overnight G21 no-access evidence remains MET for its original overnight inte
 ## Explicit diagnostic source exception approved
 
 Owner answered Approve diagnostic-only tracing to the bounded exception request. Shared-source event hooks may now be added before physical causal confidence reaches95%, exclusively for diagnostic observation. No production fix, retry/USB/timing/mutation policy change is authorized by this exception. Scope and proposed evidence fields are recorded above. Phone authorization remains active, but further phone use waits for validated exact diagnostic candidate.
+
+## Immediate phone revocation and off-phone continuation
+
+Owner went offline/asleep again and revoked all phone/JA11 access immediately. New required unlock is OWNER PRESENT — AUTHORIZE PHONE ACCESS AGAIN; the earlier unlock no longer authorizes access. No further Pixel discovery, ADB query/connect, install, launch, JA11 action, Flash or setting change is permitted. Approved diagnostic-source exception remains active. Owner explicitly authorizes all safe off-phone diagnostic implementation, privacy/cancellation/session tests, full applicable validation, exact-head hosted CI/CodeQL, independent review, APK freeze/provenance and checkpoint pushes until ready or genuine hard blocker. No release publication. Final physical-gate handoff must begin PHYSICAL PHONE ACCESS REQUIRED — WAITING FOR OWNER and include exact diagnostic tuple and all off-phone gates.
