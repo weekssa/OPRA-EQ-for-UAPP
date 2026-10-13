@@ -169,9 +169,19 @@ class FiioJa11FlashLifetimeTest {
                 return
             }
 
-            connected.value = Kt02h20ConnectionState.Disconnected
+            // Flash already marked EQ stale before Save. Seed a read marker so this wait
+            // acknowledges the actual disconnected collector, preventing StateFlow conflation
+            // from skipping the simulated disconnect. Save remains held under the real mutex.
+            @Suppress("UNCHECKED_CAST")
+            val snapshotState = field(repository, "mutableFiioJa11SnapshotState") as
+                MutableStateFlow<com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState>
+            snapshotState.value = snapshotState.value.beginRead()
             setField(hid, "currentSessionGeneration", 0L)
-            await { repository.fiioJa11SnapshotState.value.freshness != DacStateFreshness.CURRENT }
+            connected.value = Kt02h20ConnectionState.Disconnected
+            await {
+                !repository.fiioJa11SnapshotState.value.isReading &&
+                    repository.fiioJa11SnapshotState.value.freshness == DacStateFreshness.LAST_READ_STALE
+            }
             source.misses.set(replacementMisses)
             setField(hid, "currentSessionGeneration", 2L)
             connected.value = Kt02h20ConnectionState.Connected

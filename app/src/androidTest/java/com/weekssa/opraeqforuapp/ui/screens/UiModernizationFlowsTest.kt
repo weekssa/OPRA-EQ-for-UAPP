@@ -427,7 +427,7 @@ class UiModernizationFlowsTest {
                 appPreferences = state.value.appPreferences.copy(
                     exportTargets = state.value.appPreferences.exportTargets.withActiveTarget(output),
                 ),
-                // The VM emits no selected-output rows during the library/output mismatch.
+                // Legacy control: the old VM mapping emitted no rows during this mismatch.
                 managedHeadphones = if (disposesDetail) emptyList() else listOf(headphone),
                 fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
             )
