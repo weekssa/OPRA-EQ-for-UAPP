@@ -1,6 +1,6 @@
-OWNER APPROVED MERGE/BUILD — EXACT-MAIN VALIDATION RUNNING
+EXACT-MAIN QUALIFIED — OFFICIAL SIGNED CANDIDATE BUILD RUNNING
 
-Owner approved the merge and candidate build. PR94 is merged as `9983edf0b7fe437aeeec9ac3dcb3864705afa16a`. Exact-main run38473044839 is running; official signing follows actual gate completion. Sol orchestrates/integrates/persists canonical state; bounded Luna workhorses execute checks and validation-tooling work. No publication or physical action authorized by this approval.
+Owner approved the merge and candidate build. PR94 is merged as `9983edf0b7fe437aeeec9ac3dcb3864705afa16a`. Exact-main run38473044839 passed allfourrealjobs:777unit/68UI/API26/CodeQLzero. Officialmain-onlysigning run38474740277 isrunning. Reviewedvalidation-onlytoolingc5be0d9a isreadyforsignedinstall/upgradeafterartifactverification. Sol orchestrates/integrates/persists canonical state; bounded Luna workhorses execute checks and validation-tooling work. No publication or physical action authorized by this approval.
 
 The prior pre-merge package below is preserved for context; its approval blocker is superseded. Current machine state is STATE.md and append-only evidence is EVIDENCE.md.
 
