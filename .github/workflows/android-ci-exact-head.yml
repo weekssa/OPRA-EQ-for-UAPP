@@ -3,9 +3,33 @@ name: Android CI Exact Head
 on:
   workflow_dispatch:
     inputs:
+      validation_mode:
+        description: Select exact-head CI or read-only signed-candidate smoke verification.
+        required: true
+        type: choice
+        options:
+          - exact-head
+          - signed-candidate-smoke
+        default: exact-head
       source_sha:
         description: Exact commit SHA to test
-        required: true
+        required: false
+        type: string
+      candidate_source_sha:
+        description: Exact source SHA embedded in the signed candidate artifact.
+        required: false
+        type: string
+      candidate_run_id:
+        description: Successful main-only Signed Release Candidate run ID.
+        required: false
+        type: string
+      candidate_artifact_id:
+        description: Signed candidate Actions artifact ID from candidate_run_id.
+        required: false
+        type: string
+      tag:
+        description: Exact candidate release tag, for example v0.8.2.
+        required: false
         type: string
 
 permissions:
@@ -13,6 +37,7 @@ permissions:
 
 jobs:
   exact-codeql:
+    if: inputs.validation_mode == 'exact-head'
     name: CodeQL exact head
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -62,6 +87,7 @@ jobs:
           category: /language:java-kotlin/exact-head
 
   build:
+    if: inputs.validation_mode == 'exact-head'
     name: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -156,6 +182,7 @@ jobs:
           retention-days: 14
 
   emulator-ui-test:
+    if: inputs.validation_mode == 'exact-head'
     name: emulator-ui-test
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -244,6 +271,7 @@ jobs:
           retention-days: 14
 
   min-api-smoke:
+    if: inputs.validation_mode == 'exact-head'
     name: min-api-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -350,4 +378,209 @@ jobs:
             ${{ runner.temp }}/emulator-api-26.log
             ${{ runner.temp }}/min-api-launch.txt
           if-no-files-found: ignore
+          retention-days: 14
+
+  signed-candidate-smoke:
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/codex/ja11-signed-candidate-validation' && inputs.validation_mode == 'signed-candidate-smoke'
+    name: signed-candidate-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Create private runner evidence and transfer directories
+        env:
+          CANDIDATE_SOURCE_SHA: ${{ inputs.candidate_source_sha }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
+          CANDIDATE_TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate-smoke-evidence" "$RUNNER_TEMP/candidate-smoke-transfer"
+          {
+            printf 'validation_workflow_sha=%s\n' "$GITHUB_SHA"
+            printf 'validation_workflow_ref=%s\n' "$GITHUB_REF"
+            printf 'candidate_source_sha=%s\n' "$CANDIDATE_SOURCE_SHA"
+            printf 'candidate_run_id=%s\n' "$CANDIDATE_RUN_ID"
+            printf 'candidate_artifact_id=%s\n' "$CANDIDATE_ARTIFACT_ID"
+            printf 'candidate_tag=%s\n' "$CANDIDATE_TAG"
+          } > "$RUNNER_TEMP/candidate-smoke-evidence/request.txt"
+
+      - name: Check out the validation workflow source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          path: tooling
+          persist-credentials: false
+
+      - name: Check out exact signed-candidate source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.candidate_source_sha }}
+          path: candidate
+          persist-credentials: false
+
+      - name: Assert workflow and candidate checkout identities
+        shell: bash
+        env:
+          CANDIDATE_SOURCE_SHA: ${{ inputs.candidate_source_sha }}
+          VALIDATION_WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git -C tooling rev-parse HEAD)" = "$VALIDATION_WORKFLOW_SHA"
+          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_SOURCE_SHA"
+          printf 'validation_workflow_sha=%s\ncandidate_source_sha=%s\n' \
+            "$VALIDATION_WORKFLOW_SHA" "$CANDIDATE_SOURCE_SHA" \
+            > "$RUNNER_TEMP/candidate-smoke-evidence/source-identities.txt"
+
+      - name: Set up Android SDK tools and API 35 image
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Install pinned build tools and API 35 emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" \
+            "emulator" "system-images;android-35;google_apis;x86_64"
+
+      - name: Verify official signed candidate and current stable baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          CANDIDATE_SOURCE_SHA: ${{ inputs.candidate_source_sha }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CANDIDATE_SOURCE_SHA:?candidate_source_sha is required}"
+          : "${CANDIDATE_RUN_ID:?candidate_run_id is required}"
+          : "${CANDIDATE_ARTIFACT_ID:?candidate_artifact_id is required}"
+          : "${RELEASE_TAG:?tag is required}"
+          python3 tooling/tools/verify_signed_candidate_smoke.py \
+            --candidate-source-sha "$CANDIDATE_SOURCE_SHA" \
+            --candidate-run-id "$CANDIDATE_RUN_ID" \
+            --candidate-artifact-id "$CANDIDATE_ARTIFACT_ID" \
+            --tag "$RELEASE_TAG" \
+            --candidate-root candidate \
+            --build-tools "$ANDROID_HOME/build-tools/36.0.0" \
+            --transfer-dir "$RUNNER_TEMP/candidate-smoke-transfer" \
+            --evidence-dir "$RUNNER_TEMP/candidate-smoke-evidence" \
+            | tee "$RUNNER_TEMP/candidate-smoke-evidence/candidate-verification.log"
+
+      - name: Verify API 35 emulator identity and boot it
+        shell: bash
+        run: |
+          set -euo pipefail
+          avd_home="$RUNNER_TEMP/candidate-smoke-avd"
+          mkdir -p "$avd_home"
+          export ANDROID_AVD_HOME="$avd_home"
+          printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
+          avdmanager create avd --force --name opra_signed_candidate_api_35 \
+            --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          test -f "$avd_home/opra_signed_candidate_api_35.ini"
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" \
+            -avd opra_signed_candidate_api_35 -no-window -noaudio -no-boot-anim \
+            -no-snapshot -wipe-data -gpu swiftshader_indirect \
+            > "$RUNNER_TEMP/candidate-smoke-emulator.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 90); do
+            kill -0 "$emulator_pid" 2>/dev/null || {
+              cat "$RUNNER_TEMP/candidate-smoke-emulator.log"
+              exit 1
+            }
+            adb get-state 2>/dev/null | grep -qx device && break
+            [[ "$attempt" -eq 90 ]] && {
+              cat "$RUNNER_TEMP/candidate-smoke-emulator.log"
+              exit 1
+            }
+            sleep 2
+          done
+          adb wait-for-device
+          for attempt in $(seq 1 60); do
+            [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]] && break
+            [[ "$attempt" -eq 60 ]] && {
+              cat "$RUNNER_TEMP/candidate-smoke-emulator.log"
+              exit 1
+            }
+            sleep 5
+          done
+          test "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "35"
+          test "$(adb shell getprop ro.product.cpu.abi | tr -d '\r')" = "x86_64"
+          device_count="$(adb devices | awk 'NR > 1 && $2 == "device" { count++ } END { print count + 0 }')"
+          test "$device_count" = "1"
+          adb devices -l > "$RUNNER_TEMP/candidate-smoke-evidence/adb-devices.txt"
+          adb shell getprop ro.build.version.sdk > "$RUNNER_TEMP/candidate-smoke-evidence/api-level.txt"
+          adb shell getprop ro.product.cpu.abi > "$RUNNER_TEMP/candidate-smoke-evidence/emulator-abi.txt"
+
+      - name: Run clean-install and in-place-upgrade smoke against verified APK bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate_apk="$RUNNER_TEMP/candidate-smoke-transfer/signed-candidate.apk"
+          baseline_apk="$RUNNER_TEMP/candidate-smoke-transfer/stable-baseline.apk"
+          verification_json="$RUNNER_TEMP/candidate-smoke-evidence/candidate-verification.json"
+          test -s "$candidate_apk" && test -s "$baseline_apk" && test -s "$verification_json"
+          sha256sum "$candidate_apk" "$baseline_apk" \
+            > "$RUNNER_TEMP/candidate-smoke-evidence/apk-sha256-before.txt"
+          candidate_version_name="$(jq -r '.candidateVersionName' "$verification_json")"
+          candidate_version_code="$(jq -r '.candidateVersionCode' "$verification_json")"
+          baseline_version_name="$(jq -r '.baselineTag | ltrimstr("v")' "$verification_json")"
+          baseline_version_code="$(jq -r '.baselineVersionCode' "$verification_json")"
+          python3 candidate/tools/verify_stable_release_smoke.py upgrade \
+            --baseline-apk "$baseline_apk" \
+            --baseline-version-name "$baseline_version_name" \
+            --baseline-version-code "$baseline_version_code" \
+            --candidate-apk "$candidate_apk" \
+            --candidate-version-name "$candidate_version_name" \
+            --candidate-version-code "$candidate_version_code" \
+            --evidence-dir "$RUNNER_TEMP/candidate-smoke-evidence/v0.8.1-to-candidate"
+          adb uninstall com.weekssa.opraeqforuapp
+          python3 candidate/tools/verify_stable_release_smoke.py clean-install \
+            --candidate-apk "$candidate_apk" \
+            --candidate-version-name "$candidate_version_name" \
+            --candidate-version-code "$candidate_version_code" \
+            --evidence-dir "$RUNNER_TEMP/candidate-smoke-evidence/candidate-clean-install"
+
+      - name: Verify APK bytes are unchanged after smoke
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate_apk="$RUNNER_TEMP/candidate-smoke-transfer/signed-candidate.apk"
+          baseline_apk="$RUNNER_TEMP/candidate-smoke-transfer/stable-baseline.apk"
+          before="$RUNNER_TEMP/candidate-smoke-evidence/apk-sha256-before.txt"
+          after="$RUNNER_TEMP/candidate-smoke-evidence/apk-sha256-after.txt"
+          if [[ -s "$before" && -s "$candidate_apk" && -s "$baseline_apk" ]]; then
+            sha256sum "$candidate_apk" "$baseline_apk" > "$after"
+            diff -u "$before" "$after"
+          else
+            printf 'APK byte comparison unavailable because verification or smoke setup did not produce all inputs.\n' > "$after"
+          fi
+
+      - name: Preserve emulator logcat and stop emulator
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set +e
+          adb logcat -d > "$RUNNER_TEMP/candidate-smoke-evidence/emulator-logcat.txt" 2>&1
+          adb emu kill > "$RUNNER_TEMP/candidate-smoke-evidence/emulator-stop.txt" 2>&1
+
+      - name: Upload signed-candidate smoke evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: signed-candidate-smoke-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/candidate-smoke-evidence/
+            ${{ runner.temp }}/candidate-smoke-emulator.log
+          if-no-files-found: warn
           retention-days: 14
