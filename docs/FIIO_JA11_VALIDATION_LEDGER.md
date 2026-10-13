@@ -4,6 +4,23 @@ This is the append-only evidence ledger for the exact FiiO JA11 target. Do not r
 EW300 ledger for JA11. A software, artifact, emulator, or owner-reported UI result does not
 qualify JA11 hardware unless the exact physical gate is satisfied.
 
+## 2026-10-12 v0.8.1 final physical and release disposition
+
+The exact published candidate is source `d0b6fe143957012c138613d153896923d6d76369`, APK
+SHA-256 `36b54063f6193eeb7e7b1ac0486b5094bf088a02442d8ea6d0a67d8b6acc8303`, package
+`com.weekssa.opraeqforuapp`, versionName `0.8.1`, versionCode `12`, and signer certificate
+SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Promotion run
+`38326220697` passed the API 35 clean-install, exact v0.8.0-to-v0.8.1 upgrade, and corrected
+stable-release smoke gates. The published APK matches that candidate byte-for-byte.
+
+The final accepted capability model is: Mic persistent; USB Audio Class persistent; saved User 1
+custom EQ/global gain persistent; playback volume runtime-only across true power loss; and active
+EQ program/preset runtime-only across true power loss. The volume and program classifications are
+supported by the official FiiO Control comparison and the exact candidate's true-power-cycle
+readback: volume returned to the device default and the active program returned to User 1. No
+additional Save behavior or production persistence implementation is required for either runtime
+control. J029 remains the accepted ordered-write/session-safety evidence for User 1 EQ/global gain.
+
 ## 2026-09-28 owner-authorized release disposition
 
 The owner authorized final software/release closeout. No new JA11 operation report or exact-current

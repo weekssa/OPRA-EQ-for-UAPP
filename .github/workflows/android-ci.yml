@@ -423,6 +423,7 @@ jobs:
           adb shell input tap "$tap_x" "$tap_y"
           readiness_deadline=$((SECONDS + 300))
           catalog_ready=false
+          catalog_retried=false
           while (( SECONDS < readiness_deadline )); do
             if ! adb shell pidof com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-pid.txt"; then
               adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
@@ -435,13 +436,32 @@ jobs:
               exit 1
             fi
             adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
-            if adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="Manufacturers"' && \
-              adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="1Custom"'; then
+            adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-window.xml" 2>/dev/null || true
+            if grep -q 'text="Manufacturers"' "$RUNNER_TEMP/min-api-window.xml" && \
+              grep -q 'text="1Custom"' "$RUNNER_TEMP/min-api-window.xml"; then
               catalog_ready=true
-              adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml"
+              cp "$RUNNER_TEMP/min-api-window.xml" "$RUNNER_TEMP/min-api-hierarchy.xml"
               adb exec-out screencap -p > "$RUNNER_TEMP/min-api-library.png"
               adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo.txt"
               break
+            fi
+            if [[ "$catalog_retried" != true ]] && grep -q 'text="Try again"' "$RUNNER_TEMP/min-api-window.xml"; then
+              try_again_tap="$(python3 - "$RUNNER_TEMP/min-api-window.xml" <<'PY'
+import re
+import sys
+
+xml = open(sys.argv[1], encoding="utf-8").read()
+match = re.search(r'text="Try again"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
+if not match:
+    raise SystemExit("The catalog error state exposed Try again without usable bounds.")
+x1, y1, x2, y2 = map(int, match.groups())
+print((x1 + x2) // 2, (y1 + y2) // 2)
+PY
+              )"
+              read -r try_again_x try_again_y <<< "$try_again_tap"
+              printf 'Catalog error state detected; tapping Try again once at %s,%s.\n' "$try_again_x" "$try_again_y"
+              adb shell input tap "$try_again_x" "$try_again_y"
+              catalog_retried=true
             fi
             adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
             if grep -Fq 'Process: com.weekssa.opraeqforuapp' "$RUNNER_TEMP/min-api-logcat.txt"; then
@@ -451,7 +471,7 @@ jobs:
             sleep 5
           done
           if [[ "$catalog_ready" != true ]]; then
-            adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml" 2>/dev/null || true
+            cp "$RUNNER_TEMP/min-api-window.xml" "$RUNNER_TEMP/min-api-hierarchy.xml" 2>/dev/null || true
             adb exec-out screencap -p > "$RUNNER_TEMP/min-api-library.png" 2>/dev/null || true
             adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo.txt" 2>&1 || true
             printf 'EQ catalog did not show its Manufacturers heading and populated 1Custom row within 300 seconds.\n' >&2
