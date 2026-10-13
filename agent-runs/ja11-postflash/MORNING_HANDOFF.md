@@ -43,7 +43,7 @@ PHONE ACCESSED OVERNIGHT:
 NO
 
 OWNER ACTION:
-Approve a narrowly scoped diagnostic acquisition trace before any new physical test. Phone access separately remains forbidden until OWNER PRESENT — AUTHORIZE PHONE ACCESS. No routine owner action is needed while asleep.
+Phone access was authorized by the exact owner unlock phrase. Approve diagnostic-only shared-source trace hooks as a bounded exception to the95% production-edit gate; no speculative fix or automatic Flash. Current source is unchanged.
 
 DIAGNOSTIC PROCEDURE
 1. Off-phone first: add diagnostic-only correlation for acquisition owner, attempt index, generation/currentness guard, null/rejection cause, accepted publication/UI adoption, and cancellation. No payload/identity/private-value logging; no retry, transport, timing or mutation change. Validate trace behavior with fixtures; freeze source/APK/hash/package/signer and complete its applicable local/emulator/review/CI gates.
@@ -53,3 +53,6 @@ DIAGNOSTIC PROCEDURE
 
 DURABLE CONTEXT
 RUNBOOK.md preserves exact owner mission. STATE.md is canonical; EVIDENCE.md contains source references, history, probe outcomes, commands, private artifact hashes and limitations. Raw retained captures remain outside Git. Temporary local validation logs remain under tmp/. Only test characterization and mission documentation were added.
+
+OWNER-PRESENT BASELINE UPDATE
+Installed failed-candidate APK hash and release signer independently verified. PID5485 survived, but the original Activity was absent; warm launch opened a new Activity, so original ViewModel/repository continuity is not proven. One read-only Connect produced current EQ/DEVICE with five filters and enabled Edit EQ. No Flash, setting write, install, force-stop, or unplug. This is a fresh-Activity baseline, not post-Flash acceptance. Diagnostic trace must identify Activity/ViewModel/repository lifetime, not only PID. Phone is available for the owner; no capture stream remains active.

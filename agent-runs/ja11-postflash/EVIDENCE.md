@@ -128,3 +128,33 @@ Manual mission ledger (completion is not claimed):
 | G23 Durable mission/handoff state | MET |
 
 Totals:8 MET,15 UNMET,0 abandoned. G10-G13 verify diagnostic source/tests only; they do not qualify an absent fix. Physical acceptance is separately forbidden/pending owner authorization and is not counted as an overnight gate. Root gate G03 is the earliest blocker; dependent gates stay explicit, not removed or rewritten green.
+
+## Owner-present authorization — 2026-10-13
+
+Owner sent exact unlock phrase OWNER PRESENT — AUTHORIZE PHONE ACCESS. Phone access now authorized; overnight no-access record remains true. This does not establish a fix, qualify a candidate, authorize automatic Flash, or permit publication. Initial action is non-mutating device/app/session observation and preservation of any surviving failed process; no install/restart/Flash requested. Android debugging skill applied for current process/package/log/UI/USB evidence gathering.
+
+## Authorized live baseline and lifetime correction — 2026-10-13
+
+Private captures: /private/tmp/opra-ja11-owner-observation-20261013T064626Z. Pixel9 reachable over existing wireless ADB. Package com.weekssa.opraeqforuapp, version0.8.1/code12; process PID5485 matches prior failure capture. Installed APK pulled and independently hashed: b617f79b7980ae45083f5f2d24f769d50da6f57f6d6ba03c668187670fb4b644, exactly the failed PR89 candidate. Host apksigner verifies pinned certificate65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747. No new APK was installed.
+
+Initial phone was at launcher. The complete initial activities dump contains no EQ Library Activity, although the process exists. Attempted reorder-to-front returned LaunchState=WARM and opened a new MainActivity task81460. Process stayed5485. Thus this is NOT proof that the original Activity/ViewModel/repository lifetime survived. Initial resumed app showed Device detected, and My DAC showed Disconnected/no EQ bundle. The earlier commentary inference that repository remained alive was too strong and was explicitly corrected. Same PID alone is insufficient lifetime evidence.
+
+One normal Connect action opened a fresh read-only session. Current hardware EQ, User1 five-band graph/filters/global gain and enabled Edit EQ appeared. DEVICE showed Current device state with verified values. PID remained5485. No Flash, Reset, Apply, Save, editor mutation, Mic/UAC/volume/program write, install, force-stop, process restart or unplug action was issued. No automatic physical retry occurred. Wire-level mutation counts and session generations were not exported; do not fabricate them. The capture proves startup/fresh-connect baseline functionality in a newly opened Activity within the surviving process, not original post-Flash convergence or a fix. No hardware restoration obligation was created.
+
+Causal confidence remains below95%. Diagnostic correlation must include Activity, ViewModel and repository instance lifetime as well as acquisition owner, operation ID, session generation, guard exit, attempts, null reason, publication/UI adoption and cancellation. The original failed lifecycle is no longer available for a faithful live inspection. Main remains4b2d3e67 after fresh git fetch.
+
+## Concrete diagnostic-only proposal, pending owner decision
+
+Objective: one report that identifies the actual failed state transition before choosing a fix. Preserve release behaviour and JA11 protocol/mutation/read policies.
+
+Narrow event hooks are needed in HardwareEqRepository.kt (ConnectedObserver versus FlashCompletion, acquisition start/end, accepted publication and cancellation), DacSessionRepository.kt / HardwareEqSnapshotReaders.kt (generation guard or first missing/rejected field reason), and EqLibraryViewModel.kt (instance lifetime and UI adoption). Bind recorder only for ja11Diagnostic in EqLibraryDependencyFactory.kt; reuse existing diagnostic report/share surface. Release uses no recorder and no diagnostic UI. No second read/retry, delay, mutation, reconnect or lifecycle fix accompanies these hooks.
+
+Record only opaque instance/operation IDs, generations, attempt indices, phase/reason enums and booleans. Exclude serials, fingerprints, raw USB payloads, EQ values and unrelated app data. Prove with tests that recorder cannot issue writes, release binding is disabled, cancellation is unchanged, and actual Connected/Flash completion wiring is observable. Run applicable local/emulator/CI/review and freeze diagnostic source/APK/hash/package/signer before asking for one owner-controlled physical Flash. No release signing-path bypass or publication.
+
+Owner runbook§17 forbids production edits before the95% gate. These trace hooks would touch shared main-source files even though their recorder is diagnostic-only; phone unlock alone does not explicitly amend that source gate. Therefore only the bounded diagnostic exception is requested, not permission for a speculative fix. Production files remain untouched while awaiting that decision.
+
+The overnight G21 no-access evidence remains MET for its original overnight interval. Current phone observation occurred only after owner unlock; it does not rewrite historical no-access evidence.
+
+## Explicit diagnostic source exception approved
+
+Owner answered Approve diagnostic-only tracing to the bounded exception request. Shared-source event hooks may now be added before physical causal confidence reaches95%, exclusively for diagnostic observation. No production fix, retry/USB/timing/mutation policy change is authorized by this exception. Scope and proposed evidence fields are recorded above. Phone authorization remains active, but further phone use waits for validated exact diagnostic candidate.
