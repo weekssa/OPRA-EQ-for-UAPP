@@ -233,8 +233,9 @@ jobs:
           sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" "emulator" "system-images;android-26;google_apis;x86_64"
           avd_home="$RUNNER_TEMP/android-avd-api-26"
           mkdir -p "$avd_home"
+          export ANDROID_AVD_HOME="$avd_home"
           printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
-          ANDROID_AVD_HOME="$avd_home" avdmanager create avd --force --name opra_ci_api_26 --package "system-images;android-26;google_apis;x86_64" --device pixel_2
+          avdmanager create avd --force --name opra_ci_api_26 --package "system-images;android-26;google_apis;x86_64" --device pixel_2
           test -f "$avd_home/opra_ci_api_26.ini"
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
