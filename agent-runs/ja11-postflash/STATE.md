@@ -28,3 +28,7 @@ PHYSICAL_TEST_REQUIRED=YES
 PHYSICAL_TEST_AUTHORIZED=NO
 PHYSICAL_TEST_READY=NO
 NEXT_ACTION=Require one correlated acquisition-owner/attempt/publication trace before selecting production fix; no phone access without owner unlock
+ANALYSIS_TESTED_HEAD_SHA=7d6658891d6f793372bd4dc525156e3dbe5446ce
+GATES_MET=8
+GATES_UNMET=15
+GATES_ABANDONED=0

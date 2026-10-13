@@ -94,3 +94,37 @@ Smallest next diagnostic: correlate one EQ acquisition with Flash operation and 
 ## Final historical-chat evidence check
 
 Read prior chats Find the blocked EQ retry predicate (01a133dc-37d5-72d1-8994-d17e07f2a360) and Audit JA11 My EQ recovery state (01a1337e-992f-75a3-b63a-335c8e6eacd8) as historical evidence only, without messaging/continuing either. The former is interrupted and its uncommitted test substitutes a Unit-returning refresh callback that never invokes the real lower retry helper. The latter claims a state-level reproduction and has local unmerged commit89b51262, but explicitly retains unknown incomplete-read versus generation-rejection causes. Neither supplies a captured acquisition-owner/attempt/cancellation trace for the physical candidate. Do not import those claims as a >=95% causal conclusion or transplant their patches. Source/probe evidence above is authoritative for this audit.
+
+## Final gate and repository verification
+
+Evidence at tested code/analysis commit `7d6658891d6f793372bd4dc525156e3dbe5446ce` includes unchanged production tree plus four probes. This commit was pushed to origin/codex/ja11-postflash-reconstruction; remote ref independently read back equal. The subsequent checkpoint changes documentation only. No production/main/Gradle/workflow diff exists against investigated main. Tmp logs are locally preserved and ignored via exact path in Git info/exclude; no private raw captures staged.
+
+Manual mission ledger (completion is not claimed):
+
+| Gate | Disposition |
+|---|---|
+| G01 Phase0 capability/instructions audit | MET |
+| G02 Fresh exact history/remote baseline | MET |
+| G03 Physical causal confidence>=95% | UNMET |
+| G04 Faithful physical production regression red/green | UNMET |
+| G05 Minimal correct production fix | UNMET |
+| G06 Final-fix healthy/first-read/bounded-failure coverage | UNMET |
+| G07 Final-fix replacement/cancellation/late-result coverage | UNMET |
+| G08 Final-fix no mutation replay proof | UNMET |
+| G09 Process-start parity | UNMET |
+| G10 Local focused characterization validation | MET |
+| G11 Local full JVM validation | MET |
+| G12 Local lint | MET |
+| G13 Local debug assembly | MET |
+| G14 Fresh adversarial final-fix review | UNMET |
+| G15 Final-fix exact-head hosted build | UNMET |
+| G16 Final-fix minimumAPI smoke | UNMET |
+| G17 Final-fix API35/emulatorUI smoke | UNMET |
+| G18 Final-fix CodeQL | UNMET |
+| G19 Final-fix catalog/community validation | UNMET |
+| G20 Exact signed candidate provenance | UNMET |
+| G21 Pixel/JA11 untouched | MET |
+| G22 No public tag/release | MET |
+| G23 Durable mission/handoff state | MET |
+
+Totals:8 MET,15 UNMET,0 abandoned. G10-G13 verify diagnostic source/tests only; they do not qualify an absent fix. Physical acceptance is separately forbidden/pending owner authorization and is not counted as an overnight gate. Root gate G03 is the earliest blocker; dependent gates stay explicit, not removed or rewritten green.
