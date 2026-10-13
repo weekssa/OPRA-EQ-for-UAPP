@@ -8,21 +8,23 @@ The separate production fix keeps globally owned rows visible through target cha
 | --- | --- |
 | Production branch | `codex/fix-ja11-postflash-convergence-final` |
 | Worktree | `/Users/stephenweeks/.codex/worktrees/ja11-flash-owner-fix/OPRA-EQ-for-UAPP` |
-| Exact source | `381355282f0b446977df172d35d89afd3cd289d3` |
+| Exact source | `a39965d34974edf704c351441038394191d052e9` |
 | Current main incorporated | `dbefc0fe225ff13031ef99323f4391a9a978ed02` |
 | Draft PR | [#94](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/94), attached, no merge approval |
-| Fresh Luna High review | APPROVE exact38135528; initial ownership-row P2 reproduced RED and corrected |
-| Local focused/full unit |54 focused;777 total,0failures/errors/skips on coherent repairc9fbc034 |
+| Fresh Luna High review | APPROVE exacta39965d3; ownership-row P2 and deterministic disconnect fixture barrier corrected |
+| Local focused/full unit |Prior54 focused/777 total PASS; finala39965d3 local gates running by bounded Luna |
 | Lint/build |0errors/118warnings/2hints; debug/release/diagnostic/test assembly + R8 PASS |
 | Workflow/security contracts |actionlint and existing candidate-signing promotion contract PASS |
-| Exact-head hosted run |[38441942881](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/38441942881), four real jobs RUNNING |
+| Exact-head hosted run |[38468082823](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/38468082823), four real jobs RUNNING |
 | CodeQL |Exact-head and standard PR PENDING |
-| Catalog/community/dependency |PASS on38135528 |
+| Catalog/community/dependency |Earlier heads PASS; final head PENDING |
 | Qualified production APK hash |NOT CREATED; no substitute debug/unsigned artifact |
 | Package/version/code |`com.weekssa.opraeqforuapp` / `0.8.2` / `13` |
 | Required official signer |`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747` |
 | Signed-candidate provenance |PENDING main-only workflow; explicit owner merge approval required |
 | Production physical acceptance |NOT RUN |
+
+The first final-head38135528 hosted unit gate failed one healthy-fixture case: its stale-wait was already true from Flash entry and could miss the StateFlow disconnect. Original failure remains preserved; no production behavior change followed. An always-upload unit XML/HTML helper was added atbdaf168; all four hosted jobs passed on that head. Eight local repetitions also passed, but did not remove the known synchronization hole. Finala39965d3 seeds a read marker during held Save and waits for the actual disconnected collector to clear it before reconnecting, preserving all exact assertions. Fresh independent Luna High approves this barrier. Final exact-head gates are running.
 
 The faithful desired-behavior regression failed before the fix with Running FLASH, reads2, stale EQgen1/current DEVICEgen2 and exactly one Save. It passes after the fix, alongside healthy first-read, bounded exhaustion, actual owner clear, and delayed global-ownership cases. Private RED evidence is preserved outside Git. The prior test-only characterization head27bb0445 passed67/67 hosted UI tests after same-head emulator focus recovery; final source adds a retained-row control and requires its own hosted execution. Historical failures remain in EVIDENCE.md, including the normal Android CI zero-job infrastructure failure; the registered exact-head fallback runs the actual gates.
 
@@ -35,3 +37,5 @@ The frozen diagnostic candidate remains source `f6bc1d6d87b9618bc35354f33103504c
 Owner-authorized J030 diagnostic session is complete: healthy control, exactly one Save, seven final reads on generation2, all baseline EQ/settings preserved and verified, complete EQ/Edit UI,107trace records/0drops. Temporary Personal EQ/source removed; no outstanding restoration. Original failed lifetime was not physically reproduced in that control. Video supplied later establishes visible failed sequence; owner confirms regular app, but video has no embedded APK provenance. Pixel was explicitly released. No further phone query, discovery, installation, launch, Flash, settings mutation or unplug is planned. No release has been published.
 
 Canonical append-only evidence, exact historical candidate tuple and private-artifact digests are in EVIDENCE.md; machine checkpoint is STATE.md. Orchestration remains on `codex/ja11-postflash-reconstruction`. Production review/gates never transfer qualification from the frozen diagnostic source.
+
+During the task pause the app archived the checkouts. Snapshot7bb5e419 preserved the uncommitted fixture barrier; restoration and descriptive cherry-pick recovery retained it. Production worktree is restored/attached and clean on the intended branch. Canonical root files are restored, usable and pushed on the original branch; app ownership registration for the old root returned an error, which does not affect durable Git checkpoints. No unrelated state was reset or deleted. Current remote main isd193eb35 with later catalog-bot updates; runtime source is unchanged from incorporateddbefc0fe, and exact merged main must be validated after owner authorization.
