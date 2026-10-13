@@ -389,13 +389,14 @@ class EqLibraryViewModel(
     ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
         val matchingLibrary = library.data.takeIf { it.outputId == activeOutputId }
+        // Ownership is global. Keep its rows while a target change reloads derived currentness.
         val blackPearlLibrary = blackPearlLibraryData.value
         EqLibraryUiState(
             appPreferences = preferences,
             catalogState = catalogState,
-            managedHeadphones = matchingLibrary?.managedHeadphones.orEmpty(),
-            savedEqs = matchingLibrary?.savedEqs.orEmpty(),
-            savedGeneralEqs = matchingLibrary?.savedGeneralEqs.orEmpty(),
+            managedHeadphones = library.data.managedHeadphones,
+            savedEqs = library.data.savedEqs,
+            savedGeneralEqs = library.data.savedGeneralEqs,
             exportCurrentness = if (matchingLibrary == null) ExportCurrentness() else library.exportCurrentness,
             dacRecognitionState = recognition,
             blackPearlConnectionState = hardware.blackPearl,

@@ -238,13 +238,17 @@ class FiioJa11FlashLifetimeTest {
         val paused = AtomicBoolean()
         val queued = ConcurrentLinkedQueue<Pair<CoroutineContext, Runnable>>()
         override fun dispatch(context: CoroutineContext, block: Runnable) {
-            if (paused.get()) queued.add(context to block) else Dispatchers.IO.dispatch(context, block)
+            synchronized(this) {
+                if (paused.get()) queued.add(context to block) else Dispatchers.IO.dispatch(context, block)
+            }
         }
         fun resume() {
-            paused.set(false)
-            while (true) {
-                val task = queued.poll() ?: break
-                Dispatchers.IO.dispatch(task.first, task.second)
+            synchronized(this) {
+                paused.set(false)
+                while (true) {
+                    val task = queued.poll() ?: break
+                    Dispatchers.IO.dispatch(task.first, task.second)
+                }
             }
         }
     }

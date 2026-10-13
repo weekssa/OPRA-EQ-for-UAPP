@@ -165,6 +165,11 @@ class UiModernizationFlowsTest {
     }
 
     @Test
+    fun outputFallbackWithGlobalRowsRetainedKeepsTheOpenDetailAndItsCaller() {
+        characterizeManagedProfileFlashLifetime(switchToFallback = true, retainOwnership = true)
+    }
+
+    @Test
     fun automaticFallbackDuringSaveStrandsRunningFlashAndHidesEqWhileDeviceRecovers() {
         val catalog = testCatalog()
         val profile = catalog.profiles.single()
@@ -328,7 +333,8 @@ class UiModernizationFlowsTest {
     )
 
     /** Conditional source-path characterization; the original physical output transition is unknown. */
-    private fun characterizeManagedProfileFlashLifetime(switchToFallback: Boolean) {
+    private fun characterizeManagedProfileFlashLifetime(switchToFallback: Boolean, retainOwnership: Boolean = false) {
+        val disposesDetail = switchToFallback && !retainOwnership
         val catalog = testCatalog()
         val profile = catalog.profiles.single()
         val headphone = ManagedHeadphoneRecord(
@@ -422,23 +428,24 @@ class UiModernizationFlowsTest {
                     exportTargets = state.value.appPreferences.exportTargets.withActiveTarget(output),
                 ),
                 // The VM emits no selected-output rows during the library/output mismatch.
-                managedHeadphones = if (switchToFallback) emptyList() else listOf(headphone),
+                managedHeadphones = if (disposesDetail) emptyList() else listOf(headphone),
                 fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
             )
         }
         composeRule.waitForIdle()
-        if (switchToFallback) {
+        if (disposesDetail) {
             composeRule.waitUntil(5_000) { finished.isCompleted }
             composeRule.onNodeWithText("Build your EQ library").assertIsDisplayed()
         } else {
             composeRule.runOnIdle { assertTrue(!finished.isCompleted) }
+            composeRule.onNodeWithText("Manage presets").performScrollTo().assertIsDisplayed()
         }
         composeRule.runOnIdle { refreshGate.complete(Unit) }
         composeRule.waitUntil(5_000) { finished.isCompleted }
         composeRule.runOnIdle {
             assertEquals(1, simulatedMutations.get())
-            assertEquals(if (switchToFallback) 1 else 0, cancellations.get())
-            assertEquals(if (switchToFallback) 0 else 1, refreshes.get())
+            assertEquals(if (disposesDetail) 1 else 0, cancellations.get())
+            assertEquals(if (disposesDetail) 0 else 1, refreshes.get())
             // Reappearance cannot replay the cancelled transaction or restore the old selection.
             state.value = state.value.copy(managedHeadphones = listOf(headphone))
         }

@@ -8,7 +8,7 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ### FiiO JA11 reliability
 
-- Keep JA11 Flash verification and EQ refresh running when reconnect briefly changes Automatic output and closes the initiating My EQs detail screen, preventing the EQ tab from remaining blank. Version 0.8.2 / code 13 is a candidate pending exact-source validation, signing and owner acceptance.
+- Preserve My EQs items and the open headphone detail when Automatic output changes during JA11 reconnect. Keep authorized Flash verification and EQ refresh running if the initiating screen is left, preventing the EQ tab from remaining blank. Version 0.8.2 / code 13 is a candidate pending exact-source validation, signing and owner acceptance.
 - Verify Mic/UAC reset writes only after the old USB session detaches and one fresh JA11 session returns; do not replay an uncertain write.
 - Select and verify User 1 before Flash, editor, or Reset EQ writes. A late detach after Save can continue with final readback only.
 - Keep JA11 serial optional for continuity and fail closed when multiple supported candidates are connected. Required physical acceptance is complete for the tested candidate; this entry makes no general power-cycle PEQ persistence or public hardware-support claim.
