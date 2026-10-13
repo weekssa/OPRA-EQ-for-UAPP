@@ -233,8 +233,9 @@ jobs:
           sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" "emulator" "system-images;android-26;google_apis;x86_64"
           avd_home="$RUNNER_TEMP/android-avd-api-26"
           mkdir -p "$avd_home"
+          export ANDROID_AVD_HOME="$avd_home"
           printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
-          ANDROID_AVD_HOME="$avd_home" avdmanager create avd --force --name opra_ci_api_26 --package "system-images;android-26;google_apis;x86_64" --device pixel_2
+          avdmanager create avd --force --name opra_ci_api_26 --package "system-images;android-26;google_apis;x86_64" --device pixel_2
           test -f "$avd_home/opra_ci_api_26.ini"
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
@@ -255,7 +256,28 @@ jobs:
           test "$(adb shell getprop ro.product.cpu.abi | tr -d '\r')" = "x86_64"
           release_apk="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
           test -n "$release_apk"
-          adb install "$release_apk"
+          smoke_keystore="$RUNNER_TEMP/api-26-smoke.jks"
+          smoke_apk="$RUNNER_TEMP/app-release-api26-smoke.apk"
+          trap 'rm -f -- "$smoke_keystore" "$smoke_apk"' EXIT
+          keytool -genkeypair -noprompt \
+            -alias api-26-smoke \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 2 \
+            -dname 'CN=EQ Library API 26 smoke only' \
+            -storetype JKS \
+            -keystore "$smoke_keystore" \
+            -storepass android \
+            -keypass android
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" sign \
+            --ks "$smoke_keystore" \
+            --ks-key-alias api-26-smoke \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out "$smoke_apk" \
+            "$release_apk"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$smoke_apk"
+          adb install "$smoke_apk"
           adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity | tee "$RUNNER_TEMP/min-api-launch.txt"
           grep -q '^Status: ok$' "$RUNNER_TEMP/min-api-launch.txt"
 
