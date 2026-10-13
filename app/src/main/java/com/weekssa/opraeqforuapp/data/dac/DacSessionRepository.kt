@@ -10,6 +10,12 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceDiagnostics
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceEvent
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceComponent
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceOwner
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergencePhase
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceReadContext
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,11 +72,13 @@ class DacSessionRepository(
     internal val fiioJa11Transport: AndroidFiioJa11UsbTransport,
     internal val ew300Transport: AndroidEw300UsbTransport,
     private val ew300ReconnectGate: Ew300ReconnectGate = ew300Transport.reconnectGate,
+    private val convergenceDiagnostics: Ja11ConvergenceDiagnostics? = null,
 ) : Closeable {
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> = blackPearlTransport.state
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> = fiioJa11Transport.state
     val ew300ConnectionState: StateFlow<Kt02h20ConnectionState> = ew300Transport.state
 
+    private val diagnosticInstanceId = convergenceDiagnostics?.allocateId() ?: 0L
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val blackPearlOperationMutex = Mutex()
     private val fiioJa11OperationMutex = Mutex()
@@ -100,6 +108,9 @@ class DacSessionRepository(
     )
 
     init {
+        convergenceDiagnostics?.record(Ja11ConvergenceEvent(
+            Ja11ConvergenceComponent.SESSION_REPOSITORY, diagnosticInstanceId, Ja11ConvergencePhase.CREATED,
+        ))
         scope.launch {
             combine(
                 blackPearlTransport.present,
@@ -185,11 +196,29 @@ class DacSessionRepository(
         read = blackPearlSnapshotReader::read,
     )
 
-    suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
+    suspend fun readFiioJa11Snapshot(
+        diagnosticContext: Ja11ConvergenceReadContext? = null,
+    ): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
         generation = { fiioJa11Transport.sessionGeneration },
         isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
-        read = fiioJa11SnapshotReader::read,
+        read = { generation -> fiioJa11SnapshotReader.read(generation) { reason, fieldIndex ->
+            recordRead(diagnosticContext, reason, generation, fieldIndex)
+        } },
+        onRejected = { reason -> recordRead(diagnosticContext, reason, fiioJa11Transport.sessionGeneration) },
     )
+
+    private fun recordRead(
+        context: Ja11ConvergenceReadContext?, phase: Ja11ConvergencePhase, generation: Long,
+        fieldIndex: Int? = null,
+    ) {
+        if (context == null) return
+        convergenceDiagnostics?.record(Ja11ConvergenceEvent(
+            Ja11ConvergenceComponent.SESSION_REPOSITORY, diagnosticInstanceId, phase,
+            relatedInstanceId = context.repositoryId, owner = context.owner,
+            acquisitionId = context.acquisitionId, operationId = context.operationId,
+            attempt = context.attempt, generation = generation, fieldIndex = fieldIndex,
+        ))
+    }
 
     suspend fun readEw300Snapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
         generation = { ew300Transport.sessionGeneration },
@@ -256,15 +285,25 @@ class DacSessionRepository(
         generation: () -> Long,
         isConnected: () -> Boolean,
         read: suspend (Long) -> HardwareEqSnapshotBundle?,
+        onRejected: ((Ja11ConvergencePhase) -> Unit)? = null,
     ): HardwareEqSnapshotBundle? {
         val expectedGeneration = generation()
-        if (expectedGeneration <= 0L || !isConnected()) return null
+        if (expectedGeneration <= 0L || !isConnected()) {
+            onRejected?.invoke(Ja11ConvergencePhase.GUARD_REJECTED)
+            return null
+        }
         val snapshot = read(expectedGeneration) ?: return null
-        if (!isConnected() || generation() != expectedGeneration) return null
+        if (!isConnected() || generation() != expectedGeneration) {
+            onRejected?.invoke(Ja11ConvergencePhase.GENERATION_CHANGED)
+            return null
+        }
         return snapshot
     }
 
     override fun close() {
+        convergenceDiagnostics?.record(Ja11ConvergenceEvent(
+            Ja11ConvergenceComponent.SESSION_REPOSITORY, diagnosticInstanceId, Ja11ConvergencePhase.CLOSED,
+        ))
         scope.cancel()
         blackPearlTransport.close()
         fiioJa11Transport.close()

@@ -84,6 +84,10 @@ import com.weekssa.opraeqforuapp.ui.screens.blackPearlFlashPresentation
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceEvent
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceComponent
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceOwner
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergencePhase
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -203,6 +207,7 @@ class EqLibraryViewModel(
     private var lastForegroundRefreshAttemptMillis: Long = 0L
     private val exportInvalidation = MutableStateFlow(0L)
     private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
+    internal val diagnosticInstanceId = hardwareRepository.convergenceDiagnostics?.allocateId() ?: 0L
     private val mutableFiioJa11EditorState = MutableStateFlow(MyDacEditorUiState())
     private val mutableEw300EditorState = MutableStateFlow(MyDacEditorUiState())
     private var fiioJa11EditorBaseline: FiioJa11EditorBaseline? = null
@@ -427,6 +432,10 @@ class EqLibraryViewModel(
     )
 
     init {
+        hardwareRepository.convergenceDiagnostics?.record(Ja11ConvergenceEvent(
+            Ja11ConvergenceComponent.VIEW_MODEL, diagnosticInstanceId, Ja11ConvergencePhase.CREATED,
+            relatedInstanceId = hardwareRepository.diagnosticInstanceId,
+        ))
         viewModelScope.launch { updateCoordinator.initialize() }
         viewModelScope.launch {
             catalogRepository.initialize()
@@ -561,7 +570,7 @@ class EqLibraryViewModel(
                     mutableFiioJa11DeviceState.value =
                         mutableFiioJa11DeviceState.value.verified(controlId, result.snapshot)
                     if (controlId == FiioJa11DeviceControls.EQ_PROGRAM) {
-                        hardwareRepository.readFiioJa11Snapshot()
+                        hardwareRepository.readFiioJa11Snapshot(Ja11ConvergenceOwner.EQ_PROGRAM_WRITE)
                     }
                 }
                 is FiioJa11ControlWriteResult.ReconnectRequired -> {
@@ -603,7 +612,7 @@ class EqLibraryViewModel(
             is FiioJa11ControlWriteResult.Verified -> {
                 mutableFiioJa11DeviceState.value =
                     mutableFiioJa11DeviceState.value.verified(result.controlId, result.snapshot)
-                hardwareRepository.readFiioJa11Snapshot()
+                hardwareRepository.readFiioJa11Snapshot(Ja11ConvergenceOwner.RESTART_VERIFICATION)
             }
             else -> mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(
                 fiioJa11WriteFailureMessage(result),
@@ -727,7 +736,7 @@ class EqLibraryViewModel(
 
         mutableFiioJa11EditorState.value = MyDacEditorUiState(isOpening = true)
         viewModelScope.launch {
-            val refreshed = hardwareRepository.readFiioJa11Snapshot()
+            val refreshed = hardwareRepository.readFiioJa11Snapshot(Ja11ConvergenceOwner.EDITOR_BASELINE)
             val bundle = refreshed ?: hardwareRepository.fiioJa11SnapshotState.value.bundle
             val baseline = bundle?.let(hardwareRepository::fiioJa11EditorBaseline)
             if (
@@ -1767,6 +1776,10 @@ class EqLibraryViewModel(
     fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) = Unit
 
     override fun onCleared() {
+        hardwareRepository.convergenceDiagnostics?.record(Ja11ConvergenceEvent(
+            Ja11ConvergenceComponent.VIEW_MODEL, diagnosticInstanceId, Ja11ConvergencePhase.CLEARED,
+            relatedInstanceId = hardwareRepository.diagnosticInstanceId,
+        ))
         hardwareRepository.close()
         super.onCleared()
     }

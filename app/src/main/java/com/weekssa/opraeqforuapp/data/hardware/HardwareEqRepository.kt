@@ -30,6 +30,13 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PlaybackGainResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceDiagnostics
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceEvent
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceComponent
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceOwner
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergencePhase
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceReadContext
+import kotlinx.coroutines.CancellationException
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +67,7 @@ class HardwareEqRepository(
     private val ew300Flasher: Ew300Flasher,
     private val ew300CapabilityBatch: Ew300CapabilityBatch,
     private val ew300PersistenceQualifier: Ew300PersistenceQualifier,
+    internal val convergenceDiagnostics: Ja11ConvergenceDiagnostics? = null,
 ) : Closeable {
     val recognitionState: StateFlow<DacRecognitionState> = dacSessionRepository.recognitionState
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> =
@@ -80,6 +88,7 @@ class HardwareEqRepository(
     val jcallyJm12ConnectionState: StateFlow<Kt02h20ConnectionState> =
         mutableUnsupportedJcallyState.asStateFlow()
 
+    internal val diagnosticInstanceId = convergenceDiagnostics?.allocateId() ?: 0L
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutableBlackPearlSnapshotState = MutableStateFlow(HardwareEqSnapshotState())
     val blackPearlSnapshotState: StateFlow<HardwareEqSnapshotState> =
@@ -92,6 +101,7 @@ class HardwareEqRepository(
         mutableEw300SnapshotState.asStateFlow()
 
     init {
+        recordConvergence(Ja11ConvergencePhase.CREATED)
         scope.launch {
             blackPearlConnectionState.collectLatest { state ->
                 if (state is BlackPearlConnectionState.Connected) {
@@ -103,10 +113,16 @@ class HardwareEqRepository(
         }
         scope.launch {
             fiioJa11ConnectionState.collectLatest { state ->
+                recordConvergence(
+                    if (state is Kt02h20ConnectionState.Connected) Ja11ConvergencePhase.CONNECTED
+                    else Ja11ConvergencePhase.NOT_CONNECTED,
+                    owner = Ja11ConvergenceOwner.CONNECTED_OBSERVER,
+                )
                 if (state is Kt02h20ConnectionState.Connected) {
-                    refreshFiioJa11Snapshot()
+                    refreshFiioJa11Snapshot(owner = Ja11ConvergenceOwner.CONNECTED_OBSERVER)
                 } else {
                     mutableFiioJa11SnapshotState.update { it.markStale() }
+                    recordConvergence(Ja11ConvergencePhase.STALE, owner = Ja11ConvergenceOwner.CONNECTED_OBSERVER)
                 }
             }
         }
@@ -157,7 +173,9 @@ class HardwareEqRepository(
 
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = refreshBlackPearlSnapshot()
 
-    suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = refreshFiioJa11Snapshot()
+    suspend fun readFiioJa11Snapshot(
+        owner: Ja11ConvergenceOwner = Ja11ConvergenceOwner.EXPLICIT_READ,
+    ): HardwareEqSnapshotBundle? = refreshFiioJa11Snapshot(owner = owner)
 
     /** Captures exact identity metadata for one already-current verified User 1 snapshot. */
     fun fiioJa11EditorBaseline(bundle: HardwareEqSnapshotBundle): FiioJa11EditorBaseline? {
@@ -231,16 +249,30 @@ class HardwareEqRepository(
 
     suspend fun flashFiioJa11(profile: OpraEqProfile): Kt02h20FlashResult {
         mutableFiioJa11SnapshotState.update { it.markStale() }
-        return completeFiioJa11Flash(
-            flash = {
-                dacSessionRepository.withExclusiveFiioJa11Operation {
-                    fiioJa11Flasher.flash(profile)
-                }
-            },
-            isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
-            refreshSnapshot = { refreshFiioJa11Snapshot(allowBoundedRetry = true) },
-            markSnapshotStale = { mutableFiioJa11SnapshotState.update { it.markStale() } },
-        )
+        recordConvergence(Ja11ConvergencePhase.FLASH_STARTED, owner = Ja11ConvergenceOwner.FLASH_COMPLETION)
+        return try {
+            completeFiioJa11Flash(
+                flash = {
+                    dacSessionRepository.withExclusiveFiioJa11Operation {
+                        fiioJa11Flasher.flash(profile)
+                    }.also {
+                        recordConvergence(Ja11ConvergencePhase.MUTATION_RETURNED, owner = Ja11ConvergenceOwner.FLASH_COMPLETION)
+                    }
+                },
+                isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
+                refreshSnapshot = { refreshFiioJa11Snapshot(allowBoundedRetry = true, owner = Ja11ConvergenceOwner.FLASH_COMPLETION) },
+                markSnapshotStale = {
+                    mutableFiioJa11SnapshotState.update { it.markStale() }
+                    recordConvergence(Ja11ConvergencePhase.STALE, owner = Ja11ConvergenceOwner.FLASH_COMPLETION)
+                },
+            ).also { recordConvergence(Ja11ConvergencePhase.FLASH_RETURNED, owner = Ja11ConvergenceOwner.FLASH_COMPLETION) }
+        } catch (cancelled: CancellationException) {
+            recordConvergence(Ja11ConvergencePhase.CANCELLED, owner = Ja11ConvergenceOwner.FLASH_COMPLETION)
+            throw cancelled
+        } catch (failure: Throwable) {
+            recordConvergence(Ja11ConvergencePhase.THREW, owner = Ja11ConvergenceOwner.FLASH_COMPLETION)
+            throw failure
+        }
     }
 
     suspend fun resetFiioJa11(): Kt02h20FlatResetResult {
@@ -376,33 +408,84 @@ class HardwareEqRepository(
 
     private suspend fun refreshFiioJa11Snapshot(
         allowBoundedRetry: Boolean = false,
-    ): HardwareEqSnapshotBundle? =
-        dacSessionRepository.withExclusiveFiioJa11Operation {
-            if (fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
-                mutableFiioJa11SnapshotState.update { it.markStale() }
-                return@withExclusiveFiioJa11Operation null
-            }
-
-            readFiioJa11SnapshotWithBoundedRetry(
-                allowRetry = allowBoundedRetry,
-                isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
-                currentSessionGeneration = { dacSessionRepository.fiioJa11Transport.sessionGeneration },
-                isSessionCurrent = dacSessionRepository::isFiioJa11SessionCurrent,
-                read = {
-                    mutableFiioJa11SnapshotState.update { it.beginRead() }
-                    dacSessionRepository.readFiioJa11Snapshot()
-                },
-                publishCurrent = { bundle ->
-                    mutableFiioJa11SnapshotState.update { it.publishCurrent(bundle) }
-                },
-                markReadFailed = {
-                    // Built-in JA11 programs intentionally have no established coefficient snapshot.
-                    // The DEVICE state still reports the active program exactly; no fake curve is shown.
-                    mutableFiioJa11SnapshotState.update { it.markReadFailed() }
-                },
-                markStale = { mutableFiioJa11SnapshotState.update { it.markStale() } },
-            )
+        owner: Ja11ConvergenceOwner = Ja11ConvergenceOwner.EXPLICIT_READ,
+    ): HardwareEqSnapshotBundle? {
+        val acquisitionId = convergenceDiagnostics?.allocateId()
+        var attempt = 0
+        fun record(phase: Ja11ConvergencePhase, bundleGeneration: Long? = null) {
+            recordConvergence(phase, owner, acquisitionId, attempt.takeIf { it > 0 }, bundleGeneration)
         }
+        record(Ja11ConvergencePhase.REFRESH_REQUESTED)
+        return try {
+            dacSessionRepository.withExclusiveFiioJa11Operation {
+                record(Ja11ConvergencePhase.REFRESH_ENTERED)
+                if (fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+                    mutableFiioJa11SnapshotState.update { it.markStale() }
+                    record(Ja11ConvergencePhase.GUARD_REJECTED)
+                    return@withExclusiveFiioJa11Operation null
+                }
+
+                readFiioJa11SnapshotWithBoundedRetry(
+                    allowRetry = allowBoundedRetry,
+                    isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
+                    currentSessionGeneration = { dacSessionRepository.fiioJa11Transport.sessionGeneration },
+                    isSessionCurrent = dacSessionRepository::isFiioJa11SessionCurrent,
+                    read = {
+                        mutableFiioJa11SnapshotState.update { it.beginRead() }
+                        dacSessionRepository.readFiioJa11Snapshot(acquisitionId?.let {
+                            Ja11ConvergenceReadContext(it, diagnosticInstanceId, owner, currentOperationId(), attempt)
+                        })
+                    },
+                    publishCurrent = { bundle -> mutableFiioJa11SnapshotState.update { it.publishCurrent(bundle) } },
+                    markReadFailed = { mutableFiioJa11SnapshotState.update { it.markReadFailed() } },
+                    markStale = { mutableFiioJa11SnapshotState.update { it.markStale() } },
+                    observe = if (convergenceDiagnostics == null) null else { phase, index, generation ->
+                        attempt = index
+                        record(phase, generation)
+                    },
+                )
+            }
+        } catch (cancelled: CancellationException) {
+            record(Ja11ConvergencePhase.CANCELLED)
+            throw cancelled
+        } catch (failure: Throwable) {
+            record(Ja11ConvergencePhase.THREW)
+            throw failure
+        } finally {
+            record(Ja11ConvergencePhase.REFRESH_ENDED)
+        }
+    }
+
+    private fun currentOperationId(): String? = when (val status = fiioJa11OperationStatus.value) {
+        is FiioJa11OperationStatus.Running -> status.operationId
+        is FiioJa11OperationStatus.Completed -> status.trace.operationId
+        FiioJa11OperationStatus.Idle -> null
+    }
+
+    private fun recordConvergence(
+        phase: Ja11ConvergencePhase,
+        owner: Ja11ConvergenceOwner = Ja11ConvergenceOwner.NONE,
+        acquisitionId: Long? = null,
+        attempt: Int? = null,
+        bundleGeneration: Long? = null,
+    ) {
+        val recorder = convergenceDiagnostics ?: return
+        val state = fiioJa11SnapshotState.value
+        val generation = dacSessionRepository.fiioJa11Transport.sessionGeneration
+        recorder.record(Ja11ConvergenceEvent(
+            Ja11ConvergenceComponent.HARDWARE_REPOSITORY, diagnosticInstanceId, phase,
+            owner = owner, acquisitionId = acquisitionId,
+            operationId = if (phase == Ja11ConvergencePhase.FLASH_STARTED) null else currentOperationId(),
+            attempt = attempt,
+            generation = generation, bundleGeneration = bundleGeneration ?: state.bundle?.snapshot?.sessionGeneration,
+            connected = fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected,
+            sessionCurrent = dacSessionRepository.isFiioJa11SessionCurrent(generation),
+            bundleCurrent = state.freshness == DacStateFreshness.CURRENT && state.bundle?.let {
+                dacSessionRepository.isFiioJa11SessionCurrent(it.snapshot.sessionGeneration)
+            } == true,
+            bundlePresent = state.bundle != null, reading = state.isReading, readFailed = state.readFailed,
+        ))
+    }
 
     private fun scheduleBlackPearlSnapshotRefresh() {
         scope.launch {
@@ -417,7 +500,7 @@ class HardwareEqRepository(
     private fun scheduleFiioJa11SnapshotRefresh() {
         scope.launch {
             if (fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
-                refreshFiioJa11Snapshot()
+                refreshFiioJa11Snapshot(owner = Ja11ConvergenceOwner.SCHEDULED_REFRESH)
             } else {
                 mutableFiioJa11SnapshotState.update { it.markStale() }
             }
@@ -466,6 +549,7 @@ class HardwareEqRepository(
     }
 
     override fun close() {
+        recordConvergence(Ja11ConvergencePhase.CLOSED)
         scope.cancel()
         dacSessionRepository.close()
     }
@@ -500,33 +584,48 @@ internal suspend fun readFiioJa11SnapshotWithBoundedRetry(
     publishCurrent: (HardwareEqSnapshotBundle) -> Unit,
     markReadFailed: () -> Unit,
     markStale: () -> Unit,
+    observe: ((Ja11ConvergencePhase, Int, Long?) -> Unit)? = null,
 ): HardwareEqSnapshotBundle? {
     val attempts = if (allowRetry) 2 else 1
     repeat(attempts) { attempt ->
         if (!isConnected()) {
+            observe?.invoke(Ja11ConvergencePhase.GUARD_REJECTED, attempt + 1, null)
             markStale()
             return null
         }
 
         val sessionGeneration = currentSessionGeneration()
         if (sessionGeneration <= 0L || !isSessionCurrent(sessionGeneration)) {
+            observe?.invoke(Ja11ConvergencePhase.GUARD_REJECTED, attempt + 1, null)
             markReadFailed()
             return null
         }
 
+        observe?.invoke(Ja11ConvergencePhase.ATTEMPT_STARTED, attempt + 1, null)
         val bundle = read()
+        observe?.invoke(
+            if (bundle == null) Ja11ConvergencePhase.READ_NO_BUNDLE else Ja11ConvergencePhase.READ_BUNDLE,
+            attempt + 1, bundle?.snapshot?.sessionGeneration,
+        )
         if (
             bundle != null &&
             isConnected() &&
             isSessionCurrent(bundle.snapshot.sessionGeneration)
         ) {
             publishCurrent(bundle)
+            observe?.invoke(Ja11ConvergencePhase.PUBLISHED, attempt + 1, bundle.snapshot.sessionGeneration)
             return bundle
         }
 
         if (attempt == 0 && allowRetry && isConnected()) return@repeat
     }
 
-    if (isConnected()) markReadFailed() else markStale()
+    if (isConnected()) {
+        markReadFailed()
+        observe?.invoke(Ja11ConvergencePhase.READ_FAILED, attempts, null)
+    } else {
+        markStale()
+        observe?.invoke(Ja11ConvergencePhase.STALE, attempts, null)
+    }
     return null
 }

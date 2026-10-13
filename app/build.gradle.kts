@@ -40,13 +40,15 @@ android {
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
+        buildConfigField("boolean", "JA11_CONVERGENCE_DIAGNOSTICS_ENABLED", "false")
     }
 
     buildTypes {
         create("ja11Diagnostic") {
             initWith(getByName("debug"))
-            applicationIdSuffix = ".ja11diag"
-            versionNameSuffix = "-ja11diag"
+            applicationIdSuffix = ".ja11trace"
+            buildConfigField("boolean", "JA11_CONVERGENCE_DIAGNOSTICS_ENABLED", "true")
+            versionNameSuffix = "-ja11trace"
             matchingFallbacks += listOf("debug")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
@@ -83,6 +85,7 @@ android {
 androidComponents {
     beforeVariants(selector().withBuildType("ja11Diagnostic")) { variantBuilder ->
         variantBuilder.enableAndroidTest = true
+        variantBuilder.hostTests[com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
     }
 }
 
