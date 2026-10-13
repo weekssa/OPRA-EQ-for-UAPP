@@ -46,6 +46,16 @@ class Ja11FlashReportActivity : ComponentActivity() {
                     onShareTechnicalJson = {
                         retainedTrace?.let { shareReport(it, Ja11FlashReportFormat.TECHNICAL_JSON) }
                     },
+                    onSaveConvergence = { diagnosticApplication.exportConvergenceTrace() },
+                    onShareConvergence = {
+                        startActivity(Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_SUBJECT, "JA11 acquisition and lifecycle trace")
+                                putExtra(Intent.EXTRA_TEXT, diagnosticApplication.convergenceReportJson())
+                            }, "Share JA11 convergence trace",
+                        ))
+                    },
                 )
             }
         }
@@ -100,6 +110,8 @@ internal fun Ja11FlashReportContent(
     onDismiss: () -> Unit,
     onShareReadable: () -> Unit,
     onShareTechnicalJson: () -> Unit,
+    onShareConvergence: () -> Unit = {},
+    onSaveConvergence: () -> Unit = {},
 ) {
     Scaffold { contentPadding ->
         Column(
@@ -111,6 +123,8 @@ internal fun Ja11FlashReportContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("FiiO JA11 Flash report", style = MaterialTheme.typography.headlineSmall)
+            Button(onClick = onSaveConvergence) { Text("Save acquisition trace locally") }
+            Button(onClick = onShareConvergence) { Text("Share acquisition and lifecycle trace") }
             if (trace == null) {
                 Text("No completed JA11 Flash report is available in this running app session.")
                 TextButton(onClick = onDismiss) { Text("Close") }

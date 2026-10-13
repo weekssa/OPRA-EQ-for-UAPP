@@ -55,6 +55,9 @@ internal data class EqLibraryRuntimeDependencies(
 internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRuntimeDependencies {
     val appContext = context.applicationContext
     val database = OpraEqDatabase.create(appContext)
+    val convergenceDiagnostics = if (BuildConfig.JA11_CONVERGENCE_DIAGNOSTICS_ENABLED) {
+        (appContext as? Ja11ConvergenceDiagnosticsProvider)?.convergenceDiagnostics
+    } else null
 
     // Physical presence is intentionally established before preferences so Automatic output can
     // project one connected supported DAC over the user's durable manual fallback without requiring
@@ -66,6 +69,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
         blackPearlTransport = blackPearlTransport,
         fiioJa11Transport = fiioJa11Transport,
         ew300Transport = ew300Transport,
+        convergenceDiagnostics = convergenceDiagnostics,
     )
     val preferencesRepository = AppPreferencesRepository(
         dataStore = appContext.eqLibraryPreferencesDataStore,
@@ -119,6 +123,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
     val ew300GainStateStore = Ew300GainStatePreferences(appContext)
     val hardwareRepository = HardwareEqRepository(
         dacSessionRepository = dacSessionRepository,
+        convergenceDiagnostics = convergenceDiagnostics,
         blackPearlFlasher = BlackPearlFlasher(
             blackPearlTransport,
             BlackPearlGainStatePreferences(appContext),

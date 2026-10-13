@@ -4,6 +4,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergencePhase
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Transport
@@ -51,24 +52,37 @@ class FiioJa11SnapshotReader(
     private val source: FiioJa11SnapshotSource,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) {
-    suspend fun read(sessionGeneration: Long): HardwareEqSnapshotBundle? {
+    suspend fun read(
+        sessionGeneration: Long,
+        diagnosticRejected: ((Ja11ConvergencePhase, Int?) -> Unit)? = null,
+    ): HardwareEqSnapshotBundle? {
         if (sessionGeneration <= 0) return null
-        val program = source.readEqProgram() ?: return null
+        val program = source.readEqProgram() ?: run {
+            diagnosticRejected?.invoke(Ja11ConvergencePhase.PROGRAM_MISSING, null)
+            return null
+        }
 
         // Built-in programs are real current hardware state, but their native coefficient set is not
         // established by the current protocol evidence. Returning no PEQ bundle is safer than drawing
         // the stored User 1 bank as though it were Vocal/Classic/Bass. DEVICE state still reports the
         // exact active program separately.
         if (program != FiioJa11Protocol.EqProgram.USER_1 && program != FiioJa11Protocol.EqProgram.OFF) {
+            diagnosticRejected?.invoke(Ja11ConvergencePhase.PROGRAM_UNSUPPORTED, null)
             return null
         }
 
         val bands = buildList {
             repeat(FiioJa11Protocol.BAND_COUNT) { index ->
-                add(source.readBand(index) ?: return null)
+                add(source.readBand(index) ?: run {
+                    diagnosticRejected?.invoke(Ja11ConvergencePhase.BAND_MISSING, index)
+                    return null
+                })
             }
         }
-        val globalEqGainDb = source.readGlobalGainDb() ?: return null
+        val globalEqGainDb = source.readGlobalGainDb() ?: run {
+            diagnosticRejected?.invoke(Ja11ConvergencePhase.GAIN_MISSING, null)
+            return null
+        }
         return HardwareEqSnapshotFactory.fiioJa11(
             nativeBands = bands,
             globalEqGainDb = globalEqGainDb,
@@ -76,7 +90,9 @@ class FiioJa11SnapshotReader(
             verifiedAtEpochMillis = nowEpochMillis(),
             eqEnabled = program == FiioJa11Protocol.EqProgram.USER_1,
             activeProgram = program,
-        )
+        ).also { bundle ->
+            if (bundle == null) diagnosticRejected?.invoke(Ja11ConvergencePhase.FACTORY_REJECTED, null)
+        }
     }
 }
 

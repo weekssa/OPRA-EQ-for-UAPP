@@ -6,7 +6,7 @@
             android:exported="true"
             android:label="@string/ja11_flash_report_launcher_label"
             android:launchMode="singleTop"
-            android:taskAffinity="com.weekssa.opraeqforuapp.ja11diag.report">
+            android:taskAffinity="${applicationId}.report">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

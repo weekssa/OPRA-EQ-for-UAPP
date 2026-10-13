@@ -1,6 +1,13 @@
 package com.weekssa.opraeqforuapp
 
 import android.content.Intent
+import androidx.test.core.app.ActivityScenario
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergenceComponent
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11ConvergencePhase
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -116,6 +123,48 @@ class Ja11FlashReportDiagnosticTest {
         assertSame(laterFlash, diagnosticApplication.retainedFlashReport.value)
         diagnosticApplication.dismissCompletedFlash(laterFlash.operationId)
         assertNull(diagnosticApplication.retainedFlashReport.value)
+    }
+
+    @Test
+    fun convergenceReportIsAvailableWithoutCompletedFlashAndContainsProvenanceOnly() {
+        val app = targetDiagnosticApplication()
+        app.retainedFlashReport.value?.let { app.dismissCompletedFlash(it.operationId) }
+        composeRule.onNodeWithText("Share acquisition and lifecycle trace").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Save acquisition trace locally").performScrollTo().performClick()
+        val file = java.io.File(app.filesDir, "ja11-convergence-trace.json")
+        val text = file.readText()
+        val json = Json.parseToJsonElement(text).jsonObject
+        assertEquals(BuildConfig.CANDIDATE_SOURCE_SHA, json.getValue("sourceSha").toString().trim('"'))
+        InstrumentationRegistry.getArguments().getString("expected_source_sha")?.let {
+            assertEquals(it, json.getValue("sourceSha").toString().trim('"'))
+        }
+        assertEquals(BuildConfig.APPLICATION_ID, json.getValue("packageId").toString().trim('"'))
+        assertFalse(text.contains("deviceFingerprintKey"))
+        assertFalse(text.contains("sourceProfileId"))
+        assertFalse(text.contains("targetBands"))
+        assertTrue(file.canonicalPath.startsWith(app.filesDir.canonicalPath))
+    }
+
+    @Test
+    fun activityRecreationIsDistinguishedFromViewModelRecreation() {
+        val app = targetDiagnosticApplication()
+        val firstSequence = app.convergenceDiagnostics.snapshot().records.lastOrNull()?.sequence ?: 0L
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val first = app.convergenceDiagnostics.snapshot().records
+                .last { it.event.component == Ja11ConvergenceComponent.ACTIVITY && it.event.phase == Ja11ConvergencePhase.RESUMED }
+            scenario.recreate()
+            val second = app.convergenceDiagnostics.snapshot().records
+                .last { it.event.component == Ja11ConvergenceComponent.ACTIVITY && it.event.phase == Ja11ConvergencePhase.RESUMED }
+            assertTrue(first.event.instanceId != second.event.instanceId)
+            assertEquals(first.event.relatedInstanceId, second.event.relatedInstanceId)
+            assertTrue(app.convergenceDiagnostics.snapshot().records.any {
+                it.sequence > firstSequence && it.event.phase == Ja11ConvergencePhase.CREATED &&
+                    it.event.component == Ja11ConvergenceComponent.VIEW_MODEL
+            })
+        }
+        assertTrue(app.convergenceDiagnostics.snapshot().records.any {
+            it.sequence > firstSequence && it.event.phase == Ja11ConvergencePhase.CLEARED
+        })
     }
 
     private fun trace(operationId: String, operation: String) = FiioJa11OperationTrace(
