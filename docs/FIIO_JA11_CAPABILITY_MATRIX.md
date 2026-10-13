@@ -10,6 +10,8 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
+The 0.8.2 post-Flash candidate changes app completion ownership and preserves global My EQs rows during output transitions. Hardware controls, native EQ representation, protocol/Save behavior and the capability classifications below remain unchanged. Its new ViewModel-lifetime behavior still requires exact signed-candidate physical acceptance. J030's separate tracing-build healthy control is recorded in the validation ledger and does not qualify the 0.8.2 fix.
+
 ## 2026-10-12 v0.8.1 final capability disposition
 
 The published v0.8.1 release is qualified from source

@@ -86,6 +86,7 @@ import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -388,13 +389,14 @@ class EqLibraryViewModel(
     ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
         val matchingLibrary = library.data.takeIf { it.outputId == activeOutputId }
+        // Ownership is global. Keep its rows while a target change reloads derived currentness.
         val blackPearlLibrary = blackPearlLibraryData.value
         EqLibraryUiState(
             appPreferences = preferences,
             catalogState = catalogState,
-            managedHeadphones = matchingLibrary?.managedHeadphones.orEmpty(),
-            savedEqs = matchingLibrary?.savedEqs.orEmpty(),
-            savedGeneralEqs = matchingLibrary?.savedGeneralEqs.orEmpty(),
+            managedHeadphones = library.data.managedHeadphones,
+            savedEqs = library.data.savedEqs,
+            savedGeneralEqs = library.data.savedGeneralEqs,
             exportCurrentness = if (matchingLibrary == null) ExportCurrentness() else library.exportCurrentness,
             dacRecognitionState = recognition,
             blackPearlConnectionState = hardware.blackPearl,
@@ -1935,13 +1937,15 @@ class EqLibraryViewModel(
         return result
     }
 
-    private suspend fun flashFiioJa11AndRefresh(profile: OpraEqProfile): Kt02h20FlashResult {
+    // Save can change Automatic output and dispose the initiating detail screen. The same
+    // ViewModel must own final readback/publication; clearing it still cancels this work.
+    private suspend fun flashFiioJa11AndRefresh(profile: OpraEqProfile): Kt02h20FlashResult = viewModelScope.async {
         val result = hardwareRepository.flashFiioJa11(profile)
         if (hardwareRepository.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
             refreshFiioJa11DeviceState()
         }
-        return result
-    }
+        result
+    }.await()
 
     private suspend fun resetFiioJa11AndRefresh(): Kt02h20FlatResetResult {
         val result = hardwareRepository.resetFiioJa11()

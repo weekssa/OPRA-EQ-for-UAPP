@@ -385,6 +385,8 @@ Android dynamically locates the HID interface containing interrupt IN + OUT endp
 
 Flash preflights/readbacks device state, validates the entire target before destructive writes, writes all five slots including flat padding, writes global gain, Applies, verifies, Saves, and performs final verification. Success is not reported early.
 
+JA11 Flash completion belongs to the initiating ViewModel lifetime. The existing transaction, final verified readback, current-session EQ publication and DEVICE refresh run as a child of viewModelScope; cancellation of the screen awaiting that completion leaves the authorized work running. Clearing the ViewModel cancels the work and closes its authoritative session. Global My EQs ownership rows remain visible while an Automatic-output transition reloads derived library state; only output-specific export currentness is reset on a key mismatch. The open headphone detail therefore remains selected across that transition. Protocol ordering, shared operation serialization, generation fences and bounded EQ-read policy are unchanged. The 0.8.2 implementation requires its own exact-candidate physical acceptance; earlier hardware tuples do not qualify this lifecycle change.
+
 Reset writes five flat bands/global 0 dB, Applies/verifies/Saves/verifies.
 
 No verified JA11 external preset-file format is exposed. Direct Flash remains intact.

@@ -13,6 +13,8 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.isDialog as isComposeDialog
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasContentDescription
@@ -51,6 +53,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Explore
@@ -77,6 +81,8 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.data.hardware.completeFiioJa11Flash
+import com.weekssa.opraeqforuapp.data.hardware.readFiioJa11SnapshotWithBoundedRetry
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
@@ -104,6 +110,11 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStage
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Transport
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20DeviceSpecs
 import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
@@ -115,6 +126,8 @@ import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
+import com.weekssa.opraeqforuapp.domain.settings.EffectiveOutputResolver
+import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.ui.components.ExportReviewDialog
 import com.weekssa.opraeqforuapp.ui.components.ExportReviewItem
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
@@ -132,10 +145,313 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.atomic.AtomicInteger
 
 class UiModernizationFlowsTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun automaticOutputFallbackDisposesManagedProfileFlashCallerWithoutNavigation() {
+        characterizeManagedProfileFlashLifetime(switchToFallback = true)
+    }
+
+    @Test
+    fun retainedJa11OutputKeepsManagedProfileFlashCallerAcrossDisconnect() {
+        characterizeManagedProfileFlashLifetime(switchToFallback = false)
+    }
+
+    @Test
+    fun outputFallbackWithGlobalRowsRetainedKeepsTheOpenDetailAndItsCaller() {
+        characterizeManagedProfileFlashLifetime(switchToFallback = true, retainOwnership = true)
+    }
+
+    @Test
+    fun automaticFallbackDuringSaveStrandsRunningFlashAndHidesEqWhileDeviceRecovers() {
+        val catalog = testCatalog()
+        val profile = catalog.profiles.single()
+        val headphone = lifetimeHeadphone(profile)
+        val transport = SaveBoundaryTransport(profile)
+        val flasher = FiioJa11Flasher(transport)
+        val completed = CompletableDeferred<Unit>()
+        val completionRefreshes = AtomicInteger()
+        val observerReads = AtomicInteger()
+        val state = mutableStateOf(
+            EqLibraryUiState(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                    directFiioJa11FlashEnabled = true,
+                ),
+                catalogState = CatalogState.Ready(catalog, lastSuccessfulRefreshMillis = 1L),
+                managedHeadphones = listOf(headphone),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Connected,
+                dacRecognitionState = DacRecognitionState(
+                    presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                    recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                ),
+                fiioJa11HardwareEqState = fiioJa11CurrentHardwareState(),
+                fiioJa11DeviceState = FiioJa11DeviceUiState(
+                    snapshot = fixtureFiioDeviceSnapshot(), isCurrentSession = true,
+                ),
+            ),
+        )
+        composeRule.setContent {
+            val status by flasher.operationStatus.collectAsState()
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(
+                    state = state.value.copy(fiioJa11OperationStatus = status),
+                    actions = noOpEqLibraryActions(onFlashManagedProfile = { _, _ ->
+                        try {
+                            completeFiioJa11Flash(
+                                flash = { flasher.flash(profile) },
+                                isConnected = { state.value.fiioJa11ConnectionState is Kt02h20ConnectionState.Connected },
+                                refreshSnapshot = { completionRefreshes.incrementAndGet() },
+                                markSnapshotStale = {},
+                            )
+                            "Synthetic Flash completed"
+                        } finally { completed.complete(Unit) }
+                    }),
+                )
+            }
+        }
+        composeRule.onNodeWithText("WH-1000XM4").performClick()
+        composeRule.onNodeWithText("Flash").performScrollTo().performClick()
+        composeRule.onNodeWithText("Flash to FiiO JA11?").assertIsDisplayed()
+        composeRule.onNode(hasText("Flash") and hasAnyAncestor(isComposeDialog())).performClick()
+        composeRule.waitUntil(5_000) { transport.saveEntered.isCompleted }
+        composeRule.runOnIdle {
+            state.value = state.value.copy(
+                appPreferences = state.value.appPreferences.copy(
+                    exportTargets = state.value.appPreferences.exportTargets.withActiveTarget(
+                        EffectiveOutputResolver.resolve(OutputBehavior.Automatic, ExportDevice.UAPP, emptySet()).output,
+                    ),
+                ),
+                managedHeadphones = emptyList(),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+                fiioJa11HardwareEqState = state.value.fiioJa11HardwareEqState.markStale(),
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.waitUntil(5_000) { completed.isCompleted }
+        composeRule.onNodeWithText("Build your EQ library").assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertTrue(flasher.operationStatus.value is FiioJa11OperationStatus.Running)
+            assertEquals(listOf(0x16, 0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19), transport.commands)
+            assertEquals(0, completionRefreshes.get())
+            // The authoritative premise supplies one normal-null observer acquisition, not an exception.
+            var replacementEq = HardwareEqSnapshotState()
+            runBlocking {
+                readFiioJa11SnapshotWithBoundedRetry(
+                    allowRetry = false,
+                    isConnected = { true }, currentSessionGeneration = { 2L }, isSessionCurrent = { it == 2L },
+                    read = { observerReads.incrementAndGet(); null },
+                    publishCurrent = { replacementEq = replacementEq.publishCurrent(it) },
+                    markReadFailed = { replacementEq = replacementEq.markReadFailed() }, markStale = {},
+                )
+            }
+            assertEquals(1, observerReads.get())
+            assertTrue(replacementEq.bundle == null && replacementEq.readFailed)
+            state.value = state.value.copy(
+                appPreferences = state.value.appPreferences.copy(
+                    exportTargets = state.value.appPreferences.exportTargets.withActiveTarget(ExportDevice.FIIO_JA11),
+                ),
+                managedHeadphones = listOf(headphone),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Connected,
+                fiioJa11HardwareEqState = replacementEq,
+                fiioJa11DeviceState = FiioJa11DeviceUiState(
+                    snapshot = fixtureFiioDeviceSnapshot().copy(sessionGeneration = 2L), isCurrentSession = true,
+                ),
+            )
+            transport.saveGate.complete(Unit)
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Open My DAC").performClick()
+        composeRule.onNodeWithText("FiiO JA11 · Connected").assertIsDisplayed()
+        composeRule.onNodeWithText("EQ").assertIsDisplayed()
+        composeRule.onNodeWithText("Hardware EQ").assertDoesNotExist()
+        composeRule.onNodeWithText("Current hardware EQ").assertDoesNotExist()
+        composeRule.onNodeWithText("Edit EQ").assertDoesNotExist()
+        composeRule.onNodeWithText("User 1 is active, but a verified five-band EQ read is not available yet.").assertDoesNotExist()
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Current device state").assertIsDisplayed()
+        composeRule.onNodeWithText("User 1").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(1, transport.commands.count { it == 0x19 })
+            assertEquals(0, transport.finalReads.get())
+            assertEquals(0, completionRefreshes.get())
+            assertTrue(flasher.lastOperationTrace.value == null)
+            assertTrue(flasher.operationStatus.value is FiioJa11OperationStatus.Running)
+        }
+    }
+
+    /** Read/write transport simulation only; no Android USB transport or physical device is constructed. */
+    private class SaveBoundaryTransport(profile: OpraEqProfile) : FiioJa11Transport {
+        private val representation = (Kt02h20FiveBandOptimizer.optimize(profile, Kt02h20DeviceSpecs.FIIO_JA11)
+            as FiveBandOptimizationResult.Ready).representation
+        private val bands = FiioJa11Protocol.completeBands(representation.bands)
+        val commands = mutableListOf<Int>()
+        val saveEntered = CompletableDeferred<Unit>()
+        val saveGate = CompletableDeferred<Unit>()
+        val finalReads = AtomicInteger()
+        override val sessionGeneration = 1L
+        override suspend fun readBand(index: Int): FiioJa11Protocol.Band {
+            if (saveEntered.isCompleted) finalReads.incrementAndGet()
+            return bands[index]
+        }
+        override suspend fun readGlobalGainDb(): Double {
+            if (saveEntered.isCompleted) finalReads.incrementAndGet()
+            return representation.playbackGainDb
+        }
+        override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram {
+            if (saveEntered.isCompleted) finalReads.incrementAndGet()
+            return FiioJa11Protocol.EqProgram.USER_1
+        }
+        override suspend fun sendReport(report: ByteArray): Boolean {
+            commands += report[5].toInt() and 0xff
+            return true
+        }
+        override suspend fun saveToFlash(): Boolean {
+            sendReport(FiioJa11Protocol.saveToFlashReport())
+            saveEntered.complete(Unit)
+            saveGate.await()
+            return true
+        }
+    }
+
+    private fun lifetimeHeadphone(profile: OpraEqProfile) = ManagedHeadphoneRecord(
+        productId = profile.productId, vendorId = "sony", vendorName = "Sony", productName = "WH-1000XM4",
+        autoIncludeNewProfiles = false, createdAtMillis = 1L, updatedAtMillis = 1L,
+        profiles = listOf(ManagedProfileRecord(
+            profileId = profile.id, selected = true, explicitlyExcluded = false, lastKnownProfile = profile,
+            fingerprint = "synthetic-lifetime-profile", firstSeenAtMillis = 1L, lastSeenAtMillis = 1L,
+            isNewUnreviewed = false, isUpdatedUnreviewed = false, noLongerAvailable = false,
+            generatedPresetName = null, generatedXml = null, generatedFromFingerprint = null, generatedAtMillis = null,
+        )),
+    )
+
+    /** Conditional source-path characterization; the original physical output transition is unknown. */
+    private fun characterizeManagedProfileFlashLifetime(switchToFallback: Boolean, retainOwnership: Boolean = false) {
+        val disposesDetail = switchToFallback && !retainOwnership
+        val catalog = testCatalog()
+        val profile = catalog.profiles.single()
+        val headphone = ManagedHeadphoneRecord(
+            productId = profile.productId,
+            vendorId = "sony",
+            vendorName = "Sony",
+            productName = "WH-1000XM4",
+            autoIncludeNewProfiles = false,
+            createdAtMillis = 1L,
+            updatedAtMillis = 1L,
+            profiles = listOf(
+                ManagedProfileRecord(
+                    profileId = profile.id,
+                    selected = true,
+                    explicitlyExcluded = false,
+                    lastKnownProfile = profile,
+                    fingerprint = "synthetic-lifetime-profile",
+                    firstSeenAtMillis = 1L,
+                    lastSeenAtMillis = 1L,
+                    isNewUnreviewed = false,
+                    isUpdatedUnreviewed = false,
+                    noLongerAvailable = false,
+                    generatedPresetName = null,
+                    generatedXml = null,
+                    generatedFromFingerprint = null,
+                    generatedAtMillis = null,
+                ),
+            ),
+        )
+        val state = mutableStateOf(
+            EqLibraryUiState(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                    directFiioJa11FlashEnabled = true,
+                ),
+                catalogState = CatalogState.Ready(catalog, lastSuccessfulRefreshMillis = 1L),
+                managedHeadphones = listOf(headphone),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Connected,
+            ),
+        )
+        val refreshEntered = CompletableDeferred<Unit>()
+        val refreshGate = CompletableDeferred<Unit>()
+        val finished = CompletableDeferred<Unit>()
+        val simulatedMutations = AtomicInteger()
+        val refreshes = AtomicInteger()
+        val cancellations = AtomicInteger()
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(
+                    state = state.value,
+                    actions = noOpEqLibraryActions(
+                        onFlashManagedProfile = { productId, profileId ->
+                            assertEquals(headphone.productId, productId)
+                            assertEquals(profile.id, profileId)
+                            try {
+                                completeFiioJa11Flash(
+                                    flash = { simulatedMutations.incrementAndGet(); "Synthetic success" },
+                                    isConnected = { true },
+                                    refreshSnapshot = {
+                                        refreshEntered.complete(Unit)
+                                        refreshGate.await()
+                                        refreshes.incrementAndGet()
+                                    },
+                                    markSnapshotStale = { error("Synthetic replacement is connected") },
+                                )
+                            } catch (cancelled: CancellationException) {
+                                cancellations.incrementAndGet()
+                                throw cancelled
+                            } finally {
+                                finished.complete(Unit)
+                            }
+                        },
+                    ),
+                )
+            }
+        }
+        composeRule.onNodeWithText("WH-1000XM4").performClick()
+        composeRule.onNodeWithText("Flash").performScrollTo().performClick()
+        composeRule.onNodeWithText("Flash to FiiO JA11?").assertIsDisplayed()
+        composeRule.onNode(hasText("Flash") and hasAnyAncestor(isComposeDialog())).performClick()
+        composeRule.waitUntil(5_000) { refreshEntered.isCompleted }
+        composeRule.runOnIdle {
+            val output = EffectiveOutputResolver.resolve(
+                behavior = OutputBehavior.Automatic,
+                manualFallback = ExportDevice.UAPP,
+                presentDeviceIds = emptySet(),
+                sessionOverride = if (switchToFallback) null else ExportDevice.FIIO_JA11,
+            ).output
+            state.value = state.value.copy(
+                appPreferences = state.value.appPreferences.copy(
+                    exportTargets = state.value.appPreferences.exportTargets.withActiveTarget(output),
+                ),
+                // Legacy control: the old VM mapping emitted no rows during this mismatch.
+                managedHeadphones = if (disposesDetail) emptyList() else listOf(headphone),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+            )
+        }
+        composeRule.waitForIdle()
+        if (disposesDetail) {
+            composeRule.waitUntil(5_000) { finished.isCompleted }
+            composeRule.onNodeWithText("Build your EQ library").assertIsDisplayed()
+        } else {
+            composeRule.runOnIdle { assertTrue(!finished.isCompleted) }
+            composeRule.onNodeWithText("Manage presets").performScrollTo().assertIsDisplayed()
+        }
+        composeRule.runOnIdle { refreshGate.complete(Unit) }
+        composeRule.waitUntil(5_000) { finished.isCompleted }
+        composeRule.runOnIdle {
+            assertEquals(1, simulatedMutations.get())
+            assertEquals(if (disposesDetail) 1 else 0, cancellations.get())
+            assertEquals(if (disposesDetail) 0 else 1, refreshes.get())
+            // Reappearance cannot replay the cancelled transaction or restore the old selection.
+            state.value = state.value.copy(managedHeadphones = listOf(headphone))
+        }
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { assertEquals(1, simulatedMutations.get()) }
+    }
 
     @Test
     fun productionAppShellHasThreeStableRootsAndAnIndependentOutputContext() {
@@ -2520,6 +2836,9 @@ private fun noOpEqLibraryActions(
     onRefreshCatalog: () -> String = { "Fixture catalog is current." },
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
     onReadBlackPearlEqSnapshot: () -> Unit = {},
+    onFlashManagedProfile: suspend (String, String) -> String = { _, _ ->
+        error("Hardware writes are not part of the app-shell test")
+    },
 ) = EqLibraryActions(
         onConnectDacForMyDac = onConnectDacForMyDac,
         onOpenBlackPearlEditor = {},
@@ -2580,7 +2899,7 @@ private fun noOpEqLibraryActions(
         onResetEw300 = { error("Hardware writes are not part of the app-shell test") },
         onConnectJcallyJm12 = {},
         onResetJcallyJm12 = { error("Unsupported hardware is not part of the app-shell test") },
-        onFlashManagedProfile = { _, _ -> error("Hardware writes are not part of the app-shell test") },
+        onFlashManagedProfile = onFlashManagedProfile,
         onFlashSavedEq = { error("Hardware writes are not part of the app-shell test") },
         onFlashGeneralEq = { error("Hardware writes are not part of the app-shell test") },
         onRefreshCatalog = onRefreshCatalog,
