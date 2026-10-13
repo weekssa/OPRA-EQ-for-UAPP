@@ -231,13 +231,16 @@ class HardwareEqRepository(
 
     suspend fun flashFiioJa11(profile: OpraEqProfile): Kt02h20FlashResult {
         mutableFiioJa11SnapshotState.update { it.markStale() }
-        return try {
-            dacSessionRepository.withExclusiveFiioJa11Operation {
-                fiioJa11Flasher.flash(profile)
-            }
-        } finally {
-            scheduleFiioJa11SnapshotRefresh()
-        }
+        return completeFiioJa11Flash(
+            flash = {
+                dacSessionRepository.withExclusiveFiioJa11Operation {
+                    fiioJa11Flasher.flash(profile)
+                }
+            },
+            isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
+            refreshSnapshot = ::refreshFiioJa11Snapshot,
+            markSnapshotStale = { mutableFiioJa11SnapshotState.update { it.markStale() } },
+        )
     }
 
     suspend fun resetFiioJa11(): Kt02h20FlatResetResult {
@@ -466,4 +469,19 @@ class HardwareEqRepository(
         scope.cancel()
         dacSessionRepository.close()
     }
+}
+
+/**
+ * Keeps a successful JA11 Flash and its replacement-session snapshot publication one completion
+ * boundary. The UI must not observe Flash success before the authoritative EQ state is available.
+ */
+internal suspend fun <T> completeFiioJa11Flash(
+    flash: suspend () -> T,
+    isConnected: () -> Boolean,
+    refreshSnapshot: suspend () -> Unit,
+    markSnapshotStale: () -> Unit,
+): T = try {
+    flash()
+} finally {
+    if (isConnected()) refreshSnapshot() else markSnapshotStale()
 }
