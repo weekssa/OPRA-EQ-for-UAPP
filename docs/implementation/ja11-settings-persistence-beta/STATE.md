@@ -1,7 +1,6 @@
 # JA11 settings persistence beta state
 
-Status: **ALL OFF-PHONE SOFTWARE AND PRIVATE APK GATES PASS**. This is a private beta-only feature; no production support or hardware
-qualification claim is made by this implementation record.
+Status: **SOFTWARE GATES PASS; OWNER HARDWARE REPORTS INCLUDE A USER_1 EQ MISMATCH — HOLD FOR DIAGNOSIS**. This private beta is not hardware-qualified.
 
 ## Mission tuple
 
@@ -46,13 +45,23 @@ claim USB bus counts or firmware reboot counts.
 | Private beta APK provenance | PASS | Exact APK metadata, injected source SHA, debug signer, alignment, checksum, and API 26/API 35 installs recorded in `ARTIFACTS.md` |
 | Standard Android CI workflow | FAIL (existing workflow) | Run 38512307326 fails before jobs exist; same known malformed-workflow issue on the base branch, not candidate-specific |
 | PR CodeQL | PASS | Run 38512320065 on exact PR head |
-| Private beta phone install | PASS | After owner confirmation, exact APK installed on Pixel 9 / API 37; package/version verified; app was not launched |
-| JA11 / physical hardware testing | PENDING OWNER | Owner performs normal manual hardware testing; no JA11 connection or operation has occurred in this task |
+| Private beta phone install | PASS | After owner confirmation, exact APK installed on Pixel 9 / API 37; package/version verified |
+| Owner beta report review | MIXED; HOLD | Volume Save and Off-program Save reports passed; selecting User 1 returned `FINAL_EQ_MISMATCH` with a stored-bank difference |
+| Original-state restoration | NOT VERIFIED | Exported reports end at volume 56 / Off; no report documents restoring the original volume 60 or the pre-Save User 1 bank |
 
 ## Safety boundary
 
 The owner confirmed the phone was ready and wireless debugging was enabled. The exact private beta
-APK was installed on the Pixel 9 / API 37 and its package/version was verified; it was left
-unopened. No JA11 was connected and no hardware operation or physical capability test occurred.
-The owner conducts normal hardware testing manually. Stop at the first uncertain physical result;
-no mutation replay or recovery mutation is implied.
+APK was installed and the owner later conducted the manual session. The reports tie the operations
+to candidate `620e1a46761de2d3621dbcd32135193efb42cf49`, Pixel 9 / API 37, JA11 firmware 2.20,
+and USB product ID 258; no USB serial is retained. The volume 60→56 Save and the later Off-program
+selection report `SUCCESS`. The intervening Off→User 1 selection reports `FINAL_EQ_MISMATCH`: the
+User 1 stored bank read before Save differed from the bank read after Save. The later Off Save
+started from the already-flat User 1 bank, so it does not establish restoration of that bank.
+
+The report set contains no volume 56→60 transaction or other proof that the original volume was
+restored. Therefore the physical session is **FAIL / RESTORATION NOT VERIFIED**, not a beta pass.
+Report transport counts are software-recorded and do not prove USB bus packet counts or firmware
+reboot counts. Do not issue another Save, retry the User 1 selection, or attempt recovery until the
+failure is diagnosed and an explicit recovery plan is authorized. Keep the owner-shared raw reports
+outside GitHub; a sanitized outcome is appended to `docs/FIIO_JA11_VALIDATION_LEDGER.md`.

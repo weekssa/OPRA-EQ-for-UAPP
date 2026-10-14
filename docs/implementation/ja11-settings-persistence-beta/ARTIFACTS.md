@@ -30,8 +30,27 @@ exact-head gates.
 | PR community/catalog checks | PASS, runs `38512320099` and `38512320115` |
 | Exact-head hosted build jobs | PASS: build, exact-head CodeQL, API 26 smoke, and API 35 UI test |
 | Legacy standard Android CI push workflow | Failed before creating jobs (run `38512307326`); exact-head fallback run above supplies the required hosted software gates |
-| JA11 physical qualification | Pending; the owner will perform normal hardware testing manually after this install-only handoff |
+| Owner-led JA11 beta session | HOLD / FAIL: volume 60→56 Save and Off-program Save report success; Off→User 1 Save reports `FINAL_EQ_MISMATCH` because the stored User 1 bank changed across Save |
+| Original-state restoration | NOT VERIFIED: the exported operation reports contain no 56→60 volume restoration; the User 1 bank was already flat at the start of the later Off Save |
 
 The intended signer is the normal local debug/test signer. This is a private test artifact, not the
 officially signed or published beta/release APK. An installed APK's package, version, embedded
 source SHA, signature, alignment, and file checksum must be rechecked against these records.
+
+## Owner-shared physical reports
+
+The owner supplied six readable and six JSON exports covering three operations, with later copies
+including a newer automatic read-only refresh. The raw reports remain in the owner's private
+storage and are not copied to GitHub. Their latest readable/JSON copies were cross-checked:
+
+| Operation | Report outcome | Readable / JSON SHA-256 |
+| --- | --- | --- |
+| Volume 60→56, program Off | SUCCESS; later refresh still read 56 / Off | `f39cc23fedc7de0ef93101a92d1dfc49f61632d36ee6476c1c514d0a536fa377` / `2be511b1083a9ddd17866753aac5537733d0b6599839abc4d434f6659e832f43` |
+| Program Off→User 1 | **FINAL_EQ_MISMATCH**; the stored User 1 bank differed after Save | `b539f013ab343fb129ce3fcb693eb74ee4a9f7fb2f66e907b6d2248e2aa9a8f3` / `def7148253948eee90a7f0774e1a48ff94f40fb00c182e2fe38379fe3c65468a` |
+| Program User 1→Off | SUCCESS for program selection; started from the already-flat User 1 bank | `01c2cebca573886d53b2f9ac4b11aa38f6f5d0117bffe80570d4cb919852178f` / `43b1a51319871718805f82ffd7e9d56e74dd2c031104613d5733fc967024b67e` |
+
+All reports name candidate source `620e1a46761de2d3621dbcd32135193efb42cf49`. The JA11 reports
+firmware 2.20 and PID 258; the phone was Pixel 9 / API 37. The app recorded one target write and
+one Save per operation, with no bounded read-only retry. These are software-recorded counts, not
+bus-level observations. The failure and missing restoration proof block physical acceptance; see
+J034 in `docs/FIIO_JA11_VALIDATION_LEDGER.md`.

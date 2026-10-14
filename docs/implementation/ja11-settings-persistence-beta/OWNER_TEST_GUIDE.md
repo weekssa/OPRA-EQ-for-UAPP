@@ -1,6 +1,6 @@
 # JA11 settings persistence beta owner guide
 
-Status: **DRAFT — use only after the exact private beta APK and owner phone window are confirmed.**
+Status: **HOLD — owner-shared reports show a User 1 stored-bank mismatch after Save and do not establish original-state restoration. Do not repeat hardware mutations until the failure is diagnosed and a recovery plan is explicitly authorized.**
 
 This separate beta app tests two explicit actions: My DAC → DEVICE → Device volume → Apply, and My
 DAC → DEVICE → EQ program → choose a different entry. Each changed action writes that one requested
