@@ -22,9 +22,28 @@ The checklist is organized around the **current release state**. Detailed histor
   and never rebuilds or re-signs the APK.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
 
-## Current stable release: v0.8.2
+## Current stable release: v0.8.3
 
-EQ Library v0.8.2 is the immutable public stable release and is returned by [`/releases/latest`](https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest). v0.8.1 is the previous stable release. The immutable v0.8.0-beta remains preserved as historical prerelease evidence.
+EQ Library v0.8.3 is the immutable public stable release and is returned by
+[`/releases/latest`](https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest).
+v0.8.2 is the previous stable release; the immutable v0.8.0-beta remains preserved as historical
+prerelease evidence.
+
+- [x] Stable source identity: main commit `899755507f812c940f3ab9381a856c80c6030885`; annotated tag object `1a584839b699ce2f0ff447582719fbeb19915392` peels to that exact source and binds the official signed candidate run/artifact and archive digest. PR #97 merged normally as this source.
+- [x] Exact-main Android CI: run `38648012952` passed all four jobs: unit/lint/build/R8, exact-source Kotlin analysis, API 26 release smoke, and API 35 connected UI tests. PR #97 CodeQL/Kotlin analysis passed at exact head `96399e902f7390c6f27bfc42bfc412790328457a`.
+- [x] Stable metadata: package `com.weekssa.opraeqforuapp`, versionName `0.8.3`, versionCode `14`, advancing v0.8.2 code `13`.
+- [x] Official signed candidate: run `38649163805`, artifact `11934142420`, archive SHA-256 `500c5c693ea41f35e5025041b9fddebab3d44c863151411d871a8255cc6e31bb`; APK SHA-256 `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`; R8 mapping SHA-256 `45601e0f655cb82f5965b2077faebb310a8009826ceb7bd9cb30966d20ed16d9` remains private.
+- [x] Candidate verification: APK package/version/code, source SHA, checksum, v2/v3 signatures, pinned signer certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, R8 mapping and zip alignment passed independent readback.
+- [x] API 35 exact-candidate promotion gates: clean install and v0.8.2 in-place upgrade passed within promotion run `38650109951` before tag creation.
+- [x] Exact-artifact promotion: run `38650109951` created annotated `v0.8.3` and published the unchanged signed candidate; release ID `413252769` is immutable, non-draft, non-prerelease, and current latest.
+- [x] All six public asset downloads were independently checked against GitHub SHA-256 digests; public APK bytes match the candidate and checksum sidecar. Tag peels to exact source; public release body matches `docs/releases/v0.8.3.md`. Full evidence is in `docs/release-engineering/v0.8.3-stable/ARTIFACTS.md`.
+- [x] Owner accepted Beta v1 and authorized go-live. Exact beta and its data remain installed on the Pixel 9; final reported DAC state is volume 19 / Classic, Mic On, UAC 2.0. No production APK was installed over it. J032/J033 preserve the PASS WITH LIMITS and do not claim USB bus capture, User 1 bank preservation, or unique same-unit continuity.
+
+Status: **v0.8.3 is current stable/latest.** Its exact candidate, promotion, public asset, owner acceptance, and hardware evidence limits are recorded in the v0.8.3 release-engineering record, JA11 validation ledger, capability matrix, and runbook.
+
+## Historical previous stable release: v0.8.2
+
+EQ Library v0.8.2 remains an immutable public release but has been superseded by v0.8.3.
 
 - [x] Stable source identity: exact main source `9983edf0b7fe437aeeec9ac3dcb3864705afa16a`; annotated `v0.8.2` tag object `e5d3d1150c1d981f63f7e2eaa50d5bd9a1caf939` peels to that source and binds the official signed candidate run/artifact and archive digest.
 - [x] Source validation: exact-main Android CI run `38473044839` passed; CodeQL, Catalog currentness, community coverage, and dependency checks passed on the exact source. PR #94 is merged.
@@ -33,10 +52,10 @@ EQ Library v0.8.2 is the immutable public stable release and is returned by [`/r
 - [x] Signed v0.8.1 in-place upgrade and clean install passed on API 35 in candidate smoke run `38475878287`. Promotion run `38499666593` independently revalidated the candidate and passed its signed API 35 install/upgrade gate before publication.
 - [x] Public stable release [v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.2), release ID `412274351`, is immutable, non-draft, non-prerelease, and latest.
 - [x] All six uploaded public assets were downloaded. Each byte SHA-256 matched GitHub release metadata; the public APK matches the candidate and checksum sidecar. Full asset, tag, provenance, and release-body evidence is in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`.
-- [x] Public release body matches `docs/releases/v0.8.2.md`; the public README and changelog identify v0.8.2 and v0.8.1 as the previous stable version.
+- [x] Public release body matched `docs/releases/v0.8.2.md` at the time of v0.8.2 publication; v0.8.3 now supersedes it. Current README and changelog identify v0.8.3 as stable and v0.8.2 as the previous stable version.
 - [x] J031 physical acceptance is PASS_WITH_LIMITS for same-process visible EQ/DEVICE convergence, edit/navigation, unchanged observed baseline, and cleanup on the exact official candidate. Raw packet/write/Save/replay counts, internal generations, ViewModel identity, and unique same-unit continuity remain unmeasured; no additional capability or persistence claim is made.
 
-Status: **v0.8.2 is the current stable/latest release.** The exact candidate, promotion, public asset, and J031 evidence boundaries are recorded in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`, the JA11 validation ledger, capability matrix, and current status document.
+Status at v0.8.2 closeout: **v0.8.2 was current stable/latest.** It has been superseded by v0.8.3. The exact candidate, promotion, public asset, and J031 evidence boundaries remain recorded in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`, the JA11 validation ledger, and capability matrix.
 
 ## Historical v0.8.0 stable release
 

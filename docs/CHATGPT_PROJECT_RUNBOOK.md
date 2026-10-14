@@ -934,3 +934,38 @@ Public release [v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag
 J031 is PASS_WITH_LIMITS for the exact signed candidate and original Explorer/LoboNautics managed-profile route: the owner performed one Flash, same-process visible EQ and DEVICE state converged, editing/navigation worked, observed baseline values were unchanged, and cleanup completed. The phone was released. Raw USB packet/write/Save/replay counts, internal session generations, and ViewModel identity remain unmeasured. Generic descriptor data and the non-unique profile fingerprint do not establish same-unit continuity. No further phone action or broader hardware/persistence claim is made. Previous v0.8.1 status and historical release records remain preserved as history.
 
 The updated README, changelog, release checklist, JA11 status, capability matrix, and append-only validation ledger identify v0.8.2 as current and retain J031's exact evidence limits. Full public asset digests and artifact provenance are recorded in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`. Rollback to v0.8.1 is documented there as a separate recovery path; local data should be exported/backed up through the app's supported flows before attempting a downgrade or uninstall/reinstall.
+
+## 2026-10-14 v0.8.3 stable publication and JA11 defaults closeout — current release
+
+This entry supersedes earlier chronological snapshots that identify v0.8.2 or v0.8.0 as the
+current public stable/latest release. EQ Library v0.8.3 is now the immutable public stable release
+and `/releases/latest`. Feature integration PR #97 merged normally to `main` as
+`899755507f812c940f3ab9381a856c80c6030885`; exact-main CI run `38648012952` passed all four jobs.
+The integrated app-source tree is equivalent to the physically tested Beta v1 source
+`7cea4545dddbee2da0b436e0684a9c489835e3cd`; no app-source changes followed hardware qualification.
+
+Official main-only signing run `38649163805` produced artifact `11934142420`, archive SHA-256
+`500c5c693ea41f35e5025041b9fddebab3d44c863151411d871a8255cc6e31bb`. Its APK is package
+`com.weekssa.opraeqforuapp`, versionName `0.8.3`, versionCode `14`, SHA-256
+`396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`, signed by the pinned
+certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Promotion run
+`38650109951` passed API 35 clean install and v0.8.2 in-place upgrade, then reused the exact signed
+candidate without rebuilding or re-signing. Annotated tag `v0.8.3` object
+`1a584839b699ce2f0ff447582719fbeb19915392` peels to exact main source
+`899755507f812c940f3ab9381a856c80c6030885`. Public release ID `413252769` reads immutable,
+non-draft, non-prerelease; `/releases/latest` returns v0.8.3. All six public assets were downloaded
+and matched GitHub metadata, including the APK and checksum sidecar. Full public identity and
+asset digests are in `docs/release-engineering/v0.8.3-stable/ARTIFACTS.md` and J034 of the
+append-only JA11 validation ledger.
+
+J032 records the candidate-specific defaults operation as PASS WITH LIMITS. J033 records the
+owner's subsequent manual acceptance and go-live authorization. App operation counts are not USB
+bus captures; the J032 report lacks a unique unit identity and reported User 1 comparison
+unavailable. The owner statement did not include an independent bus trace, serial/fingerprint, or
+User 1 payload, so none is inferred. No native EQ Save, UAC change, or EQ-band write occurred. The
+owner's phone retains the exact debug-signed Beta v1 and its data, with final reported settings
+volume 19 / Classic, Mic On, UAC 2.0. No phone operation occurred during stable publication.
+`docs/implementation/v0.8.3-defaults-beta/` preserves the implementation, gates, candidate,
+accepted test substitutions and owner report. PR #98 carries the documentation closeout; the
+public release notes and release body remain aligned. No broader JA11 capability or hardware
+claim is added by publication.
