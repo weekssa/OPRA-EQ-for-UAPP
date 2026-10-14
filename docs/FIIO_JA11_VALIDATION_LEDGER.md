@@ -748,3 +748,32 @@ It does not change J032's captured facts, replace the debug-signed beta with a s
 or authorize another phone mutation. Public release behavior claims remain limited to the explicit
 defaults product flow and the exact candidate evidence; no broader JA11 capability classification
 is changed by this owner report.
+
+## 2026-10-14 J034 — v0.8.3 stable release readback
+
+This entry records the official software release chain following J033 owner-reported acceptance. PR
+[#97](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/97) merged normally to `main` as
+`899755507f812c940f3ab9381a856c80c6030885`. The merged application-source tree is equivalent to
+Beta v1 source `7cea4545dddbee2da0b436e0684a9c489835e3cd`; no app-source diff was introduced after
+physical qualification. Exact-main Android CI run `38648012952` passed all four jobs. Main-only
+signed candidate run `38649163805` produced Actions artifact `11934142420`, archive SHA-256
+`500c5c693ea41f35e5025041b9fddebab3d44c863151411d871a8255cc6e31bb`, and stable APK SHA-256
+`396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`. The APK is package
+`com.weekssa.opraeqforuapp`, version `0.8.3` / code `14`, signed by pinned certificate SHA-256
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Independent package,
+source-identity, signature, alignment, mapping, and digest checks passed. Promotion run
+`38650109951` passed API 35 clean-install and v0.8.2 in-place-upgrade checks, then published the
+same signed candidate without rebuild or re-sign.
+
+Annotated tag `v0.8.3` object `1a584839b699ce2f0ff447582719fbeb19915392` peels to exact source
+`899755507f812c940f3ab9381a856c80c6030885`. Public release ID `413252769` is immutable,
+non-draft, non-prerelease and `/releases/latest`. All six public asset downloads matched GitHub
+asset digests; the public APK matches the signed candidate. The exact public identity and six asset
+digests are recorded in `docs/release-engineering/v0.8.3-stable/ARTIFACTS.md`.
+
+This release outcome does not broaden JA11 hardware evidence. J032 remains PASS WITH LIMITS and
+J033 remains owner-reported acceptance: app counts are not bus captures, no unique serial or
+fingerprint was recorded, and no independent User 1 EQ payload was supplied. The owner phone
+retains the exact Beta v1 and data, with final reported JA11 settings volume 19 / Classic, Mic On,
+UAC 2.0. No new phone mutation occurred during release. No User 1 preservation, bus-level count,
+or same-unit continuity claim is made here.

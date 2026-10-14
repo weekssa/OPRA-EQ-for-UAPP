@@ -8,11 +8,11 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.8.2** is the current stable public Android release. v0.8.1 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
+**v0.8.3** is the current stable public Android release. v0.8.2 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
 
-[Download EQ Library v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.2) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.2/EQ-Library-v0.8.2.apk).
+[Download EQ Library v0.8.3](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.3) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.3/EQ-Library-v0.8.3.apk).
 
-- Package: `com.weekssa.opraeqforuapp`; versionName `0.8.2`; versionCode `13`
+- Package: `com.weekssa.opraeqforuapp`; versionName `0.8.3`; versionCode `14`
 - Android 8.0 / API 26 or newer
 - Install over v0.8.1 to keep local app data
 - Signed with the project's permanent Android release identity
@@ -21,18 +21,26 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 The public APK SHA-256 is:
 
-`df1ac78e7462da588e01f4aa39f5f23d0c05797d27eb2222d0650ce319c5d6e3`
+`396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`
 
-The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.2/EQ-Library-v0.8.2.apk.sha256) is published with the release.
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.3/EQ-Library-v0.8.3.apk.sha256) is published with the release.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## v0.8.2 highlights
+## v0.8.3 highlights
+
+- JA11 volume and EQ program editors stage changes locally, with separate Cancel, session-only Apply, and explicitly confirmed Set as Default actions.
+- Set as Default verifies the selected pair through the microphone reconnect sequence and verifies the original microphone and companion state afterward. It does not use native EQ Save, change UAC, or write EQ-band/gain data.
+- Owner testing passed for the identified beta candidate. Evidence limits remain explicit: app operation counts are not USB bus captures; no independent User 1 comparison or unique same-unit identity measurement is claimed.
+
+See the [v0.8.3 release notes](docs/releases/v0.8.3.md) for scope, compatibility, installation, and evidence boundaries.
+
+## v0.8.2 highlights (previous stable release)
 
 - My EQs keeps saved items and open headphone detail visible during a brief Automatic-output change on JA11 reconnect.
 - An authorized JA11 Flash completes final verification and refreshes EQ and DEVICE state when its initiating screen is left.
 
-See the [v0.8.2 release notes](docs/releases/v0.8.2.md) for scope, compatibility, and install guidance.
+See the [v0.8.2 release notes](docs/releases/v0.8.2.md) for its scope and evidence.
 
 ## v0.8.0 product modernization highlights
 

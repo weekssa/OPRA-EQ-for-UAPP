@@ -12,9 +12,13 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 - Added locally staged JA11 volume and EQ program changes with separate Cancel, session-only Apply, and explicit confirmed Set as Default actions.
 - Set as Default verifies the reviewed pair through the microphone reconnect sequence, restores and verifies the original microphone state, and confirms fresh companion readback. The transaction does not use native EQ Save, write UAC, or write EQ-band/gain data.
-- Owner accepted the exact beta after manual testing. The evidence remains bounded: app operation counts are not USB bus captures, and J032 reports User 1 comparison unavailable for the tested Off/Classic programs; see J032/J033 and the v0.8.3 release notes. Official signed artifact and public release verification will be appended after promotion.
+- The exact beta passed owner-reported manual acceptance; J032/J033 retain the bounded evidence and note that app operation counts are not USB bus captures. User 1 comparison and unique same-unit continuity are not independently claimed.
+- Published immutable stable release [v0.8.3](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.3) from source `899755507f812c940f3ab9381a856c80c6030885`. Official candidate run `38649163805`, artifact `11934142420`, archive SHA-256 `500c5c693ea41f35e5025041b9fddebab3d44c863151411d871a8255cc6e31bb`; promotion run `38650109951` published the same signed candidate bytes after API 35 clean-install and v0.8.2 upgrade gates passed.
+- The stable APK is package `com.weekssa.opraeqforuapp`, versionName `0.8.3`, versionCode `14`, SHA-256 `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`; pinned signer SHA-256 is `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 ## [0.8.2] - 2026-10-13
+
+This is the previous stable release; v0.8.3 is current.
 
 ### FiiO JA11 reconnect and Flash completion
 

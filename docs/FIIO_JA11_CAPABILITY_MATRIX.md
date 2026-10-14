@@ -36,6 +36,20 @@ identity limits, and do not promote this one candidate result into a general fir
 classification. The beta reports final volume 19 / Classic, Mic On, UAC 2.0; its exact package,
 version, APK digest and signer remain in J032.
 
+## 2026-10-14 v0.8.3 stable publication
+
+Stable release [v0.8.3](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.3) is source
+`899755507f812c940f3ab9381a856c80c6030885`, package `com.weekssa.opraeqforuapp`, versionName
+`0.8.3`, versionCode `14`, APK SHA-256
+`396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`, signed by the pinned release
+certificate. PR #97 merged normally; exact-main Android CI `38648012952` passed, and promotion
+`38650109951` passed API 35 clean-install and v0.8.2 in-place-upgrade checks before publishing the
+exact candidate. The owner accepted the Beta v1 after manual testing (J033). This publication adds
+the explicit JA11 Set as Default product action, while the existing general volume/program
+runtime-only classification remains historical firmware evidence. The exact-candidate result does
+not change the general classification or substantiate a User 1 preservation, unique same-unit, or
+USB bus-capture claim. The final beta/device state and limits remain in J032/J033.
+
 The published 0.8.2 candidate changes app completion ownership and preserves global My EQs rows during output transitions. Hardware controls, native EQ representation, protocol/Save behavior and the capability classifications below remain unchanged. J031 accepted the exact signed candidate for same-process visible EQ/DEVICE convergence, editing/navigation, unchanged observed baseline, and cleanup, with limits recorded in the validation ledger. Raw mutation/replay telemetry, internal generations, ViewModel identity, unique same-unit continuity, and any additional persistence behavior remain unmeasured or unclaimed. J030's separate tracing-build healthy control is preserved and does not qualify the 0.8.2 fix.
 
 ## Current capability disposition after v0.8.2 publication

@@ -20,7 +20,7 @@ The beta reports User 1 EQ data could not be compared for the tested Off/Classic
 
 Private automated evidence is under `/private/tmp/ja11-v083-session-20261014/`; the sanitized summary digest is in J032. Review the evidence limits and continue any manual testing you want with this exact installed candidate. The tested final volume/program are 19/Classic; mic is On, UAC 2.0, sample rate 384 kHz and firmware 2.20. Avoid another Set as Default action unless you intend to change the device's saved defaults.
 
-Your 2026-10-14 instruction identifies this candidate as passing and authorizes publication of v0.8.3. The authorized merge, official signing, release checks, and publication are now in progress; no further approval is required for that chain.
+Your 2026-10-14 instruction identified this candidate as passing and authorized publication of v0.8.3. That release is now published. The exact beta and data remain on the Pixel for your continued manual use; final reported settings remain volume 19 / Classic, Mic On, UAC 2.0. The stable APK is a separate package installation.
 
 ## Expected product behavior
 
