@@ -6,6 +6,14 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-10-14
+
+### FiiO JA11 defaults
+
+- Added locally staged JA11 volume and EQ program changes with separate Cancel, session-only Apply, and explicit confirmed Set as Default actions.
+- Set as Default verifies the reviewed pair through the microphone reconnect sequence, restores and verifies the original microphone state, and confirms fresh companion readback. The transaction does not use native EQ Save, write UAC, or write EQ-band/gain data.
+- Owner accepted the exact beta after manual testing. The evidence remains bounded: app operation counts are not USB bus captures, and J032 reports User 1 comparison unavailable for the tested Off/Classic programs; see J032/J033 and the v0.8.3 release notes. Official signed artifact and public release verification will be appended after promotion.
+
 ## [0.8.2] - 2026-10-13
 
 ### FiiO JA11 reconnect and Flash completion

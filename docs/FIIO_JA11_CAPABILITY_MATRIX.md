@@ -10,6 +10,32 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
+## 2026-10-14 v0.8.3 private beta defaults observation
+
+Exact beta source `7cea4545dddbee2da0b436e0684a9c489835e3cd`, package
+`com.weekssa.opraeqforuapp.v083beta`, APK SHA-256
+`ac982eafd76f4db80f48e0f26040bf1f849388c4f0a51f778b51c8c013c59ce5`, and debug signer
+certificate SHA-256 `968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4` were used on
+one Pixel 9 / FiiO JA11 profile (firmware 2.20, VID/PID `0x2972:0x0102`). Three explicit defaults
+operations completed: a changed volume, an unchanged-current volume, and a non-User-1 program.
+After the owner-confirmed true power removal, fresh readback on the sole supported returning JA11
+showed volume 19/60, program Classic, mic On, and UAC 2.0. See J032 in the validation ledger.
+
+This is **candidate-specific beta evidence**, not a new general firmware or public capability
+classification. It shows that this exact app's explicit Set as Default mic-round-trip workflow
+persisted the tested volume/program pair on this one JA11 profile. Ordinary runtime Apply remains
+a runtime control. No unique serial/fingerprint was captured, and User 1 EQ data could not be
+compared for the tested Off/Classic programs; EQ-bank preservation and same-unit continuity are
+not claimed. Keep the historical v0.8.2 table below bounded to its original tuple. Any later
+production classification requires owner acceptance and exact release evidence.
+
+On 2026-10-14 the owner reported that manual testing of this identified Beta v1 succeeded and that
+all other manual tests passed, then authorized go-live (J033). This owner acceptance is not an
+independent bus capture or a new User 1/serial measurement. Keep the above User 1 comparison and
+identity limits, and do not promote this one candidate result into a general firmware capability
+classification. The beta reports final volume 19 / Classic, Mic On, UAC 2.0; its exact package,
+version, APK digest and signer remain in J032.
+
 The published 0.8.2 candidate changes app completion ownership and preserves global My EQs rows during output transitions. Hardware controls, native EQ representation, protocol/Save behavior and the capability classifications below remain unchanged. J031 accepted the exact signed candidate for same-process visible EQ/DEVICE convergence, editing/navigation, unchanged observed baseline, and cleanup, with limits recorded in the validation ledger. Raw mutation/replay telemetry, internal generations, ViewModel identity, unique same-unit continuity, and any additional persistence behavior remain unmeasured or unclaimed. J030's separate tracing-build healthy control is preserved and does not qualify the 0.8.2 fix.
 
 ## Current capability disposition after v0.8.2 publication
@@ -210,7 +236,7 @@ path for a usable serial match.
 
 ## Matrix rule
 
-J029 is the latest physical record for unchanged production source `9493cf030acb440f92e547fc667f6a5399616045`, diagnostic APK SHA `44040493c7263ae7d7e6f41be7389534d07977427cc8002494097fbf3c868848`, and PR #81 head `78deeddd2cce65c22a98fce7e288a608ceb813fd`. Its exact one-Save count, ordered writes, detach/fresh-generation transition, and final readback are verified in paired reports. J028 remains a separate historical record for its prior APK; its report is still missing and its Save count remains unknown. J028 Mic/UAC/Test D outcomes remain attributed to J028. J029 restored the recorded baseline and released the Pixel. No same-unit continuity or general PEQ power-cycle persistence is claimed.
+As of 2026-10-10, J029 was the latest physical record for unchanged production source `9493cf030acb440f92e547fc667f6a5399616045`, diagnostic APK SHA `44040493c7263ae7d7e6f41be7389534d07977427cc8002494097fbf3c868848`, and PR #81 head `78deeddd2cce65c22a98fce7e288a608ceb813fd`. Its exact one-Save count, ordered writes, detach/fresh-generation transition, and final readback are verified in paired reports. J028 remains a separate historical record for its prior APK; its report is still missing and its Save count remains unknown. J028 Mic/UAC/Test D outcomes remain attributed to J028. J029 restored the recorded baseline and released the Pixel. No same-unit continuity or general PEQ power-cycle persistence was claimed there. J032 is the later private v0.8.3 beta defaults record above; it qualifies only that exact Set as Default workflow/profile and leaves EQ-bank preservation unverified.
 
 ## 2026-09-25 independent protocol-oracle matrix
 

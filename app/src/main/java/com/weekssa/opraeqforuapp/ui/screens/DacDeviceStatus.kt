@@ -16,6 +16,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -34,6 +35,8 @@ import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsEqReadback
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import java.util.Locale
 
 @Composable
@@ -48,6 +51,7 @@ internal fun CapabilityDrivenDeviceStatus(
     onReadFiioJa11DeviceControls: () -> Unit = {},
     onSetFiioJa11OutputVolume: (Int) -> Unit = {},
     onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
+    onSetFiioJa11Defaults: (FiioJa11DefaultsRequest) -> Unit = {},
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit = {},
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
     fiioJa11OperationBusy: Boolean = false,
@@ -65,6 +69,7 @@ internal fun CapabilityDrivenDeviceStatus(
             onRead = onReadFiioJa11DeviceControls,
             onSetVolume = onSetFiioJa11OutputVolume,
             onSetEqProgram = onSetFiioJa11EqProgram,
+            onSetDefaults = onSetFiioJa11Defaults,
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
             operationBusy = fiioJa11OperationBusy,
@@ -135,17 +140,23 @@ private fun FiioJa11DeviceStatus(
     onRead: () -> Unit,
     onSetVolume: (Int) -> Unit,
     onSetEqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
+    onSetDefaults: (FiioJa11DefaultsRequest) -> Unit,
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
     operationBusy: Boolean,
 ) {
     var stagedVolume by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingEqProgram by rememberSaveable { mutableStateOf(false) }
+    var stagedEqProgramName by rememberSaveable { mutableStateOf<String?>(null) }
+    var defaultsReview by remember { mutableStateOf<FiioJa11DefaultsRequest?>(null) }
     var pendingHeadsetValue by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var choosingUacMode by rememberSaveable { mutableStateOf(false) }
     var aboutExpanded by rememberSaveable { mutableStateOf(false) }
 
     val snapshot = state.snapshot
+    val stagedProgram = stagedEqProgramName?.let { name ->
+        FiioJa11Protocol.EqProgram.entries.firstOrNull { it.name == name }
+    } ?: snapshot?.eqProgram
     val controlsEnabled = connected &&
         state.isCurrentSession &&
         !state.isBusy &&
@@ -163,6 +174,7 @@ private fun FiioJa11DeviceStatus(
         error = state.error,
         enabled = connected,
         busy = state.isBusy || state.pendingRestartWrite != null || operationBusy,
+        operationMessage = if (state.isSavingDefaults) "Saving settings…" else null,
         onRefresh = onRead,
         controlName = ::fiioControlName,
     )
@@ -179,6 +191,32 @@ private fun FiioJa11DeviceStatus(
             modifier = Modifier.padding(top = 12.dp),
         )
         return
+    }
+
+    state.defaultsReport?.let { report ->
+        Text(
+            text = if (report.stage == com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage.COMPLETE) {
+                "Defaults verified · ${report.requestedVolume} / ${report.requestedProgram.technicalLabel} · mic restored ${if (report.originalMicEnabled == true) "On" else "Off"} · app writes volume/program/mic ${report.counts.volumeWrites}/${report.counts.programWrites}/${report.counts.micWrites}\nNo EQ-band data was written."
+            } else {
+                "Defaults not verified · ${report.stage} · last verified ${report.lastVerifiedSnapshot?.outputVolume ?: "unknown"} / ${report.lastVerifiedSnapshot?.eqProgram?.technicalLabel ?: "unknown"} · mic state may be unknown"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        if (report.stage == com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage.COMPLETE) {
+            val eqReadback = report.eqReadback
+            Text(
+                text = when (eqReadback) {
+                    FiioJa11DefaultsEqReadback.MATCHED -> "User 1 EQ readback matched before and after."
+                    FiioJa11DefaultsEqReadback.CHANGED -> "User 1 EQ readback changed across the defaults reconnect. Review it before use."
+                    FiioJa11DefaultsEqReadback.UNAVAILABLE -> "User 1 EQ data could not be compared for these programs."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (eqReadback == FiioJa11DefaultsEqReadback.CHANGED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
     }
 
     DeviceSectionTitle("Audio")
@@ -263,7 +301,7 @@ private fun FiioJa11DeviceStatus(
         )
     }
 
-    stagedVolume?.let { staged ->
+    stagedVolume?.takeIf { defaultsReview == null }?.let { staged ->
         AlertDialog(
             onDismissRequest = { stagedVolume = null },
             title = { Text("Device volume") },
@@ -302,13 +340,26 @@ private fun FiioJa11DeviceStatus(
                 }
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        stagedVolume = null
-                        onSetVolume(staged)
-                    },
-                    enabled = controlsEnabled && staged != snapshot.outputVolume,
-                ) { Text("Apply") }
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(
+                        onClick = {
+                            stagedVolume = null
+                            onSetVolume(staged)
+                        },
+                        enabled = controlsEnabled && staged != snapshot.outputVolume,
+                    ) { Text("Apply") }
+                    TextButton(
+                        onClick = {
+                            defaultsReview = FiioJa11DefaultsRequest(
+                                reviewedSnapshot = snapshot,
+                                requestedVolume = staged,
+                                requestedProgram = snapshot.eqProgram,
+                                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                            )
+                        },
+                        enabled = controlsEnabled,
+                    ) { Text("Set as Default") }
+                }
             },
             dismissButton = {
                 TextButton(onClick = { stagedVolume = null }) { Text("Cancel") }
@@ -316,30 +367,88 @@ private fun FiioJa11DeviceStatus(
         )
     }
 
-    if (choosingEqProgram) {
+    if (choosingEqProgram && defaultsReview == null) {
         AlertDialog(
-            onDismissRequest = { choosingEqProgram = false },
+            onDismissRequest = { choosingEqProgram = false; stagedEqProgramName = null },
             title = { Text("EQ program") },
             text = {
                 Column {
                     FiioJa11Protocol.EqProgram.entries.forEach { program ->
                         val current = program == snapshot.eqProgram
+                        val selected = program == stagedProgram
                         TextButton(
                             onClick = {
-                                choosingEqProgram = false
-                                onSetEqProgram(program)
+                                stagedEqProgramName = program.name
                             },
-                            enabled = controlsEnabled && !current,
+                            enabled = controlsEnabled,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(if (current) "${program.technicalLabel} · Current" else program.technicalLabel)
+                            Text(buildString {
+                                append(if (selected) "● " else "○ ")
+                                append(program.technicalLabel)
+                                if (current) append(" · Current")
+                            })
                         }
                     }
                 }
             },
-            confirmButton = {},
+            confirmButton = {
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(
+                        onClick = {
+                            choosingEqProgram = false
+                            stagedProgram?.let(onSetEqProgram)
+                            stagedEqProgramName = null
+                        },
+                        enabled = controlsEnabled && stagedProgram != snapshot.eqProgram,
+                    ) { Text("Apply") }
+                    TextButton(
+                        onClick = {
+                            stagedProgram?.let { program ->
+                                defaultsReview = FiioJa11DefaultsRequest(
+                                    reviewedSnapshot = snapshot,
+                                    requestedVolume = snapshot.outputVolume,
+                                    requestedProgram = program,
+                                    targetControlId = FiioJa11DeviceControls.EQ_PROGRAM,
+                                )
+                            }
+                        },
+                        enabled = controlsEnabled,
+                    ) { Text("Set as Default") }
+                }
+            },
             dismissButton = {
-                TextButton(onClick = { choosingEqProgram = false }) { Text("Cancel") }
+                TextButton(onClick = { choosingEqProgram = false; stagedEqProgramName = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    defaultsReview?.let { request ->
+        AlertDialog(
+            onDismissRequest = { defaultsReview = null },
+            title = { Text("Set JA11 defaults?") },
+            text = {
+                Text(
+                    "Save volume ${request.requestedVolume} and ${request.requestedProgram.technicalLabel} as the JA11 startup settings? " +
+                        "To verify persistence, EQ Library will briefly switch the headset / mic remote ${if (request.reviewedSnapshot.headsetControlEnabled) "off, then restore it to on" else "on, then restore it to off"}. " +
+                        "USB audio will disconnect during each reconnect. The original mic setting will be restored and checked. " +
+                        "No EQ-band data is written. User 1 EQ readback is compared only when both the reviewed and final programs support it; the app will not switch programs just to inspect the bank."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        defaultsReview = null
+                        stagedVolume = null
+                        choosingEqProgram = false
+                        stagedEqProgramName = null
+                        onSetDefaults(request)
+                    },
+                    enabled = controlsEnabled,
+                ) { Text("Confirm and Set Default") }
+            },
+            dismissButton = {
+                TextButton(onClick = { defaultsReview = null }) { Text("Cancel") }
             },
         )
     }

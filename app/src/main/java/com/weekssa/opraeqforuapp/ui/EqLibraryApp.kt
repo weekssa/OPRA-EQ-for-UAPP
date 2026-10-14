@@ -246,6 +246,7 @@ fun EqLibraryApp(
     val onReadFiioJa11DeviceControls = actions.onReadFiioJa11DeviceControls
     val onSetFiioJa11OutputVolume = actions.onSetFiioJa11OutputVolume
     val onSetFiioJa11EqProgram = actions.onSetFiioJa11EqProgram
+    val onSetFiioJa11Defaults = actions.onSetFiioJa11Defaults
     val onSetFiioJa11HeadsetControl = actions.onSetFiioJa11HeadsetControl
     val onSetFiioJa11UacMode = actions.onSetFiioJa11UacMode
     val onFlashFiioJa11FromMyDac = actions.onFlashFiioJa11FromMyDac
@@ -419,7 +420,7 @@ fun EqLibraryApp(
         }
     }
 
-    val latestVersion = appPreferences.updates.latestVersion
+    val latestVersion = appPreferences.updates.latestVersion.takeIf { BuildConfig.UPDATE_CHECKS_ENABLED }
     val updateAvailable = latestVersion != null &&
         SemVer.parse(latestVersion)?.let { latest ->
             SemVer.parse(BuildConfig.VERSION_NAME)?.let { installed -> latest > installed }
@@ -427,7 +428,7 @@ fun EqLibraryApp(
     val updateBannerVersion = latestVersion?.takeIf {
         updateAvailable && appPreferences.updates.dismissedVersion != it
     }
-    val postUpdateVersion = appPreferences.updates.postUpdateVersionToShow
+    val postUpdateVersion = appPreferences.updates.postUpdateVersionToShow.takeIf { BuildConfig.UPDATE_CHECKS_ENABLED }
         ?.takeIf { it == BuildConfig.VERSION_NAME }
 
     fun beginFlash(device: ExportDevice) {
@@ -1170,6 +1171,7 @@ fun EqLibraryApp(
                             onReadFiioJa11DeviceControls = onReadFiioJa11DeviceControls,
                             onSetFiioJa11OutputVolume = onSetFiioJa11OutputVolume,
                             onSetFiioJa11EqProgram = onSetFiioJa11EqProgram,
+                            onSetFiioJa11Defaults = onSetFiioJa11Defaults,
                             onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
                             onSetFiioJa11UacMode = onSetFiioJa11UacMode,
                             onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,

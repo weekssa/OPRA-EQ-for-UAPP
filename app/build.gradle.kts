@@ -30,8 +30,8 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "0.8.2"
+        versionCode = 14
+        versionName = "0.8.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -39,7 +39,8 @@ android {
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
-        buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
+        buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "true")
     }
 
     buildTypes {
@@ -49,6 +50,24 @@ android {
             versionNameSuffix = "-ja11diag"
             matchingFallbacks += listOf("debug")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        }
+        debug {
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        }
+        create("beta") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            applicationIdSuffix = ".v083beta"
+            versionNameSuffix = "-beta.1"
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+            matchingFallbacks += listOf("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            testProguardFiles("proguard-rules-beta-test.pro")
         }
         release {
             isMinifyEnabled = true
@@ -84,6 +103,9 @@ androidComponents {
     beforeVariants(selector().withBuildType("ja11Diagnostic")) { variantBuilder ->
         variantBuilder.enableAndroidTest = true
     }
+    beforeVariants(selector().withBuildType("beta")) { variantBuilder ->
+        variantBuilder.enableAndroidTest = true
+    }
 }
 
 kotlin {
@@ -117,6 +139,7 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+    add("betaImplementation", "androidx.compose.ui:ui-test-manifest")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")
