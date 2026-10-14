@@ -5,3 +5,6 @@
 # AndroidX Test's storage setup uses Kotlin's lazy facade from the shared
 # instrumentation classpath on API 26.
 -keep class kotlin.LazyKt { *; }
+# Instrumentation reflection inspects Compose test method signatures that use
+# this public runtime ABI type, even when app R8 can otherwise remove it.
+-keep class androidx.compose.runtime.Composer { *; }
