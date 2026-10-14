@@ -11,7 +11,7 @@ exact-head gates.
 | Repository / branch | `weekssa/OPRA-EQ-for-UAPP` / `codex/ja11-settings-persistence-beta` |
 | Base SHA | `421f03331e45e6c1bdc77e5442db1de467432930` |
 | Candidate source SHA | `620e1a46761de2d3621dbcd32135193efb42cf49` |
-| Draft PR / head SHA | [PR #96](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/96) / `620e1a46761de2d3621dbcd32135193efb42cf49` |
+| Draft PR / current head | [PR #96](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/96), open and draft; latest change is documentation-only after executable candidate `620e1a46761de2d3621dbcd32135193efb42cf49` |
 | Exact-head workflow run | [38512637427](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/38512637427), all four jobs passed with exact source SHA |
 | Local build command | `GRADLE_USER_HOME=/Users/stephenweeks/.gradle ./tools/codex-android :app:assembleJa11Beta -PCANDIDATE_SOURCE_SHA=620e1a46761de2d3621dbcd32135193efb42cf49 --no-daemon --max-workers=1 -Dorg.gradle.jvmargs=-XX:ActiveProcessorCount=2` |
 | Variant / package | `ja11Beta` / `com.weekssa.opraeqforuapp.ja11beta` |
