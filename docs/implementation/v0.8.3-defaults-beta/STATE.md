@@ -1,6 +1,6 @@
 # v0.8.3 JA11 defaults beta state
 
-Status: **IMPLEMENTATION COMPLETE; SOFTWARE GATES PASS WITH ONE API 26 BROAD-SUITE EXCEPTION; CANDIDATE NOT FROZEN**
+Status: **IMPLEMENTATION COMPLETE; EXACT BETA V1 FROZEN; MINIFIED INSTRUMENTATION EXCEPTION AWAITS OWNER; PHONE GATE NOT OPEN**
 
 ## Repository and candidate
 
@@ -24,9 +24,9 @@ See [GATES.md](GATES.md) and [TEST_RESULTS.md](TEST_RESULTS.md). The intended ow
 
 ## Current implementation and validation state
 
-- The initial implementation is committed. Artifact inspection then found that `initWith(release)` ran before the release block configured R8, so the initial Beta APK was not minified. The Beta build type now explicitly enables R8 and release ProGuard rules. Minified instrumentation initially failed on API 26 because R8 removed `androidx.tracing.Trace`, required by AndroidX Test through its runtime path; test-only rules now retain tracing and suppress the specific compile-only Error Prone annotation reference. The exact minified Beta UI suite must pass before candidate freeze.
-- The shared Debug JVM suite passes with expanded defaults transaction and User 1 comparison coverage. Debug/Beta lint, Debug/Release packaging, Beta R8 mapping, and Beta Android-test compilation pass on current source.
-- The prior 72-test Beta UI/API 35 run and 9-test JA11/API 26 run used the unminified APK and are superseded for the package gate. The broad API 26 run has two migration-fixture SQLite syntax failures and one unrelated Compose idle timeout. See `TEST_RESULTS.md`.
-- Exact-source minified Beta instrumentation, installed-package coexistence, artifact provenance and final-candidate APK checks remain.
-- No owner phone or JA11 hardware has been accessed. No physical claim is established.
-- Independent review confirmed the UI and variant fixes. Optional User 1 reads and fingerprint comparison now run inside the shared JA11 operation gate; repository tests cover matched, changed and unavailable outcomes. Remaining broad API 26 suite exception, remote exact-head checks, exact artifact gates, physical EQ-bank evidence and final-candidate gates are tracked in `GATES.md` and `TEST_RESULTS.md`.
+- The initial implementation is committed. Beta explicitly enables R8 and release rules. The frozen Beta instrumentation runner crashes before test discovery on API 26 and 35 because R8 removes `androidx.tracing.Trace` from the split app/test runtime path. Intermediate narrow keep-rule experiments and their later Kotlin `Duration.Companion` mismatch are preserved in `TEST_RESULTS.md`; ineffective app-level keeps were removed from the final candidate.
+- Exact-source JVM unit tests, Debug/Beta lint, Debug/Release/Beta packaging, Beta R8 mapping and Beta instrumentation compilation pass on `7cea4545dddbee2da0b436e0684a9c489835e3cd`. The app's `CANDIDATE_SOURCE_SHA` default was corrected; the frozen APK embeds the exact SHA.
+- Exact Beta v1 APK provenance, signer and direct install/launch/coexistence checks pass on API 26 and 35. On the same exact source, unminified Debug JA11 instrumentation passes 9/9 on API 26 and full Debug instrumentation passes 72/72 on API 35. Full API 26 Debug is 68/72 with four failures: two unsupported SQLite `DROP COLUMN` migration fixtures and two unrelated Compose idle timeouts. These are proposed gate substitutes, not silent passes.
+- Candidate source: `7cea4545dddbee2da0b436e0684a9c489835e3cd`; exact APK identity and digests: `ARTIFACTS.md`. No source changes are authorized after this freeze without creating a new candidate and repeating its affected gates.
+- No owner phone or JA11 hardware has been accessed. No physical claim is established. The requested phone readiness checkpoint waits for the owner's explicit acceptance of the exact emulator-gate substitution.
+- Independent review confirmed the implementation flow and the shared JA11 operation gate for optional User 1 reads/fingerprint comparison; repository tests cover matched, changed and unavailable outcomes. Exact-head CI/PR review, owner exception, physical transaction evidence and publication gates remain tracked in `GATES.md` and `TEST_RESULTS.md`.
