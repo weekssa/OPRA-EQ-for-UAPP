@@ -22,30 +22,36 @@ The checklist is organized around the **current release state**. Detailed histor
   and never rebuilds or re-signs the APK.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
 
-## Current stable release: v0.8.0
+## Current stable release: v0.8.2
 
-EQ Library v0.8.0 is published as the immutable stable release and is returned by [`/releases/latest`](https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest). v0.7.2 is the previous stable release. The immutable [v0.8.0-beta prerelease](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.0-beta) remains preserved as historical beta evidence.
+EQ Library v0.8.2 is the immutable public stable release and is returned by [`/releases/latest`](https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest). v0.8.1 is the previous stable release. The immutable v0.8.0-beta remains preserved as historical prerelease evidence.
 
-- [x] Stable source identity: exact merged main `54823e1a464f8b716a32c4f4808037fc0cdd99bd`, tree `e20330e2c4921823ecdf2881db0bf6fa1b3c3c0d`; reviewed PR #77 head is its second parent. Production app-source tree is unchanged from the qualified beta.
-- [x] Exact-merge CI: Android CI run `37766209677` passed build and API-26 on the first attempt; an initial API-35 hosted-emulator focus-only failure was diagnosed and its one failed-job-only retry passed 64/64. CodeQL `37766209564`, dependency submission `37766209509`, and automatic Gradle submission `37766209730` passed. PR #77's exact-head checks and the one independent pre-merge review passed before merge.
-- [x] Stable metadata: package `com.weekssa.opraeqforuapp`, versionName `0.8.0`, versionCode `11`, advancing beta code `10`.
-- [x] Official main-only signed artifact: Signed Release Candidate run `37769090436`, artifact `11546549425`, ZIP SHA-256 `2305f7fc18b3b9d391ac96f01b438e12ea4d025a690805443d3bab8f6ff364a7`. APK SHA-256 `2ea1d4b76a840e7448fddba556c3dc03aba19870eeb2499182af7d5759cce54b`; pinned signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Manifest, package/version/code, v2/v3 signer, R8 mapping, checksum, provenance, and alignment were independently verified.
-- [x] Signed v0.7.2-to-stable persisted-state upgrade, signed beta-to-stable persisted-state upgrade, and signed clean-install/core smoke all passed sequentially on API 35 in promotion run `37770238047`, job `113287763621`.
-- [x] One independent final-artifact review returned PASS before publication.
-- [x] Stable release [v0.8.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.0), release ID `406758581`, is immutable, non-draft, non-prerelease, and latest. Its annotated tag targets the exact merged source and records the signed candidate run/artifact. The beta release remains prerelease.
-- [x] All six public release assets were downloaded and their byte SHA-256 values matched GitHub release metadata; public APK bytes match the signed candidate and checksum sidecar. Exact manifest/provenance and hashes are in `docs/release-engineering/v0.8.0-stable/ARTIFACTS.md`.
-- [x] Current public documentation and release history now point to v0.8.0, retain v0.7.2 as prior stable and v0.8.0-beta as historical prerelease, and preserve the exact versioned release body.
-- [x] No Pixel/DAC/ADB/USB, TalkBack, headphones, or optional hardware smoke was used for stable promotion. The qualified beta production tree and C05 Class B evidence were unchanged.
+- [x] Stable source identity: exact main source `9983edf0b7fe437aeeec9ac3dcb3864705afa16a`; annotated `v0.8.2` tag object `e5d3d1150c1d981f63f7e2eaa50d5bd9a1caf939` peels to that source and binds the official signed candidate run/artifact and archive digest.
+- [x] Source validation: exact-main Android CI run `38473044839` passed; CodeQL, Catalog currentness, community coverage, and dependency checks passed on the exact source. PR #94 is merged.
+- [x] Stable metadata: package `com.weekssa.opraeqforuapp`, versionName `0.8.2`, versionCode `13`, advancing v0.8.1 code `12`.
+- [x] Official main-only signed artifact: run `38474740277`, artifact `11853910967`, ZIP SHA-256 `c82b5490286d27cd3616740d6f9d8ce51c9f3ac598b1f40dac87ecaac1a76b88`. APK SHA-256 `df1ac78e7462da588e01f4aa39f5f23d0c05797d27eb2222d0650ce319c5d6e3`; pinned signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 `7afd37afd57430b52233a1efb3c1545540544649314381b275c7892698dae00a` remains private.
+- [x] Signed v0.8.1 in-place upgrade and clean install passed on API 35 in candidate smoke run `38475878287`. Promotion run `38499666593` independently revalidated the candidate and passed its signed API 35 install/upgrade gate before publication.
+- [x] Public stable release [v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.2), release ID `412274351`, is immutable, non-draft, non-prerelease, and latest.
+- [x] All six uploaded public assets were downloaded. Each byte SHA-256 matched GitHub release metadata; the public APK matches the candidate and checksum sidecar. Full asset, tag, provenance, and release-body evidence is in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`.
+- [x] Public release body matches `docs/releases/v0.8.2.md`; the public README and changelog identify v0.8.2 and v0.8.1 as the previous stable version.
+- [x] J031 physical acceptance is PASS_WITH_LIMITS for same-process visible EQ/DEVICE convergence, edit/navigation, unchanged observed baseline, and cleanup on the exact official candidate. Raw packet/write/Save/replay counts, internal generations, ViewModel identity, and unique same-unit continuity remain unmeasured; no additional capability or persistence claim is made.
 
-### Dependency caveat
+Status: **v0.8.2 is the current stable/latest release.** The exact candidate, promotion, public asset, and J031 evidence boundaries are recorded in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`, the JA11 validation ledger, capability matrix, and current status document.
 
-The 2026-10-08 refresh identified 56 open transitive Maven alerts in build/test tooling. The refreshed `releaseRuntimeClasspath` graph contained no alert-bearing coordinates, and no vulnerable app-runtime path was identified in that graph. This is not a clean vulnerability scan; no DEX scan was performed.
+## Historical v0.8.0 stable release
 
-Status: **v0.8.0 is the current stable/latest release.** The beta remains an immutable historical prerelease. Full candidate, promotion, upgrade, artifact, and public-byte evidence is preserved in `docs/release-engineering/v0.8.0-stable/` and the local review bundle.
+The immutable v0.8.0 release remains preserved as historical release evidence. Its original source, signing, promotion, upgrade, and asset verification record is retained below.
 
-## v0.8.1 release preparation — not published
+- [x] Stable source identity: exact merged main `54823e1a464f8b716a32c4f4808037fc0cdd99bd`, tree `e20330e2c4921823ecdf2881db0bf6fa1b3c3c0d`.
+- [x] Official signed artifact: run `37769090436`, artifact `11546549425`, APK SHA-256 `2ea1d4b76a840e7448fddba556c3dc03aba19870eeb2499182af7d5759cce54b`.
+- [x] Promotion run `37770238047` passed its then-required signed upgrade and clean-install/core smoke gates. Public release ID `406758581` was immutable, non-draft, and non-prerelease at that closeout.
+- [x] The original six public assets matched their recorded GitHub digests. Detailed historical evidence remains in `docs/release-engineering/v0.8.0-stable/ARTIFACTS.md`.
 
-PR #81 is merged as `574413091cdfd819387388e501f74b11a2324639`; release-notes PR #82 is merged as `b6af9178bbeb07bd4e0d321f08ffec94e4df907b`. Both exact PR heads passed their required checks. JA11 physical acceptance J029 remains valid for its exact diagnostic APK and unchanged production transaction source. Versioned v0.8.1 notes are on main; the signed candidate and API 35 install/upgrade verification remain outstanding. No v0.8.1 stable tag or release exists. The v0.8.0 release above remains the current public stable/latest release. Candidate signing may proceed only from finalized `main`; stop before tag creation or publication pending owner approval.
+Historical dependency caveat: the 2026-10-08 refresh identified 56 open transitive Maven alerts in build/test tooling. This was not a clean vulnerability scan; no DEX scan was performed.
+
+## Historical v0.8.1 stable release — previous stable
+
+PR #81 merged as `574413091cdfd819387388e501f74b11a2324639`; release-notes PR #82 merged as `b6af9178bbeb07bd4e0d321f08ffec94e4df907b`. The exact signed v0.8.1 candidate from source `d0b6fe143957012c138613d153896923d6d76369` has APK SHA-256 `36b54063f6193eeb7e7b1ac0486b5094bf088a02442d8ea6d0a67d8b6acc8303`, package `com.weekssa.opraeqforuapp`, versionName `0.8.1`, versionCode `12`, and the pinned release signer. Promotion run `38326220697` published release ID `411100198`; v0.8.2 supersedes it as current stable/latest. J029 remains evidence for its exact diagnostic candidate and unchanged production transaction source.
 
 ## Historical v0.7.1 release closeout
 

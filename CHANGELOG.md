@@ -6,12 +6,14 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
-### FiiO JA11 reliability
+## [0.8.2] - 2026-10-13
 
-- Preserve My EQs items and the open headphone detail when Automatic output changes during JA11 reconnect. Keep authorized Flash verification and EQ refresh running if the initiating screen is left, preventing the EQ tab from remaining blank. Version 0.8.2 / code 13 is a candidate pending exact-source validation, signing and owner acceptance.
-- Verify Mic/UAC reset writes only after the old USB session detaches and one fresh JA11 session returns; do not replay an uncertain write.
-- Select and verify User 1 before Flash, editor, or Reset EQ writes. A late detach after Save can continue with final readback only.
-- Keep JA11 serial optional for continuity and fail closed when multiple supported candidates are connected. Required physical acceptance is complete for the tested candidate; this entry makes no general power-cycle PEQ persistence or public hardware-support claim.
+### FiiO JA11 reconnect and Flash completion
+
+- Keep My EQs items and open headphone detail visible when Automatic output briefly changes during reconnect; target-specific compatibility and export currentness still follow the selected output.
+- Keep authorized JA11 Flash final verification and EQ/DEVICE refresh owned by the ViewModel when the initiating screen is left. Clearing the owning app session still cancels the work.
+- Published the exact signed candidate from main source `9983edf0b7fe437aeeec9ac3dcb3864705afa16a` as immutable stable release [v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.2). VersionName is `0.8.2`, versionCode is `13`, APK SHA-256 is `df1ac78e7462da588e01f4aa39f5f23d0c05797d27eb2222d0650ce319c5d6e3`, and signer SHA-256 is `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- J031 is PASS_WITH_LIMITS for same-process visible EQ/DEVICE convergence, editing/navigation, unchanged baseline, and completed cleanup on its exact candidate and managed profile. Raw USB packet/write/Save/replay counts, internal generations, and ViewModel identity were not measured; no broader device or persistence claim is added.
 
 ## [0.8.1] - 2026-10-12
 
@@ -20,6 +22,12 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 - Recorded the final proven capability matrix: Mic, USB Audio Class, and saved User 1 custom EQ/global gain persist across true JA11 power loss.
 - Recorded that playback volume and the active EQ program/preset are runtime-only across true power loss. Both return to the established device defaults; no additional Save behavior is required.
 - Published the exact signed candidate from source `d0b6fe143957012c138613d153896923d6d76369` with APK SHA-256 `36b54063f6193eeb7e7b1ac0486b5094bf088a02442d8ea6d0a67d8b6acc8303`.
+
+### FiiO JA11 transaction safety
+
+- Verify Mic/UAC reset writes only after the old USB session detaches and one fresh JA11 session returns; do not replay an uncertain write.
+- Select and verify User 1 before Flash, editor, or Reset EQ writes. A late detach after Save can continue with final readback only.
+- Keep JA11 serial optional for continuity and fail closed when multiple supported candidates are connected. Physical capability claims remain limited to the accepted evidence and exact tested candidate.
 
 ## [0.8.0] - 2026-10-08
 

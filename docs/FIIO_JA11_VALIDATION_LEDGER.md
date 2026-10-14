@@ -637,3 +637,37 @@ Operation `88d718f4-47c0-4bd0-9fff-a1d70b06f311` outcome Success/stateKnown true
 Outcome: **HEALTHY CONTROL — ORIGINAL BLANK-EQ FAILURE NOT REPRODUCED**. This neither identifies the original cause nor qualifies a production fix/release. After capture, fresh read-only DEVICE Refresh and rendered EQ plus final native readback verify complete original-state restoration. Only the temporary Personal EQ/exact source download were removed; no second Flash, Reset or Mic/UAC/volume/program mutation occurred. Production installation was preserved, diagnostic/report remain installed, Pixel released, no restoration outstanding.
 
 Private curated artifacts outside Git: `/Users/stephenweeks/.codex/evidence/ja11-postflash-diagnostic-control-20261013`. Baseline JSON SHA-256 `50d30d55ab28509fb95f88913f0e796fe7d4e344dd56e0c718a590f1e9d5974f`; exact technical report `16bae426d2b9736391f4762bd14ad222f63f24bbec7b6044e625cb5b485ee27c`; exact readable report `0c8b1fe7a8b888102dc2b47165a5b568a65cf8593ad271ff18799f505db39b0d`; post-Flash acquisition trace `2e84a8ff82fd63237bcce88c4f8b354b9a9d602194619501935414be8d76c0dc`; final trace `8b8396036ad18eb5217344b53610174d884430524c987583f8b28245cc38ab2a`; independent packet-verification JSON `1d24d9a321fec76e1429fa9396c21bf4b08165d80b4d219d638719a449341e43`. No raw phone identity, screenshots, logs or unrelated notification content is committed.
+
+
+## 2026-10-13 J031 — exact v0.8.2 production candidate acceptance
+
+J031 used exact production source `9983edf0b7fe437aeeec9ac3dcb3864705afa16a` and the official signed APK
+SHA-256 `df1ac78e7462da588e01f4aa39f5f23d0c05797d27eb2222d0650ce319c5d6e3`, package
+`com.weekssa.opraeqforuapp`, versionName `0.8.2`, versionCode `13`, signer certificate SHA-256
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Candidate provenance is
+official main-only signing run `38474740277`, artifact `11853910967`, ZIP SHA-256
+`c82b5490286d27cd3616740d6f9d8ce51c9f3ac598b1f40dac87ecaac1a76b88`. The physical record used the
+original Explorer/LoboNautics managed-profile route on the owner's Pixel 9 and FiiO JA11 firmware
+2.20, VID/PID `0x2972:0x0102`; private identity and media remain outside this repository.
+
+The owner performed one Flash and reported successful completion. A captured JA11 detach/reconnect
+occurred in the same app process (PID 25666); the sole supported returning JA11 was present. The
+visible EQ and DEVICE state converged, Edit/navigation worked, observed current EQ/DEVICE values
+matched the pre-action baseline, temporary test data was removed, and the phone was released.
+Outcome: **PASS_WITH_LIMITS**. This proves the documented same-process visible behavior for this
+exact candidate and route. Raw USB packet/write/Save/replay counts, internal session generations,
+and ViewModel identity were not measured. The generic descriptor token and non-unique managed
+profile fingerprint do not establish same-unit continuity. This result does not add a hardware
+capability or prove new persistence/power-cycle behavior. No repeat action is needed.
+
+## 2026-10-14 v0.8.2 immutable stable publication
+
+Promotion run `38499666593` published immutable release [v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.2),
+release ID `412274351`, from the exact signed candidate above without rebuilding or re-signing.
+The tag peels to production source `9983edf0b7fe437aeeec9ac3dcb3864705afa16a`; the public API
+reports it as non-draft, non-prerelease, and `/releases/latest`. All six uploaded public asset
+downloads matched their GitHub SHA-256 digests, including the APK matching the signed candidate.
+The public release body matches the maintained v0.8.2 notes. Signed API 35 candidate install and
+upgrade checks passed in runs `38475878287` and `38499666593`. Full asset and release metadata
+readbacks are in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`. Earlier J029 and other
+physical records retain their own exact source/APK boundaries.
