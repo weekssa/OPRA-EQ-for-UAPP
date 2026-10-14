@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui
 
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11PendingRestartWrite
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11SettingsSaveReport
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
 
@@ -12,6 +13,8 @@ data class FiioJa11DeviceUiState(
     val isCurrentSession: Boolean = false,
     val pendingRestartWrite: FiioJa11PendingRestartWrite? = null,
     val lastVerifiedWriteControlId: DacControlId? = null,
+    val isSavingSettings: Boolean = false,
+    val settingsSaveReport: FiioJa11SettingsSaveReport? = null,
     val error: String? = null,
 ) {
     init {
@@ -25,7 +28,33 @@ data class FiioJa11DeviceUiState(
      * pending intent before the replacement JA11 session can be verified.
      */
     val isBusy: Boolean
-        get() = isReading || isWriting || pendingRestartWrite != null
+        get() = isReading || isWriting || pendingRestartWrite != null || isSavingSettings
+
+    fun beginSettingsSave(): FiioJa11DeviceUiState = copy(
+        isReading = false,
+        isWriting = false,
+        activeWriteControlId = null,
+        isSavingSettings = true,
+        settingsSaveReport = null,
+        pendingRestartWrite = null,
+        lastVerifiedWriteControlId = null,
+        error = null,
+    )
+
+    fun finishSettingsSave(report: FiioJa11SettingsSaveReport): FiioJa11DeviceUiState = copy(
+        isReading = false,
+        isWriting = false,
+        activeWriteControlId = null,
+        isSavingSettings = false,
+        settingsSaveReport = report,
+        snapshot = report.finalState ?: snapshot,
+        isCurrentSession = report.finalStateCurrent,
+        pendingRestartWrite = null,
+        lastVerifiedWriteControlId = null,
+        error = report.failureReason,
+    )
+
+    fun dismissSettingsSaveReport(): FiioJa11DeviceUiState = copy(settingsSaveReport = null)
 
     fun beginRead(): FiioJa11DeviceUiState = copy(
         isReading = true,

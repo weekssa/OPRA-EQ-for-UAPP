@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
@@ -11,6 +12,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.BuildConfig
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11SettingsSaveReport
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
@@ -28,6 +31,82 @@ import org.junit.Test
 class FiioJa11MyDacContentTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun betaSaveDisclosureIsVisibleAndCancelCurrentChoicesDoNotMutate() {
+        org.junit.Assume.assumeTrue(BuildConfig.JA11_SETTINGS_PERSISTENCE_BETA_ENABLED)
+        var volumeRequests = 0
+        var programRequests = 0
+        setContentForTrace(
+            trace = editorApplyTrace(),
+            onSetOutputVolume = { volumeRequests += 1 },
+            onSetEqProgram = { programRequests += 1 },
+        )
+
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Device volume").performClick()
+        composeRule.onNodeWithText("Saves the current volume and EQ program. The DAC briefly reconnects.")
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Current").assertIsNotEnabled()
+        composeRule.onNodeWithText("Apply").assertIsNotEnabled()
+        composeRule.onNodeWithText("Cancel").performClick()
+
+        composeRule.onNodeWithText("EQ program").performClick()
+        composeRule.onNodeWithText("Saves the current volume and EQ program. The DAC briefly reconnects.")
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("User 1 · Current").assertIsNotEnabled()
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.runOnIdle {
+            assertEquals(0, volumeRequests)
+            assertEquals(0, programRequests)
+        }
+    }
+
+    @Test
+    fun terminalSaveReportRetainsReadableAndTechnicalExportsUntilDismissed() {
+        org.junit.Assume.assumeTrue(BuildConfig.JA11_SETTINGS_PERSISTENCE_BETA_ENABLED)
+        var dismissals = 0
+        val snapshot = testDeviceSnapshot(volume = 58, program = FiioJa11Protocol.EqProgram.OFF)
+        val report = FiioJa11SettingsSaveReport(
+            operationId = "save-operation",
+            sourceCommit = "0123456789abcdef",
+            action = "OUTPUT_VOLUME",
+            requestedVolume = 58,
+            requestedProgram = null,
+            baseline = testDeviceSnapshot(volume = 59, program = FiioJa11Protocol.EqProgram.OFF),
+            finalState = snapshot,
+            saveProgram = "OFF",
+            targetedWriteCount = 1,
+            saveCount = 1,
+            sessionGenerations = listOf(1L),
+            detachGenerations = listOf(0L),
+            readbackStages = listOf("BASELINE_READ", "TARGET_WRITE", "FINAL_READBACK", "VERIFIED"),
+            boundedReadOnlyRetryCount = 0,
+            transportEvents = listOf("request:command-25:accepted"),
+            baselineEq = null,
+            preSaveEq = null,
+            finalEq = null,
+            eqComparison = "INSUFFICIENT_EVIDENCE",
+            outcome = "SUCCESS",
+            stateKnown = true,
+            finalStateCurrent = true,
+            failureReason = null,
+            latestAutomaticRefresh = snapshot,
+        )
+        val state = FiioJa11DeviceUiState(snapshot = snapshot, isCurrentSession = true, settingsSaveReport = report)
+        setContentForTrace(
+            trace = editorApplyTrace(),
+            deviceState = state,
+            onDismissSettingsSaveReport = { dismissals += 1 },
+        )
+
+        composeRule.onNodeWithText("JA11 settings saved and verified").assertIsDisplayed()
+        composeRule.onNodeWithText("Current verified state: volume 58, Off", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText(FIIO_JA11_READABLE_REPORT_LABEL).assertCountEquals(2)
+        composeRule.onAllNodesWithText(FIIO_JA11_TECHNICAL_REPORT_LABEL).assertCountEquals(2)
+        composeRule.onNodeWithContentDescription("Dismiss JA11 settings report").performClick()
+        composeRule.runOnIdle { assertEquals(1, dismissals) }
+    }
 
     @Test
     fun completedEditorApplyShowsOneTruthfulTerminalResultAndBothReports() {
@@ -100,6 +179,10 @@ class FiioJa11MyDacContentTest {
         trace: FiioJa11OperationTrace,
         restorationTester: StateRestorationTester? = null,
         onApply: () -> Unit = {},
+        onSetOutputVolume: (Int) -> Unit = {},
+        onSetEqProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
+        deviceState: FiioJa11DeviceUiState? = null,
+        onDismissSettingsSaveReport: () -> Unit = {},
     ) {
         val bundle = requireNotNull(
             HardwareEqSnapshotFactory.fiioJa11(
@@ -120,23 +203,14 @@ class FiioJa11MyDacContentTest {
                     freshness = DacStateFreshness.CURRENT,
                 ),
                 editorState = MyDacEditorUiState(),
-                deviceState = FiioJa11DeviceUiState(
-                    snapshot = FiioJa11DeviceSnapshot(
-                        sessionGeneration = 1L,
-                        usbProductId = FiioJa11Protocol.PRODUCT_ID_UAC_2,
-                        firmwareVersion = "1.0",
-                        sampleRateLabel = "96 kHz",
-                        outputVolume = 20,
-                        headsetControlEnabled = false,
-                        eqProgram = FiioJa11Protocol.EqProgram.USER_1,
-                        uacMode = FiioJa11Protocol.UacMode.UAC_2,
-                    ),
+                deviceState = deviceState ?: FiioJa11DeviceUiState(
+                    snapshot = testDeviceSnapshot(volume = 20, program = FiioJa11Protocol.EqProgram.USER_1),
                     isCurrentSession = true,
                 ),
                 onConnect = {},
                 onReadDeviceControls = {},
-                onSetOutputVolume = {},
-                onSetEqProgram = {},
+                onSetOutputVolume = onSetOutputVolume,
+                onSetEqProgram = onSetEqProgram,
                 onSetHeadsetControl = {},
                 onSetUacMode = {},
                 onResetEq = { "" },
@@ -151,6 +225,7 @@ class FiioJa11MyDacContentTest {
                 onApply = { onApply() },
                 operationTrace = trace,
                 operationStatus = FiioJa11OperationStatus.Completed(trace),
+                onDismissSettingsSaveReport = onDismissSettingsSaveReport,
                 onMessage = {},
             )
         }
@@ -160,6 +235,17 @@ class FiioJa11MyDacContentTest {
             restorationTester.setContent { content() }
         }
     }
+
+    private fun testDeviceSnapshot(volume: Int, program: FiioJa11Protocol.EqProgram) = FiioJa11DeviceSnapshot(
+        sessionGeneration = 1L,
+        usbProductId = FiioJa11Protocol.PRODUCT_ID_UAC_2,
+        firmwareVersion = "1.0",
+        sampleRateLabel = "96 kHz",
+        outputVolume = volume,
+        headsetControlEnabled = false,
+        eqProgram = program,
+        uacMode = FiioJa11Protocol.UacMode.UAC_2,
+    )
 
     private fun editorApplyTrace(
         outcome: String = "Success",

@@ -13,6 +13,7 @@ import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlReadResult
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlWriteResult
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11SettingsSaveReport
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -198,6 +199,7 @@ class EqLibraryViewModel(
     private val dacControlRepository: DacControlRepository,
     private val fiioJa11ControlRepository: FiioJa11ControlRepository,
     private val hardwareRepository: HardwareEqRepository,
+    private val ja11SettingsPersistenceBetaEnabled: Boolean = false,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
@@ -452,7 +454,7 @@ class EqLibraryViewModel(
                 when (state) {
                     Kt02h20ConnectionState.Connected -> {
                         val pending = mutableFiioJa11DeviceState.value.pendingRestartWrite
-                        if (pending == null) refreshFiioJa11DeviceState()
+                        if (pending == null && !mutableFiioJa11DeviceState.value.isSavingSettings) refreshFiioJa11DeviceState()
                     }
                     else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
                 }
@@ -482,18 +484,24 @@ class EqLibraryViewModel(
     }
 
     fun readFiioJa11DeviceControls() {
-        if (mutableFiioJa11DeviceState.value.isBusy) return
+        if (mutableFiioJa11DeviceState.value.isSavingSettings) return
         viewModelScope.launch { refreshFiioJa11DeviceState() }
+    }
+
+    fun dismissFiioJa11SettingsSaveReport() {
+        mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::dismissSettingsSaveReport)
     }
 
     fun setFiioJa11OutputVolume(level: Int) = writeFiioJa11Control(
         FiioJa11DeviceControls.OUTPUT_VOLUME,
         DacControlValue.Numeric(level.toDouble()),
+        saveSettings = ja11SettingsPersistenceBetaEnabled,
     )
 
     fun setFiioJa11EqProgram(program: FiioJa11Protocol.EqProgram) = writeFiioJa11Control(
         FiioJa11DeviceControls.EQ_PROGRAM,
         DacControlValue.Discrete(program.name.lowercase()),
+        saveSettings = ja11SettingsPersistenceBetaEnabled,
     )
 
     fun setFiioJa11HeadsetControl(enabled: Boolean) = writeFiioJa11Control(
@@ -533,7 +541,7 @@ class EqLibraryViewModel(
         }
     }
 
-    private fun writeFiioJa11Control(controlId: DacControlId, value: DacControlValue) {
+    private fun writeFiioJa11Control(controlId: DacControlId, value: DacControlValue, saveSettings: Boolean = false) {
         val state = mutableFiioJa11DeviceState.value
         val snapshot = state.snapshot
         if (state.isBusy || state.pendingRestartWrite != null) return
@@ -545,6 +553,26 @@ class EqLibraryViewModel(
             mutableFiioJa11DeviceState.value = state.failure(
                 "Read the current FiiO JA11 device state before changing this setting.",
             )
+            return
+        }
+
+        if (saveSettings && controlId in setOf(FiioJa11DeviceControls.OUTPUT_VOLUME, FiioJa11DeviceControls.EQ_PROGRAM)) {
+            mutableFiioJa11DeviceState.value = state.beginSettingsSave()
+            viewModelScope.launch {
+                val report = fiioJa11ControlRepository.writeControlAndSave(
+                    DacWriteIntent(
+                        controlId = controlId,
+                        requestedValue = value,
+                        expectedSessionGeneration = snapshot.sessionGeneration,
+                    ),
+                )
+                val finalState = mutableFiioJa11DeviceState.value.finishSettingsSave(report)
+                    .withSessionCurrent(report.finalState?.let { hardwareRepository.isFiioJa11SessionCurrent(it.sessionGeneration) } == true)
+                mutableFiioJa11DeviceState.value = finalState
+                if (report.outcome == "SUCCESS" && controlId == FiioJa11DeviceControls.EQ_PROGRAM) {
+                    hardwareRepository.readFiioJa11Snapshot()
+                }
+            }
             return
         }
 
@@ -582,7 +610,12 @@ class EqLibraryViewModel(
         if (mutableFiioJa11DeviceState.value.isBusy) return
         mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::beginRead)
         mutableFiioJa11DeviceState.value = when (val result = fiioJa11ControlRepository.readSnapshot()) {
-            is FiioJa11ControlReadResult.Success -> mutableFiioJa11DeviceState.value.readSuccess(result.snapshot)
+            is FiioJa11ControlReadResult.Success -> {
+                val state = mutableFiioJa11DeviceState.value.readSuccess(result.snapshot)
+                state.copy(
+                    settingsSaveReport = state.settingsSaveReport?.copy(latestAutomaticRefresh = result.snapshot),
+                )
+            }
             FiioJa11ControlReadResult.NotConnected -> mutableFiioJa11DeviceState.value.failure(
                 "Connect FiiO JA11 before reading device controls.",
             )
@@ -874,6 +907,7 @@ class EqLibraryViewModel(
     }
 
     fun applyFiioJa11Editor() {
+        if (mutableFiioJa11DeviceState.value.isBusy) return
         val current = mutableFiioJa11EditorState.value
         val workingCopy = current.workingCopy ?: return
         val baseline = fiioJa11EditorBaseline ?: return
@@ -1393,6 +1427,9 @@ class EqLibraryViewModel(
     }
 
     suspend fun flashFiioJa11FromMyDac(profile: OpraEqProfile): UiText {
+        if (mutableFiioJa11DeviceState.value.isSavingSettings) {
+            return UiText.Dynamic("Wait for the JA11 settings check to finish before changing EQ.")
+        }
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return UiText.Dynamic("Connect FiiO JA11 before changing its EQ.")
         }
@@ -1400,6 +1437,9 @@ class EqLibraryViewModel(
     }
 
     suspend fun resetFiioJa11FromMyDacToFlat(): UiText {
+        if (mutableFiioJa11DeviceState.value.isSavingSettings) {
+            return UiText.Dynamic("Wait for the JA11 settings check to finish before resetting EQ.")
+        }
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return UiText.Dynamic("Connect FiiO JA11 before resetting its EQ.")
         }
@@ -1481,6 +1521,9 @@ class EqLibraryViewModel(
     }
 
     suspend fun resetFiioJa11ToFlat(): UiText {
+        if (mutableFiioJa11DeviceState.value.isSavingSettings) {
+            return UiText.Dynamic("Wait for the JA11 settings check to finish before resetting EQ.")
+        }
         val preferences = preferencesRepository.snapshot()
         if (preferences.exportTargets.activeTarget != ExportDevice.FIIO_JA11) {
             return resource(R.string.error_select_fiio_reset)
@@ -1819,6 +1862,9 @@ class EqLibraryViewModel(
         profile: OpraEqProfile,
         preferences: AppPreferences,
     ): UiText {
+        if (mutableFiioJa11DeviceState.value.isSavingSettings) {
+            return UiText.Dynamic("Wait for the JA11 settings check to finish before changing EQ.")
+        }
         if (!preferences.directFiioJa11FlashEnabled) return resource(R.string.error_enable_fiio_flash)
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return resource(R.string.error_connect_fiio_flash)
@@ -2050,6 +2096,7 @@ class EqLibraryViewModel(
                 dacControlRepository = dependencies.dacControlRepository,
                 fiioJa11ControlRepository = dependencies.fiioJa11ControlRepository,
                 hardwareRepository = dependencies.hardwareRepository,
+                ja11SettingsPersistenceBetaEnabled = dependencies.ja11SettingsPersistenceBetaEnabled,
             ) as T
         }
     }
@@ -2067,6 +2114,7 @@ class EqLibraryViewModel(
         val dacControlRepository: DacControlRepository,
         val fiioJa11ControlRepository: FiioJa11ControlRepository,
         val hardwareRepository: HardwareEqRepository,
+        val ja11SettingsPersistenceBetaEnabled: Boolean = false,
     )
 
     companion object {

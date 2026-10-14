@@ -34,6 +34,7 @@ import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.BuildConfig
 import java.util.Locale
 
 @Composable
@@ -165,6 +166,7 @@ private fun FiioJa11DeviceStatus(
         busy = state.isBusy || state.pendingRestartWrite != null || operationBusy,
         onRefresh = onRead,
         controlName = ::fiioControlName,
+        statusMessage = if (state.isSavingSettings) "Saving settings…" else null,
     )
 
     if (snapshot == null) {
@@ -299,6 +301,13 @@ private fun FiioJa11DeviceStatus(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (BuildConfig.JA11_SETTINGS_PERSISTENCE_BETA_ENABLED) {
+                        Text(
+                            "Saves the current volume and EQ program. The DAC briefly reconnects.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -322,6 +331,14 @@ private fun FiioJa11DeviceStatus(
             title = { Text("EQ program") },
             text = {
                 Column {
+                    if (BuildConfig.JA11_SETTINGS_PERSISTENCE_BETA_ENABLED) {
+                        Text(
+                            "Saves the current volume and EQ program. The DAC briefly reconnects.",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     FiioJa11Protocol.EqProgram.entries.forEach { program ->
                         val current = program == snapshot.eqProgram
                         TextButton(

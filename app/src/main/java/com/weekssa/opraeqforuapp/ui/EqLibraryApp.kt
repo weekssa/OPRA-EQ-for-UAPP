@@ -248,6 +248,7 @@ fun EqLibraryApp(
     val onSetFiioJa11EqProgram = actions.onSetFiioJa11EqProgram
     val onSetFiioJa11HeadsetControl = actions.onSetFiioJa11HeadsetControl
     val onSetFiioJa11UacMode = actions.onSetFiioJa11UacMode
+    val onDismissFiioJa11SettingsSaveReport = actions.onDismissFiioJa11SettingsSaveReport
     val onFlashFiioJa11FromMyDac = actions.onFlashFiioJa11FromMyDac
     val onResetFiioJa11FromMyDac = actions.onResetFiioJa11FromMyDac
     val onFlashEw300FromMyDac = actions.onFlashEw300FromMyDac
@@ -1172,6 +1173,7 @@ fun EqLibraryApp(
                             onSetFiioJa11EqProgram = onSetFiioJa11EqProgram,
                             onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
                             onSetFiioJa11UacMode = onSetFiioJa11UacMode,
+                            onDismissFiioJa11SettingsSaveReport = onDismissFiioJa11SettingsSaveReport,
                             onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
                             onResetEw300FromMyDac = onResetEw300FromMyDac,
                             onRestoreEw300Baseline = onRestoreEw300Baseline,

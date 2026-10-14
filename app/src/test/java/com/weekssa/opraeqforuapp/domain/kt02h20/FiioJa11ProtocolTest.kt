@@ -124,6 +124,28 @@ class FiioJa11ProtocolTest {
     }
 
     @Test
+    fun programAwareSaveGoldenVectorsCoverEveryEqProgramAndKeepLegacyPacketStable() {
+        val expectedPayloads = mapOf(
+            FiioJa11Protocol.EqProgram.VOCAL to 0x00,
+            FiioJa11Protocol.EqProgram.CLASSIC to 0x01,
+            FiioJa11Protocol.EqProgram.BASS to 0x02,
+            FiioJa11Protocol.EqProgram.USER_1 to 0x03,
+            FiioJa11Protocol.EqProgram.OFF to 0x04,
+        )
+
+        expectedPayloads.forEach { (program, payload) ->
+            assertArrayEquals(
+                bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x19, 0x01, payload, 0x00, 0xEE),
+                FiioJa11Protocol.saveCurrentSettingsReport(program),
+            )
+        }
+        assertArrayEquals(
+            bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x19, 0x01, 0x03, 0x00, 0xEE),
+            FiioJa11Protocol.saveToFlashReport(),
+        )
+    }
+
+    @Test
     fun jaytissGlobalGainGoldenVectorUsesTheExpectedNegativeSourcePreamp() {
         assertArrayEquals(
             bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x17, 0x02, 0xFF, 0xD9, 0x00, 0xEE),

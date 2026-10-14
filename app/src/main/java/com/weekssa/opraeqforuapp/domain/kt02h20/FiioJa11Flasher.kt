@@ -43,6 +43,9 @@ interface FiioJa11Transport {
      */
     suspend fun saveToFlash(): Boolean = sendReport(FiioJa11Protocol.saveToFlashReport())
 
+    suspend fun saveCurrentSettings(program: FiioJa11Protocol.EqProgram): Boolean =
+        sendReport(FiioJa11Protocol.saveCurrentSettingsReport(program))
+
     /** Re-open a fresh session for final readback if Save detached during the read sequence. */
     suspend fun awaitFinalReadbackReconnect(): Boolean = false
 }

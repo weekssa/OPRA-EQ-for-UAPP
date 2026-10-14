@@ -1,4 +1,6 @@
 import org.gradle.api.tasks.testing.Test
+import com.android.build.api.variant.HasHostTestsBuilder
+import com.android.build.api.variant.HostTestBuilder
 
 plugins {
     id("com.android.application")
@@ -39,6 +41,7 @@ android {
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
+        buildConfigField("boolean", "JA11_SETTINGS_PERSISTENCE_BETA_ENABLED", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
     }
 
@@ -48,6 +51,15 @@ android {
             applicationIdSuffix = ".ja11diag"
             versionNameSuffix = "-ja11diag"
             matchingFallbacks += listOf("debug")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        }
+        create("ja11Beta") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".ja11beta"
+            versionNameSuffix = "-ja11beta"
+            matchingFallbacks += listOf("debug")
+            resValue("string", "app_name", "EQ Library JA11 Beta")
+            buildConfigField("boolean", "JA11_SETTINGS_PERSISTENCE_BETA_ENABLED", "true")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
         release {
@@ -71,6 +83,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 
     packaging {
@@ -82,6 +95,12 @@ android {
 
 androidComponents {
     beforeVariants(selector().withBuildType("ja11Diagnostic")) { variantBuilder ->
+        variantBuilder.enableAndroidTest = true
+    }
+    beforeVariants(selector().withBuildType("ja11Beta")) { variantBuilder ->
+        (variantBuilder as HasHostTestsBuilder)
+            .hostTests[HostTestBuilder.UNIT_TEST_TYPE]
+            ?.enable = true
         variantBuilder.enableAndroidTest = true
     }
 }
@@ -117,6 +136,7 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+    add("ja11BetaImplementation", "androidx.compose.ui:ui-test-manifest")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")

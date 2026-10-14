@@ -671,3 +671,101 @@ The public release body matches the maintained v0.8.2 notes. Signed API 35 candi
 upgrade checks passed in runs `38475878287` and `38499666593`. Full asset and release metadata
 readbacks are in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`. Earlier J029 and other
 physical records retain their own exact source/APK boundaries.
+
+## 2026-10-14 J032 — private JA11 settings-persistence beta software candidate
+
+This software-only record uses the prepared worktree at
+`/Users/stephenweeks/.codex/worktrees/ja11-settings-persistence-beta/OPRA-EQ-for-UAPP`, branch
+`codex/ja11-settings-persistence-beta`, based on `421f03331e45e6c1bdc77e5442db1de467432930`.
+Executable candidate source is `620e1a46761de2d3621dbcd32135193efb42cf49`, draft PR #96. The
+private test APK is `app/build/outputs/apk/ja11Beta/app-ja11Beta.apk`, SHA-256
+`63d6d1b63563f0c9129e45202eb9eec08a1424a6052e0bd9c3d1e767473600a1`, 23,209,361 bytes. Package
+`com.weekssa.opraeqforuapp.ja11beta`, version `0.8.2-ja11beta` / code `13`, minimum SDK 26, target
+SDK 36. The embedded candidate SHA was found in `classes11.dex` and `classes14.dex`. The APK
+verifies with the Android Debug test certificate SHA-256
+`968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4`; v2 APK signature verifies
+and `zipalign -c -v 4` passes. This is not signed by the official release key.
+
+The exact APK cold-launched on disposable API 35 emulator serial `emulator-5554`; the stable
+package `com.weekssa.opraeqforuapp` and separate beta package coexisted. It also cold-launched on
+disposable API 26 serial `emulator-5556`. Both emulators were shut down after their checks. The
+candidate's full debug and beta JVM suites, beta Android instrumentation (70/70), debug and beta
+lint, debug and release assembly, beta Android-test Kotlin compilation, and R8 mapping verification
+passed as recorded in the implementation state. Exact-head fallback workflow run `38512637427`
+was dispatched with `source_sha` equal to the candidate SHA and was queued at the time this entry
+was written; hosted results remain pending. PR CodeQL run `38512320065` was still running. The
+push-triggered legacy Android CI run `38512307326` failed before jobs started, matching the
+known malformed workflow on the base branch. No normal Android CI success is claimed.
+
+No physical phone or JA11 connection was made, no hardware operation was performed, and no
+physical claim is supported by this entry. Phone installation remains gated on the owner's
+explicit readiness confirmation and wireless-debugging availability. Artifact details and the
+current hosted status are maintained in
+`docs/implementation/ja11-settings-persistence-beta/ARTIFACTS.md` and `STATE.md`.
+
+### J032 hosted-gate closeout
+
+Exact-head workflow run `38512637427` completed successfully against the unchanged candidate SHA;
+all four jobs passed: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`. PR
+CodeQL run `38512320065` (`Analyze Kotlin`), Priority community coverage run `38512320099`, and
+Catalog currentness run `38512320115` also passed for PR #96's exact candidate head. The legacy
+push-triggered Android CI run `38512307326` failed before creating any jobs; no result from it is
+counted as a software pass. The private local test APK provenance and disposable local API 26/API
+35 install results remain as recorded above. No phone or JA11 has been accessed. This closes the
+off-phone software and artifact gates only; owner-led physical testing remains pending.
+
+## 2026-10-14 J033 — owner-authorized private beta phone installation
+
+Following the owner's confirmation that the phone was ready and wireless debugging was enabled,
+the exact private JA11 beta APK from candidate source
+`620e1a46761de2d3621dbcd32135193efb42cf49` was installed on the owner's Pixel 9 (Android API 37).
+The installed package manager record reports package
+`com.weekssa.opraeqforuapp.ja11beta`, version `0.8.2-ja11beta`, version code `13`. The installed
+file was the locally verified APK with SHA-256
+`63d6d1b63563f0c9129e45202eb9eec08a1424a6052e0bd9c3d1e767473600a1`, signed with the verified
+Android Debug test certificate SHA-256
+`968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4`. The package was absent
+before installation and `adb install -r` returned `Success`.
+
+Outcome: **INSTALL VERIFIED ONLY**. The beta app was not launched, no JA11 was connected, and no
+hardware operation, hardware baseline, or capability claim was produced. No restoration was
+required because installation made no DAC state changes. The owner will conduct the normal
+hardware testing manually using `docs/implementation/ja11-settings-persistence-beta/OWNER_TEST_GUIDE.md`.
+
+## 2026-10-14 J034 — owner-shared private beta operation reports
+
+The owner supplied six readable and six JSON report exports from manual testing in the exact
+private beta APK. The readable/JSON copies group into three operation IDs and agree on their
+results; later copies contain a newer automatic read-only refresh. Raw reports and private EQ
+values remain in owner storage and were not copied into this repository. Latest report hashes and
+summary are recorded in
+`docs/implementation/ja11-settings-persistence-beta/ARTIFACTS.md`.
+
+Candidate source: `620e1a46761de2d3621dbcd32135193efb42cf49`. APK:
+`app-ja11Beta.apk`, SHA-256
+`63d6d1b63563f0c9129e45202eb9eec08a1424a6052e0bd9c3d1e767473600a1`, package
+`com.weekssa.opraeqforuapp.ja11beta`, version `0.8.2-ja11beta` / code `13`, Android Debug test
+signer SHA-256
+`968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4`. Test guide:
+`docs/implementation/ja11-settings-persistence-beta/OWNER_TEST_GUIDE.md`. Hardware: Pixel 9 / API
+37 and FiiO JA11 firmware 2.20; reports expose USB product ID 258 but no unique hardware
+fingerprint or serial. The reports do not record physical power removal or bus-level packet counts.
+
+| Owner operation | App report evidence | Result and boundary |
+| --- | --- | --- |
+| Volume 60→56 while Off | Baseline and final DEVICE state matched except requested volume; one software-recorded target write and one Save for Off; a later automatic refresh read 56 / Off with mic On and UAC 2.0 | **PASS for this transaction and later app readback.** The reports do not independently establish cable/power removal. |
+| Program Off→User 1 | One program write and one Save; pre-Save User 1 stored bank was non-flat, final User 1 stored bank read flat; report outcome `FINAL_EQ_MISMATCH`, state known/current | **FAIL.** This does not establish that User 1 data was preserved. No recovery or retry is authorized by this result. |
+| Program User 1→Off | One program write and one Save; report outcome `SUCCESS`, later refresh read Off / volume 56; baseline User 1 bank was already flat | **PASS for selecting Off only.** It does not restore or qualify the prior User 1 bank. |
+
+The manual guide specified testing Vocal (or Classic if Vocal was already active); the supplied
+reports instead show a User 1 selection, which failed. No Vocal/Classic persistence result is
+present. The original baseline was volume 60 / Off / mic On / UAC 2.0, while the latest exported
+operation state was volume 56 / Off. The exports contain no later 56→60 restoration transaction
+and do not prove restoration of the prior User 1 bank. **Restored state: NOT VERIFIED. Overall
+physical outcome: FAIL / HOLD FOR DIAGNOSIS.**
+
+No user EQ coefficient values were copied here. Do not retry Save, repeat the User 1 selection, or
+attempt a recovery write before the report mismatch is diagnosed and a separate recovery plan is
+authorized. The owner had earlier summarized all tests as passing; these exact operation reports
+supersede that summary for the User 1 transaction and restoration claim. No general JA11 hardware
+support or persistence claim follows from these results.

@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -49,6 +50,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11SettingsSaveReport
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
@@ -81,6 +83,7 @@ internal fun FiioJa11MyDacContent(
     onApply: (Boolean) -> Unit,
     operationTrace: FiioJa11OperationTrace? = null,
     operationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
+    onDismissSettingsSaveReport: () -> Unit = {},
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -142,6 +145,9 @@ internal fun FiioJa11MyDacContent(
             text = "FiiO JA11 · ${connectionLabel(connectionState)}",
             fontWeight = FontWeight.SemiBold,
         )
+        deviceState.settingsSaveReport?.let { report ->
+            FiioJa11SettingsSaveResultCard(report, onDismissSettingsSaveReport)
+        }
         if (!connected) {
             Text(
                 text = "Open the current Android USB session to read and manage this connected DAC.",
@@ -236,6 +242,64 @@ internal fun FiioJa11MyDacContent(
                 onSetFiioJa11UacMode = onSetUacMode,
                 fiioJa11OperationBusy = operationStatus is FiioJa11OperationStatus.Running,
             )
+        }
+    }
+}
+
+@Composable
+private fun FiioJa11SettingsSaveResultCard(
+    report: FiioJa11SettingsSaveReport,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val unchanged = report.outcome == "UNCHANGED"
+    val success = report.outcome == "SUCCESS" || unchanged
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    when {
+                        unchanged -> "JA11 settings already match"
+                        success -> "JA11 settings saved and verified"
+                        else -> "JA11 settings not confirmed"
+                    },
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (success) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Outlined.Close, contentDescription = "Dismiss JA11 settings report")
+                }
+            }
+            Text(
+                if (unchanged) "The requested setting already matched the current device state."
+                else if (success) "The requested setting and final device readback matched."
+                else "Could not confirm that the settings were saved.",
+            )
+            Text(
+                fiioJa11SettingsReportDescription(report),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(
+                onClick = {
+                    shareFiioJa11Report(context, "FiiO JA11 settings report", "text/plain", report.toReadableText())
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(FIIO_JA11_READABLE_REPORT_LABEL) }
+            TextButton(
+                onClick = {
+                    shareFiioJa11Report(context, "FiiO JA11 settings report JSON", "application/json", report.toJson())
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(FIIO_JA11_TECHNICAL_REPORT_LABEL) }
         }
     }
 }

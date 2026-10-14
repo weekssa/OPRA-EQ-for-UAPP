@@ -1,5 +1,15 @@
 # FiiO / JadeAudio JA11 protocol notes
 
+## 2026-10-13 private beta-only volume/program Save work
+
+The separate `codex/ja11-settings-persistence-beta` candidate implements only the two owner-approved
+Save triggers: changed DEVICE volume Apply and changed DEVICE EQ-program selection. Each beta action
+uses a typed Save request for the verified active program and preserves the existing Save lifecycle.
+Production builds remain policy-disabled. This is not yet software-qualified and adds no hardware
+or public stable-support claim. The public 0.8.2 runtime-only classifications remain in force until
+new exact-candidate owner-led physical evidence is accepted. See
+`docs/implementation/ja11-settings-persistence-beta/STATE.md` for gate status and owner-test limits.
+
 Status: **Model D makes serial optional continuity evidence while retaining exact candidate/session/cardinality, expected-reset, authoritative-readback, and no-replay gates. The clean branch `codex/ja11-v0.8.1-minimal` is based on `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`, with frozen production source `9493cf030acb440f92e547fc667f6a5399616045`. Local G1-G7 pass, including 768 JVM tests and seven production Android USB-session Robolectric tests. Fresh independent review and exact-head CI for the revised PR #81 head remain pending. The host-verified diagnostic APK is `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`; it embeds the source SHA, verifies with v2, is aligned, and previously cold-launched on an isolated API 35 emulator. J027 is a partial physical session on this exact source/APK and prior PR #81 head `2e81dc99...`; it remains partial and is not relabelled to the revised head. The owner reported the phone window ready; do not begin physical acceptance until the final off-phone gates and exact tuple are reported.**
 
 
