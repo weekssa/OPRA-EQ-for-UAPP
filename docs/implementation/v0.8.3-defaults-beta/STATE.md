@@ -24,9 +24,9 @@ See [GATES.md](GATES.md) and [TEST_RESULTS.md](TEST_RESULTS.md). The intended ow
 
 ## Current implementation and validation state
 
-- Source and UI changes are uncommitted and still under review. The private beta uses a `beta` build type so standard production signing and CI output paths remain unchanged; the beta gets the requested app ID suffix, version label, update policy and local test signer.
-- The shared Debug JVM suite passes with expanded defaults transaction and User 1 comparison coverage. Debug/Beta lint, Debug/Release/Beta packaging, R8, and Beta Android-test compilation pass on current source.
-- The full 72-test Beta Android UI suite passes on API 35. The 9-test JA11 class passes on API 26; the broad API 26 run has two migration-fixture SQLite syntax failures and one unrelated Compose idle timeout. See `TEST_RESULTS.md`.
-- Exact installed-package coexistence and final-candidate APK checks remain.
+- The initial implementation is committed. Artifact inspection then found that `initWith(release)` ran before the release block configured R8, so the initial Beta APK was not minified. The Beta build type now explicitly enables R8 and release ProGuard rules. The final minified candidate build and emulator tests must use the follow-up commit SHA.
+- The shared Debug JVM suite passes with expanded defaults transaction and User 1 comparison coverage. Debug/Beta lint, Debug/Release packaging, Beta R8 mapping, and Beta Android-test compilation pass on current source.
+- The prior 72-test Beta UI/API 35 run and 9-test JA11/API 26 run used the unminified APK and are superseded for the package gate. The broad API 26 run has two migration-fixture SQLite syntax failures and one unrelated Compose idle timeout. See `TEST_RESULTS.md`.
+- Exact-source minified Beta instrumentation, installed-package coexistence, artifact provenance and final-candidate APK checks remain.
 - No owner phone or JA11 hardware has been accessed. No physical claim is established.
 - Independent review confirmed the UI and variant fixes. Optional User 1 reads and fingerprint comparison now run inside the shared JA11 operation gate; repository tests cover matched, changed and unavailable outcomes. Remaining broad API 26 suite exception, remote exact-head checks, exact artifact gates, physical EQ-bank evidence and final-candidate gates are tracked in `GATES.md` and `TEST_RESULTS.md`.

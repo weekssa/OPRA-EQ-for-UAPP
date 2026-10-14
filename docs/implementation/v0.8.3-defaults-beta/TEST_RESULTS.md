@@ -19,9 +19,10 @@ Status: **CURRENT-SOURCE SOFTWARE CHECKS RUN; FINAL CANDIDATE GATES NOT RUN**. T
 
 ## Run record
 
-- Latest source command `:app:testDebugUnitTest :app:lintDebug :app:lintBeta :app:assembleDebug :app:assembleRelease :app:assembleBeta :app:compileBetaAndroidTestKotlin` passed. This includes transaction tests for matched, changed, unavailable readback, and a final built-in program.
-- Exact current-source `:app:connectedBetaAndroidTest` passed 72/72 on API 35. Exact current-source focused `FiioJa11MyDacContentTest` passed 9/9 on API 26.
+- Latest source command `:app:testDebugUnitTest :app:lintDebug :app:lintBeta :app:assembleDebug :app:assembleRelease :app:assembleBeta :app:compileBetaAndroidTestKotlin` passed before artifact inspection found the missing Beta R8 activation; it includes transaction tests for matched, changed, unavailable readback, and a final built-in program.
+- Exact-source Beta tests then passed 72/72 on API 35 and focused JA11 9/9 on API 26, but used the unminified APK and do not satisfy the required production-path package gate. They must be rerun after the minification fix on the final SHA.
 - Preserved broad API 26 `:app:connectedBetaAndroidTest` result: 69/72 passed, 3 failed. Two `SavedEqCanonicalSnapshotMigrationTest` cases failed during legacy fixture setup because API 26 SQLite does not support the fixture's `ALTER TABLE ... DROP COLUMN`; one existing `UiModernizationFlowsTest.dpadNavigatesPersonalEqImportThroughSaveCallbackWithoutHardwareAction` timed out waiting for Compose idle. These are unrelated to JA11 defaults; the owner must explicitly accept a bounded substitute before the phone gate.
+- Artifact review caught that the first Beta build type had not inherited R8 because `initWith(release)` ran before the release block's minification configuration. The Beta definition now explicitly sets `isMinifyEnabled = true` and the release ProGuard files. A follow-up `:app:assembleBeta :app:compileBetaAndroidTestKotlin` run showed `:app:minifyBetaWithR8`, produced `app/build/outputs/mapping/beta/mapping.txt`, and passed; package identity is 0.8.3-beta.1/code 14 with the local Android test signer. The source SHA changed afterward and exact candidate verification remains pending.
 
 ## Preserved intermediate run history
 

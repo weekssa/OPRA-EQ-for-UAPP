@@ -56,12 +56,17 @@ android {
         }
         create("beta") {
             initWith(getByName("release"))
+            isMinifyEnabled = true
             applicationIdSuffix = ".v083beta"
             versionNameSuffix = "-beta.1"
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
             matchingFallbacks += listOf("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
         release {
             isMinifyEnabled = true
