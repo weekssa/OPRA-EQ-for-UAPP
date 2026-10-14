@@ -25,11 +25,12 @@ exact-head gates.
 | API 35 exact-APK install and cold launch | PASS on disposable `emulator-5554`; cold launch completed, app process observed |
 | Stable-app coexistence on API 35 | PASS; stable `com.weekssa.opraeqforuapp` and beta `.ja11beta` packages both installed |
 | API 26 exact-APK install and cold launch | PASS on disposable `emulator-5556`; cold launch completed, app process observed |
+| Owner-authorized phone install | PASS; exact APK installed on Pixel 9 / API 37, package/version `com.weekssa.opraeqforuapp.ja11beta` / `0.8.2-ja11beta` code `13` verified; app not launched |
 | PR CodeQL | PASS, run `38512320065` against exact candidate SHA |
 | PR community/catalog checks | PASS, runs `38512320099` and `38512320115` |
 | Exact-head hosted build jobs | PASS: build, exact-head CodeQL, API 26 smoke, and API 35 UI test |
 | Legacy standard Android CI push workflow | Failed before creating jobs (run `38512307326`); exact-head fallback run above supplies the required hosted software gates |
-| Physical qualification | Not yet performed; owner-led after separate readiness confirmation |
+| JA11 physical qualification | Pending; the owner will perform normal hardware testing manually after this install-only handoff |
 
 The intended signer is the normal local debug/test signer. This is a private test artifact, not the
 officially signed or published beta/release APK. An installed APK's package, version, embedded

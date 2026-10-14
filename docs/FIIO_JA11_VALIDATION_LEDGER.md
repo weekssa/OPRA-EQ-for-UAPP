@@ -713,3 +713,21 @@ push-triggered Android CI run `38512307326` failed before creating any jobs; no 
 counted as a software pass. The private local test APK provenance and disposable local API 26/API
 35 install results remain as recorded above. No phone or JA11 has been accessed. This closes the
 off-phone software and artifact gates only; owner-led physical testing remains pending.
+
+## 2026-10-14 J033 — owner-authorized private beta phone installation
+
+Following the owner's confirmation that the phone was ready and wireless debugging was enabled,
+the exact private JA11 beta APK from candidate source
+`620e1a46761de2d3621dbcd32135193efb42cf49` was installed on the owner's Pixel 9 (Android API 37).
+The installed package manager record reports package
+`com.weekssa.opraeqforuapp.ja11beta`, version `0.8.2-ja11beta`, version code `13`. The installed
+file was the locally verified APK with SHA-256
+`63d6d1b63563f0c9129e45202eb9eec08a1424a6052e0bd9c3d1e767473600a1`, signed with the verified
+Android Debug test certificate SHA-256
+`968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4`. The package was absent
+before installation and `adb install -r` returned `Success`.
+
+Outcome: **INSTALL VERIFIED ONLY**. The beta app was not launched, no JA11 was connected, and no
+hardware operation, hardware baseline, or capability claim was produced. No restoration was
+required because installation made no DAC state changes. The owner will conduct the normal
+hardware testing manually using `docs/implementation/ja11-settings-persistence-beta/OWNER_TEST_GUIDE.md`.

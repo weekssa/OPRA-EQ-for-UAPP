@@ -46,11 +46,13 @@ claim USB bus counts or firmware reboot counts.
 | Private beta APK provenance | PASS | Exact APK metadata, injected source SHA, debug signer, alignment, checksum, and API 26/API 35 installs recorded in `ARTIFACTS.md` |
 | Standard Android CI workflow | FAIL (existing workflow) | Run 38512307326 fails before jobs exist; same known malformed-workflow issue on the base branch, not candidate-specific |
 | PR CodeQL | PASS | Run 38512320065 on exact PR head |
-| Phone install / physical use | NOT AUTHORIZED YET | Ask only after all off-phone gates; wait for owner confirmation |
+| Private beta phone install | PASS | After owner confirmation, exact APK installed on Pixel 9 / API 37; package/version verified; app was not launched |
+| JA11 / physical hardware testing | PENDING OWNER | Owner performs normal manual hardware testing; no JA11 connection or operation has occurred in this task |
 
 ## Safety boundary
 
-No physical hardware has been addressed. Do not probe a remembered wireless endpoint or connect,
-install, or run a JA11 operation before the owner confirms the phone is ready and wireless debugging
-is enabled. The owner conducts normal hardware testing manually. Stop at the first uncertain
-physical result; no mutation replay or recovery mutation is implied.
+The owner confirmed the phone was ready and wireless debugging was enabled. The exact private beta
+APK was installed on the Pixel 9 / API 37 and its package/version was verified; it was left
+unopened. No JA11 was connected and no hardware operation or physical capability test occurred.
+The owner conducts normal hardware testing manually. Stop at the first uncertain physical result;
+no mutation replay or recovery mutation is implied.
