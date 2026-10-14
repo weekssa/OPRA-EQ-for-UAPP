@@ -29,6 +29,13 @@ compared for the tested Off/Classic programs; EQ-bank preservation and same-unit
 not claimed. Keep the historical v0.8.2 table below bounded to its original tuple. Any later
 production classification requires owner acceptance and exact release evidence.
 
+On 2026-10-14 the owner reported that manual testing of this identified Beta v1 succeeded and that
+all other manual tests passed, then authorized go-live (J033). This owner acceptance is not an
+independent bus capture or a new User 1/serial measurement. Keep the above User 1 comparison and
+identity limits, and do not promote this one candidate result into a general firmware capability
+classification. The beta reports final volume 19 / Classic, Mic On, UAC 2.0; its exact package,
+version, APK digest and signer remain in J032.
+
 The published 0.8.2 candidate changes app completion ownership and preserves global My EQs rows during output transitions. Hardware controls, native EQ representation, protocol/Save behavior and the capability classifications below remain unchanged. J031 accepted the exact signed candidate for same-process visible EQ/DEVICE convergence, editing/navigation, unchanged observed baseline, and cleanup, with limits recorded in the validation ledger. Raw mutation/replay telemetry, internal generations, ViewModel identity, unique same-unit continuity, and any additional persistence behavior remain unmeasured or unclaimed. J030's separate tracing-build healthy control is preserved and does not qualify the 0.8.2 fix.
 
 ## Current capability disposition after v0.8.2 publication

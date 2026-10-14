@@ -32,7 +32,7 @@ Scope: Implement and qualify the separate production-quality v0.8.3 JA11 beta fo
   EVIDENCE: Exact source `7cea454`; Beta launches on both APIs; minified runner fails before test discovery because `androidx.tracing.Trace` is absent; substitute results and all four API 26 failures are in `TEST_RESULTS.md`. Owner explicitly accepted the bounded substitution on 2026-10-14 before phone work.
 
 - [x] G8: Independent source/scope review has no unresolved safety finding; live exact-head checks are tied to the frozen candidate.
-  EVIDENCE: Independent architecture review found no product-code blocker after gate-bound EQ readback update. Draft PR #97 exact docs head `2359311c01c64e25c3930ee4af44203aaf059ecc` passed `validate`, `validate-priority-community`, `submit-gradle`, and `Analyze Kotlin` CodeQL; the separate generic `CodeQL` status is skipped. The PR carries the exact source and candidate evidence.
+  EVIDENCE: Independent review found no product-code blocker. PR #97 head `ecdd230aed8e50f5fd5cb5de0549c77ccca2d0e5` passes `validate`, `validate-priority-community`, `submit-gradle`, and `Analyze Kotlin`; generic CodeQL is neutral/skipped. New owner-acceptance and release-preparation changes are documentation-only and will trigger a fresh exact-head run.
 
 - [x] G9: Private beta app/test APK provenance is frozen: source SHA, package/version/code, signer, digests, build command and test plan.
   EVIDENCE: `ARTIFACTS.md`, frozen source `7cea4545dddbee2da0b436e0684a9c489835e3cd`; exact SHA embedded in the app and test APK BuildConfigs and app DEX.
@@ -40,8 +40,8 @@ Scope: Implement and qualify the separate production-quality v0.8.3 JA11 beta fo
 - [x] G10: Owner wireless-ADB session completed with exact beta and app data left installed; final settings and evidence limits are recorded.
   EVIDENCE: Owner accepted the G7 substitution, confirmed readiness, authorized USB `Always allow`, and later performed a 10-second physical JA11 power removal on 2026-10-14. Exact Beta v1 APK remains installed on Pixel 9 (API 37), package/version verified, with stable and earlier JA11 beta apps preserved. Runtime-only Apply, staged Cancel and three default transactions are recorded in `TEST_RESULTS.md` and J032 in the validation ledger. Mic restoration and fresh post-power-cycle readback passed for pair 19 / Classic. User 1 EQ comparison and unique device continuity remain unverified; see limits.
 
-- [ ] G11: Owner identifies the installed candidate as passing and directs publication; otherwise remain at the owner checkpoint with the beta installed.
-  EVIDENCE: pending
+- [x] G11: Owner identifies the installed candidate as passing and directs publication; otherwise remain at the owner checkpoint with the beta installed.
+  EVIDENCE: On 2026-10-14 the owner reported success for the identified Beta v1 manual testing, stated that all other manual tests passed, and authorized final go-live. J033 records the owner's statement and exact evidence limits. No bus capture, unique serial, or independent EQ-bank payload was supplied; no broader claim is made.
 
-- [ ] G12: After that instruction, the exact implementation is integrated, officially signed, upgrade/clean-install verified, promoted without rebuild, publicly read back, and documentation is closed.
-  EVIDENCE: pending
+- [ ] G12: Integrate the exact implementation, officially sign from main, pass hosted upgrade/clean-install checks, promote without rebuild, verify public readback, and close documentation.
+  EVIDENCE: In progress after owner authorization; PR #97 is the normal integration path. Record exact main SHA, candidate run/artifact/digests, promotion run, public assets and metadata before marking complete.

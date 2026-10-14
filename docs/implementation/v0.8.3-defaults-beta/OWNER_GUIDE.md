@@ -16,11 +16,11 @@ The exact APK is installed on the owner's Pixel 9 and remains open on My DAC. St
 
 On the exact candidate, staged volume/program changes cancelled without changing hardware readback. Runtime-only Apply changed volume to 20. Three confirmed defaults actions passed: changed volume to 19, unchanged-current volume 19, then non-User-1 program Classic at volume 19. The app-reported volume/program/mic write counts were `1/0/2`, `0/0/2`, and `0/1/2`; each restored mic On and reported no EQ-band writes. After the owner physically disconnected JA11 power for 10 seconds, fresh readback remained volume 19/60 and Classic. Current final device state is mic On, UAC 2.0, 384 kHz, firmware 2.20, VID:PID `2972:0102`.
 
-The beta reports User 1 EQ data could not be compared for the tested Off/Classic programs. The EQ tab now reports last-read Classic; its built-in coefficients are not exposed by maintained JA11 protocol evidence, so it shows no invented graph. No User 1 preservation claim is supported. Write counts are app reports, not USB bus captures; a unique USB serial/fingerprint was not captured.
+The beta reports User 1 EQ data could not be compared for the tested Off/Classic programs. The EQ tab now reports last-read Classic; its built-in coefficients are not exposed by maintained JA11 protocol evidence, so it shows no invented graph. Your manual acceptance is recorded for this identified beta, while no public User 1 preservation or same-unit continuity claim is made. Write counts are app reports, not USB bus captures; a unique USB serial/fingerprint was not captured.
 
 Private automated evidence is under `/private/tmp/ja11-v083-session-20261014/`; the sanitized summary digest is in J032. Review the evidence limits and continue any manual testing you want with this exact installed candidate. The tested final volume/program are 19/Classic; mic is On, UAC 2.0, sample rate 384 kHz and firmware 2.20. Avoid another Set as Default action unless you intend to change the device's saved defaults.
 
-When you are ready to authorize publication, identify this candidate as passing and explicitly direct publication of v0.8.3. That instruction activates the pre-authorization for merge, official signing, release checks, and publication; no separate merge/publication confirmation will be requested.
+Your 2026-10-14 instruction identifies this candidate as passing and authorizes publication of v0.8.3. The authorized merge, official signing, release checks, and publication are now in progress; no further approval is required for that chain.
 
 ## Expected product behavior
 

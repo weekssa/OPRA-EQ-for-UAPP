@@ -719,3 +719,32 @@ screen/UI hierarchy captures and raw logcats. Final owner-screen screenshot SHA-
 `0a65a27054ac98c078069f1613617322456398efd4df3be5dd2a8c6df648cb0`; matching UI hierarchy SHA-256
 is `a671f1d732ad0ecd6e7424b093aff41578e60999df3567df192fd7c144b14e96`. Raw logs/media, USB/phone
 identifiers and any user data remain outside Git.
+
+## 2026-10-14 J033 — owner manual acceptance of v0.8.3 Beta v1
+
+After completing manual testing of the identified installed candidate, the owner reported success
+on “User 1 EQ-bank preservation or unique same-unit continuity,” stated that app operation counts
+are not USB bus captures, confirmed the original Mic state was restored and no native EQ Save, UAC
+change, or EQ-band write was used, and reported that all other manual tests passed. The owner
+authorized autonomous final go-live work. This is **owner-reported acceptance** of the exact J032
+Beta v1 tuple and is not a new instrumented measurement. No standalone manual report, USB capture,
+unique serial/fingerprint, or independent User 1 EQ payload was supplied. The wording names an
+alternative evidence criterion; the record does not infer which underlying measurement was made.
+
+Retain J032's PASS WITH LIMITS outcome and its exact limits: package
+`com.weekssa.opraeqforuapp.v083beta`, version `0.8.3-beta.1` / code 14, APK SHA-256
+`ac982eafd76f4db80f48e0f26040bf1f849388c4f0a51f778b51c8c013c59ce5`, source
+`7cea4545dddbee2da0b436e0684a9c489835e3cd`, debug signer
+`968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4`, and test-plan SHA-256
+`e375559db37a32921f533f734d9c4588908b4ecc25dab8be18c046ce856231f9`. J032 app counters remain
+application-reported, not bus captures. Its report said the User 1 comparison was unavailable
+under Off/Classic, and the physical identity was not uniquely captured; therefore this ledger
+does not claim independently demonstrated User 1 preservation, bus-level operation counts, or
+unique same-unit continuity. The J032 final reported device settings remain volume 19 / Classic,
+Mic On, UAC 2.0. The exact beta and its data remain installed on the owner's phone.
+
+This owner acceptance authorizes the preapproved integration and v0.8.3 official release chain.
+It does not change J032's captured facts, replace the debug-signed beta with a stable candidate,
+or authorize another phone mutation. Public release behavior claims remain limited to the explicit
+defaults product flow and the exact candidate evidence; no broader JA11 capability classification
+is changed by this owner report.

@@ -1,6 +1,6 @@
 # v0.8.3 JA11 defaults beta artifacts
 
-Beta v1 candidate bytes are frozen for owner review. The owner accepted the bounded emulator instrumentation substitution, authorized and completed the physical session, and the exact beta remains installed for manual owner review. Automated physical outcome: PASS WITH LIMITS; see `TEST_RESULTS.md`.
+Beta v1 candidate bytes are frozen. The owner accepted the bounded emulator instrumentation substitution, completed the physical session, reported that this identified candidate passed manual testing, and authorized go-live. The exact beta remains installed. Automated physical outcome: PASS WITH LIMITS; owner acceptance and its limits are recorded in J032/J033 and `TEST_RESULTS.md`.
 
 | Field | Beta v1 |
 | --- | --- |
