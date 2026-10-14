@@ -1,5 +1,11 @@
 # FiiO JA11 hands-on qualification
 
+The private settings-persistence beta owner procedure is maintained separately in
+[`implementation/ja11-settings-persistence-beta/OWNER_TEST_GUIDE.md`](implementation/ja11-settings-persistence-beta/OWNER_TEST_GUIDE.md).
+It is not a production qualification procedure until its exact source/APK, software gates, review,
+and exact-head CI are recorded in that beta's `STATE.md` and `ARTIFACTS.md`. Do not infer a new
+physical result from this checklist or from the beta implementation.
+
 ## Current clean-branch status — 2026-10-10
 
 This checklist preserves prior physical evidence. The executable procedure remains in

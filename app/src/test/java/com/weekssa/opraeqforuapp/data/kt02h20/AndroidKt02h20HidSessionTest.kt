@@ -57,6 +57,7 @@ class AndroidKt02h20HidSessionTest {
 
     @After
     fun tearDown() {
+        Ja11UsbConnectionShadow.outboundReports.clear()
         Ja11UsbConnectionShadow.connectionSerial = null
         Ja11UsbConnectionShadow.claimAllowed = true
         Ja11UsbManagerShadow.openAllowed = true
@@ -91,6 +92,26 @@ class AndroidKt02h20HidSessionTest {
             assertThat(session.send(byteArrayOf(1), settleMillis = 0L)).isFalse()
         } finally {
             session.close()
+        }
+    }
+
+    @Test
+    fun programAwareSettingsSaveUsesTheAndroidSaveLifecycleAndTypedPacket() = runBlocking {
+        val device = ja11Device("/dev/bus/usb/001/001", FiioJa11Protocol.PRODUCT_ID_UAC_2)
+        usbManagerShadow.addOrUpdateUsbDevice(device, true)
+        Ja11UsbConnectionShadow.outboundReports.clear()
+        val transport = AndroidFiioJa11UsbTransport(context)
+
+        try {
+            transport.connect()
+            awaitCondition { transport.state.value is Kt02h20ConnectionState.Connected }
+
+            assertThat(transport.saveCurrentSettings(FiioJa11Protocol.EqProgram.VOCAL)).isTrue()
+            assertThat(Ja11UsbConnectionShadow.outboundReports.map { it.toList() })
+                .containsExactly(FiioJa11Protocol.saveCurrentSettingsReport(FiioJa11Protocol.EqProgram.VOCAL).toList())
+            assertThat(transport.sessionGeneration).isGreaterThan(0L)
+        } finally {
+            transport.close()
         }
     }
 
@@ -440,11 +461,27 @@ class Ja11UsbConnectionShadow : ShadowUsbDeviceConnection() {
     protected override fun claimInterface(intf: UsbInterface, force: Boolean): Boolean =
         claimAllowed && super.claimInterface(intf, force)
 
+    @Implementation
+    protected override fun bulkTransfer(
+        endpoint: UsbEndpoint,
+        buffer: ByteArray,
+        length: Int,
+        timeout: Int,
+    ): Int {
+        if (endpoint.direction == UsbConstants.USB_DIR_OUT) {
+            outboundReports += buffer.copyOf(length)
+        }
+        return length
+    }
+
     companion object {
         @JvmStatic
         var connectionSerial: String? = null
 
         @JvmStatic
         var claimAllowed = true
+
+        @JvmStatic
+        val outboundReports = mutableListOf<ByteArray>()
     }
 }

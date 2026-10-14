@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.ui.screens
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStage
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11SettingsSaveReport
 
 internal const val FIIO_JA11_READABLE_REPORT_LABEL = "Share operation report"
 internal const val FIIO_JA11_TECHNICAL_REPORT_LABEL = "Share technical report (JSON)"
@@ -72,6 +73,21 @@ internal fun fiioJa11OperationReportDescription(trace: FiioJa11OperationTrace): 
     } else {
         "Share this report before any later write so the exact values, phases, USB bytes, and session evidence remain attached to the failed operation."
     }
+
+internal fun fiioJa11SettingsReportDescription(report: FiioJa11SettingsSaveReport): String {
+    val finalLabel = if (report.finalStateCurrent) "Current verified state" else "Last read"
+    val final = report.finalState?.let {
+        "volume ${it.outputVolume}, ${it.eqProgram.technicalLabel}, mic ${if (it.headsetControlEnabled) "On" else "Off"}, ${it.uacMode.technicalLabel}"
+    } ?: "unavailable"
+    val bankNote = when (report.eqComparison) {
+        "USER_1_STORED_BANK_VERIFIED" -> "Stored User 1 bank and gain matched."
+        "SAME_PROGRAM_RAW_VERIFIED" -> "Readable coefficients matched for the same active program; stored User 1 bank identity is not established."
+        "INSUFFICIENT_EVIDENCE" -> "Stored User 1 bank preservation is insufficiently evidenced."
+        else -> "EQ parameter comparison: ${report.eqComparison}."
+    }
+    val unchangedNote = if (report.outcome == "UNCHANGED") "No write or Save was needed. " else ""
+    return "$unchangedNote$finalLabel: $final. $bankNote Operation ID ${report.operationId}."
+}
 
 internal fun FiioJa11OperationTrace.isSaveAndFinalReadbackVerified(): Boolean =
     stateKnown &&

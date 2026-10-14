@@ -132,7 +132,12 @@ class AndroidFiioJa11UsbTransport(
         )
     }
 
-    override suspend fun saveToFlash(): Boolean {
+    override suspend fun saveToFlash(): Boolean = saveWithLifecycle(FiioJa11Protocol.saveToFlashReport())
+
+    override suspend fun saveCurrentSettings(program: FiioJa11Protocol.EqProgram): Boolean =
+        saveWithLifecycle(FiioJa11Protocol.saveCurrentSettingsReport(program))
+
+    private suspend fun saveWithLifecycle(report: ByteArray): Boolean {
         val previousGeneration = hid.sessionGeneration
         val previousDetachGeneration = hid.detachGeneration
         val previousSerial = hid.connectedDeviceSerial
@@ -140,7 +145,7 @@ class AndroidFiioJa11UsbTransport(
         savePreviousDetachGeneration = previousDetachGeneration
         savePreviousSerial = previousSerial
         awaitingLateSaveDetach = false
-        if (!sendReport(FiioJa11Protocol.saveToFlashReport())) return false
+        if (!sendReport(report)) return false
 
         // Observe USB state changes through the bounded post-Save window. A detected detach must
         // complete on a fresh unique session before final readback; a stable session is retained

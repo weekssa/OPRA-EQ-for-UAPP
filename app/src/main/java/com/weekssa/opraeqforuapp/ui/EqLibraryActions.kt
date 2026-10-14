@@ -66,6 +66,7 @@ class EqLibraryActions(
     val onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
     val onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     val onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
+    val onDismissFiioJa11SettingsSaveReport: () -> Unit = {},
     val onFlashFiioJa11FromMyDac: suspend (OpraEqProfile) -> String,
     val onResetFiioJa11FromMyDac: suspend () -> String,
     val onFlashEw300FromMyDac: (OpraEqProfile) -> Unit,

@@ -21,6 +21,12 @@ evidence for visible same-process EQ/DEVICE convergence and the recorded UI/clea
 does not change any per-setting capability classification below. J029 remains the accepted ordered
 User 1 EQ/global-gain transaction and power-cycle evidence for its own exact tuple.
 
+The isolated `codex/ja11-settings-persistence-beta` branch is testing a separate package in which
+changed DEVICE volume Apply and EQ-program selection send one program-aware native Save. This
+beta-only implementation is not part of published 0.8.2, has no accepted physical result yet, and
+does not change the runtime-only classifications below. Preserve that boundary until an exact beta
+candidate passes owner-led power-cycle testing and its evidence is appended to the ledger.
+
 The 2026-10-12 v0.8.1 capability disposition below is retained as historical release context.
 
 The final proven capability matrix is:

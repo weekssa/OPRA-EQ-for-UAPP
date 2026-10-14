@@ -141,6 +141,7 @@ internal fun DeviceOperationStatusHeader(
     busy: Boolean,
     onRefresh: () -> Unit,
     controlName: (DacControlId) -> String,
+    statusMessage: String? = null,
 ) {
     val presentation = deviceOperationStatusPresentation(
         isReading = isReading,
@@ -152,6 +153,7 @@ internal fun DeviceOperationStatusHeader(
         controlName = controlName,
     )
     val supportingText = when {
+        statusMessage != null -> "Keep the DAC connected while the settings are saved and verified."
         presentation.pendingMessage != null -> presentation.pendingMessage
         presentation.staleMessage != null -> presentation.staleMessage
         isWriting || isReading -> "Checking device settings…"
@@ -169,7 +171,7 @@ internal fun DeviceOperationStatusHeader(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = presentation.heading,
+                text = statusMessage ?: presentation.heading,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )

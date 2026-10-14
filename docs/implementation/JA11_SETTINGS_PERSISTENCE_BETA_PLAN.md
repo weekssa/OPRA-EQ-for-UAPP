@@ -1,10 +1,10 @@
 # JA11 native settings Save beta — Luna High execution handoff
 
-Status: **PLAN READY; IMPLEMENTATION, BUILD, CI AND PHYSICAL ACCEPTANCE NOT RUN.**
+Status: **EXECUTION IN PROGRESS; implementation, local checks, CI, and physical acceptance remain separately gated.**
 Owner-approved scope: 2026-10-13. This document supersedes this chat's earlier Set as default button and UAC round-trip proposals.
-The current task creates this handoff only. The Luna worker conducts implementation and builds.
+This text originated as a planning handoff. The active user request explicitly directs execution of this plan in the prepared worktree; that request supersedes the original handoff-only instruction below.
 
-Handoff verification: independent read-only plan review **PASS** after clarifying bank-identity limits, the beta-only report path, and final-APK emulator verification. Document scope/format checks passed; these are planning checks, not software or hardware acceptance. The isolated branch contains this one uncommitted Markdown addition; the original checkout remains clean.
+Planning verification: independent read-only plan review **PASS** after clarifying bank-identity limits, the beta-only report path, and final-APK emulator verification. Document scope/format checks were planning checks, not software or hardware acceptance. Execution state and evidence are maintained in [`ja11-settings-persistence-beta/STATE.md`](ja11-settings-persistence-beta/STATE.md) and [`ja11-settings-persistence-beta/ARTIFACTS.md`](ja11-settings-persistence-beta/ARTIFACTS.md).
 
 ## 1. Intake, authority, and exact starting state
 

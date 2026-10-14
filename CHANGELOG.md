@@ -6,6 +6,10 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### Private FiiO JA11 beta
+
+- A separate, test-signed beta candidate is being prepared to Save changed DEVICE volume and EQ-program selections together. This is not in the stable app and does not change the published runtime-only classifications. Physical persistence remains unqualified until an exact candidate is tested and documented.
+
 ## [0.8.2] - 2026-10-13
 
 ### FiiO JA11 reconnect and Flash completion

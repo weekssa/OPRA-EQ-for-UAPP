@@ -115,6 +115,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
     val fiioJa11ControlRepository = FiioJa11ControlRepository(
         source = SessionFiioJa11DeviceControlSource(dacSessionRepository),
         operationGate = FiioJa11SessionOperationGate(dacSessionRepository),
+        sourceCommit = BuildConfig.CANDIDATE_SOURCE_SHA,
     )
     val ew300GainStateStore = Ew300GainStatePreferences(appContext)
     val hardwareRepository = HardwareEqRepository(
@@ -164,6 +165,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             dacControlRepository = dacControlRepository,
             fiioJa11ControlRepository = fiioJa11ControlRepository,
             hardwareRepository = hardwareRepository,
+            ja11SettingsPersistenceBetaEnabled = BuildConfig.JA11_SETTINGS_PERSISTENCE_BETA_ENABLED,
         ),
         unclaimedEqRepository = unclaimedEqRepository,
     )

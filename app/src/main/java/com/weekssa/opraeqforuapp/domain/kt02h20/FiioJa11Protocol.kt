@@ -171,6 +171,9 @@ object FiioJa11Protocol {
     fun saveToFlashReport(): ByteArray =
         wire(byteArrayOf(SET_1.b(), SET_2.b(), 0, 0, CMD_SAVE.b(), 1, 3, 0, FOOTER.b()))
 
+    fun saveCurrentSettingsReport(program: EqProgram): ByteArray =
+        wire(byteArrayOf(SET_1.b(), SET_2.b(), 0, 0, CMD_SAVE.b(), 1, program.code.b(), 0, FOOTER.b()))
+
     fun outputVolumeFromResponse(report: ByteArray): Int? =
         oneByteValueFromResponse(report, CMD_OUTPUT_VOLUME)
             ?.takeIf { it in MIN_OUTPUT_VOLUME..MAX_OUTPUT_VOLUME }

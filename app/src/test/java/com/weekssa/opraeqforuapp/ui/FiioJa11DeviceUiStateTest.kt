@@ -75,6 +75,17 @@ class FiioJa11DeviceUiStateTest {
         assertFalse(failed.isCurrentSession)
     }
 
+    @Test
+    fun compositeSettingsSaveRemainsBusyAcrossExpectedDetach() {
+        val stale = FiioJa11DeviceUiState(snapshot = snapshot(7L), isCurrentSession = true)
+            .beginSettingsSave()
+            .markStale()
+
+        assertTrue(stale.isBusy)
+        assertTrue(stale.isSavingSettings)
+        assertFalse(stale.isCurrentSession)
+    }
+
     private fun snapshot(sessionGeneration: Long): FiioJa11DeviceSnapshot = FiioJa11DeviceSnapshot(
         sessionGeneration = sessionGeneration,
         usbProductId = FiioJa11Protocol.PRODUCT_ID_UAC_2,

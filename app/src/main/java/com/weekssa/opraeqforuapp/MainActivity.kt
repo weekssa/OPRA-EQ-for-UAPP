@@ -170,6 +170,7 @@ class MainActivity : ComponentActivity() {
         onSetFiioJa11EqProgram = viewModel::setFiioJa11EqProgram,
         onSetFiioJa11HeadsetControl = viewModel::setFiioJa11HeadsetControl,
         onSetFiioJa11UacMode = viewModel::setFiioJa11UacMode,
+        onDismissFiioJa11SettingsSaveReport = viewModel::dismissFiioJa11SettingsSaveReport,
         onFlashFiioJa11FromMyDac = { profile ->
             resolve(viewModel.flashFiioJa11FromMyDac(profile))
         },

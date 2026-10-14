@@ -934,3 +934,17 @@ Public release [v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag
 J031 is PASS_WITH_LIMITS for the exact signed candidate and original Explorer/LoboNautics managed-profile route: the owner performed one Flash, same-process visible EQ and DEVICE state converged, editing/navigation worked, observed baseline values were unchanged, and cleanup completed. The phone was released. Raw USB packet/write/Save/replay counts, internal session generations, and ViewModel identity remain unmeasured. Generic descriptor data and the non-unique profile fingerprint do not establish same-unit continuity. No further phone action or broader hardware/persistence claim is made. Previous v0.8.1 status and historical release records remain preserved as history.
 
 The updated README, changelog, release checklist, JA11 status, capability matrix, and append-only validation ledger identify v0.8.2 as current and retain J031's exact evidence limits. Full public asset digests and artifact provenance are recorded in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`. Rollback to v0.8.1 is documented there as a separate recovery path; local data should be exported/backed up through the app's supported flows before attempting a downgrade or uninstall/reinstall.
+
+## 2026-10-13 private JA11 settings persistence beta execution
+
+The owner authorized execution of `docs/implementation/JA11_SETTINGS_PERSISTENCE_BETA_PLAN.md`
+inside the prepared `codex/ja11-settings-persistence-beta` worktree. The plan's opening
+handoff-only sentence described its original planning task and is superseded by the current explicit
+execution request. Scope remains only volume Apply and DEVICE EQ-program selection in the separate
+`ja11Beta` package; no production or public support claim follows. Executable implementation,
+software gates, independent review, exact-head checks, and the private APK are tracked in
+`docs/implementation/ja11-settings-persistence-beta/STATE.md` and `ARTIFACTS.md`. Do not contact
+the phone, connect, or install until those off-phone gates pass and the owner confirms the phone is
+ready with wireless debugging enabled. The owner performs normal hardware testing manually. Keep
+published v0.8.2 and historical capability evidence unchanged. Preserve the recorded normal Android
+CI manifest failure; use the plan's exact-head fallback after freezing and pushing the beta source.
