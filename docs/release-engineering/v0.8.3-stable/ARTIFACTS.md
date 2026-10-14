@@ -53,7 +53,7 @@ All public downloads matched the asset SHA-256 returned by GitHub. APK download 
 
 Tag `v0.8.3` is annotated at object `1a584839b699ce2f0ff447582719fbeb19915392` and peels to main source `899755507f812c940f3ab9381a856c80c6030885`. The public release page is https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.3; `/releases/latest` returns release ID `413252769`, tag `v0.8.3`, immutable `true`, draft `false`, prerelease `false`. The release body matches `docs/releases/v0.8.3.md`.
 
-Do not create the stable tag or publish manually. Use the main-only Signed Release Candidate and Promote Signed Release Candidate workflows. Promotion must reuse the exact signed artifact and verify that main has not moved. Complete the empty fields from workflow and public readback evidence before marking this record complete.
+For future releases, do not create stable tags or publish manually. Use the main-only Signed Release Candidate and Promote Signed Release Candidate workflows; promotion must reuse the exact signed artifact and verify that main has not moved. This v0.8.3 record is complete from the workflow and public readback evidence above.
 
 ## Owner authorization and evidence boundary
 
