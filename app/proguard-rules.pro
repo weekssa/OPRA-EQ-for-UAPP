@@ -1,1 +1,4 @@
-# Project-specific R8/ProGuard rules will be added only when required.
+# AndroidX Test's instrumentation runner calls the platform-independent tracing
+# facade from its test process. Keep the facade in the tested app package so
+# the runner can resolve its shared runtime dependency on API 26.
+-keep class androidx.tracing.** { *; }
