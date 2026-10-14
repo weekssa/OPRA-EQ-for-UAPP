@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
@@ -13,6 +14,8 @@ import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlReadResult
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlWriteResult
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsResult
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -429,7 +432,9 @@ class EqLibraryViewModel(
     )
 
     init {
-        viewModelScope.launch { updateCoordinator.initialize() }
+        viewModelScope.launch {
+            if (BuildConfig.UPDATE_CHECKS_ENABLED) updateCoordinator.initialize()
+        }
         viewModelScope.launch {
             catalogRepository.initialize()
             (catalogRepository.state.value as? CatalogState.Ready)?.let { ready ->
@@ -495,6 +500,33 @@ class EqLibraryViewModel(
         FiioJa11DeviceControls.EQ_PROGRAM,
         DacControlValue.Discrete(program.name.lowercase()),
     )
+
+    fun setFiioJa11Defaults(request: FiioJa11DefaultsRequest) {
+        val state = mutableFiioJa11DeviceState.value
+        if (state.isBusy || !state.isCurrentSession) return
+        mutableFiioJa11DeviceState.value = state.beginDefaultsSave()
+        viewModelScope.launch {
+            when (val result = fiioJa11ControlRepository.setDefaults(request)) {
+                is FiioJa11DefaultsResult.Verified -> {
+                    mutableFiioJa11DeviceState.value = state.defaultsVerified(result.snapshot, result.report)
+                    android.util.Log.i("Ja11Defaults", "candidate=${BuildConfig.CANDIDATE_SOURCE_SHA} operationId=${result.report.operationId} stage=${result.report.stage} volumeWrites=${result.report.counts.volumeWrites} programWrites=${result.report.counts.programWrites} micWrites=${result.report.counts.micWrites} uacWrites=0 eqBandWrites=0 eqGainWrites=0 applyWrites=0 saveWrites=0 eqBankReadback=${result.report.eqReadback} finalVolume=${result.snapshot.outputVolume} finalProgram=${result.snapshot.eqProgram} finalMic=${result.snapshot.headsetControlEnabled}")
+                }
+                is FiioJa11DefaultsResult.ReviewChanged -> {
+                    mutableFiioJa11DeviceState.value = state.readSuccess(result.snapshot).copy(
+                        error = "JA11 settings changed after review. Check the current volume and EQ program, then review again.",
+                    )
+                }
+                is FiioJa11DefaultsResult.Failed -> {
+                    val report = result.report
+                    android.util.Log.e("Ja11Defaults", "candidate=${BuildConfig.CANDIDATE_SOURCE_SHA} operationId=${report.operationId} stage=${report.stage} volumeWrites=${report.counts.volumeWrites} programWrites=${report.counts.programWrites} micWrites=${report.counts.micWrites} detail=${report.detail}")
+                    mutableFiioJa11DeviceState.value.defaultsFailure(
+                        "Defaults were not verified (${report.stage}). Do not retry until the JA11 state has been read and reviewed.", report,
+                        lastVerifiedSnapshot = report.lastVerifiedSnapshot ?: mutableFiioJa11DeviceState.value.snapshot,
+                    )
+                }
+            }
+        }
+    }
 
     fun setFiioJa11HeadsetControl(enabled: Boolean) = writeFiioJa11Control(
         FiioJa11DeviceControls.HEADSET_CONTROL,
@@ -1734,7 +1766,8 @@ class EqLibraryViewModel(
         return exportWithInvalidation { exportRepository.exportSelected(treeUri, exportRecords, device) }
     }
 
-    suspend fun checkForUpdates(): AppUpdateCheckResult = updateCoordinator.checkNow()
+    suspend fun checkForUpdates(): AppUpdateCheckResult =
+        if (BuildConfig.UPDATE_CHECKS_ENABLED) updateCoordinator.checkNow() else AppUpdateCheckResult.Unavailable
     suspend fun dismissUpdate(version: String) = preferencesRepository.dismissUpdate(version)
     suspend fun dismissPostUpdate() = preferencesRepository.dismissPostUpdateCard()
 

@@ -6,6 +6,11 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### FiiO JA11 defaults beta
+
+- Stage volume and EQ program changes locally. Runtime Apply stays separate from explicit Set as Default, which confirms the reviewed pair and verifies it through the bounded Mic reconnect sequence.
+- Keep confirmation, Mic restoration, reconnect and readback status truthful. The defaults operation issues no EQ Save, EQ-band, EQ Apply or UAC write; stored User 1 EQ data is outside this readback and persistence qualification remains pending.
+
 ## [0.8.2] - 2026-10-13
 
 ### FiiO JA11 reconnect and Flash completion

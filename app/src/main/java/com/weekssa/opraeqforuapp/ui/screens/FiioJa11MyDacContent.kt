@@ -47,6 +47,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
@@ -67,6 +68,7 @@ internal fun FiioJa11MyDacContent(
     onReadDeviceControls: () -> Unit,
     onSetOutputVolume: (Int) -> Unit,
     onSetEqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
+    onSetDefaults: (FiioJa11DefaultsRequest) -> Unit = {},
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetEq: suspend () -> String,
@@ -232,6 +234,7 @@ internal fun FiioJa11MyDacContent(
                 onReadFiioJa11DeviceControls = onReadDeviceControls,
                 onSetFiioJa11OutputVolume = onSetOutputVolume,
                 onSetFiioJa11EqProgram = onSetEqProgram,
+                onSetFiioJa11Defaults = onSetDefaults,
                 onSetFiioJa11HeadsetControl = onSetHeadsetControl,
                 onSetFiioJa11UacMode = onSetUacMode,
                 fiioJa11OperationBusy = operationStatus is FiioJa11OperationStatus.Running,

@@ -10,6 +10,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
@@ -64,6 +65,7 @@ class EqLibraryActions(
     val onReadFiioJa11DeviceControls: () -> Unit,
     val onSetFiioJa11OutputVolume: (Int) -> Unit,
     val onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
+    val onSetFiioJa11Defaults: (FiioJa11DefaultsRequest) -> Unit,
     val onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     val onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     val onFlashFiioJa11FromMyDac: suspend (OpraEqProfile) -> String,

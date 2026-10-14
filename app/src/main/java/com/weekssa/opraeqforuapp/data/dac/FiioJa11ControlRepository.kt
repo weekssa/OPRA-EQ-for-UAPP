@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValidation
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
@@ -28,6 +29,7 @@ interface FiioJa11DeviceControlSource {
     suspend fun readFirmwareVersion(): String?
     suspend fun readHeadsetControlEnabled(): Boolean?
     suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
+    suspend fun readEqSnapshot(): HardwareEqSnapshotBundle? = null
     suspend fun readUacMode(): FiioJa11Protocol.UacMode?
     suspend fun writeOutputVolume(level: Int): Boolean
     suspend fun writeHeadsetControlEnabled(enabled: Boolean): Boolean
@@ -50,6 +52,75 @@ data class FiioJa11PendingRestartWrite(
     val previousDeviceSerial: String?,
     val baseline: FiioJa11DeviceSnapshot,
 )
+
+enum class FiioJa11DefaultsStage {
+    BASELINE,
+    REVIEW_CURRENTNESS,
+    TARGET_WRITE,
+    TARGET_VERIFY,
+    MIC_TO_OPPOSITE,
+    FIRST_REPLACEMENT,
+    MIC_RESTORE,
+    SECOND_REPLACEMENT,
+    FINAL_VERIFY,
+    COMPLETE,
+}
+
+data class FiioJa11DefaultsWriteCounts(
+    val volumeWrites: Int = 0,
+    val programWrites: Int = 0,
+    val micWrites: Int = 0,
+    val uacWrites: Int = 0,
+    val eqBandWrites: Int = 0,
+    val eqGainWrites: Int = 0,
+    val eqApplyWrites: Int = 0,
+    val eqSaveWrites: Int = 0,
+) {
+    init {
+        require(volumeWrites in 0..1 && programWrites in 0..1 && micWrites in 0..2)
+        require(uacWrites == 0 && eqBandWrites == 0 && eqGainWrites == 0 && eqApplyWrites == 0 && eqSaveWrites == 0)
+    }
+}
+
+data class FiioJa11DefaultsOperationReport(
+    val operationId: String,
+    val stage: FiioJa11DefaultsStage,
+    val originalMicEnabled: Boolean?,
+    val requestedVolume: Int,
+    val requestedProgram: FiioJa11Protocol.EqProgram,
+    val counts: FiioJa11DefaultsWriteCounts,
+    val lastVerifiedSnapshot: FiioJa11DeviceSnapshot?,
+    val eqReadback: FiioJa11DefaultsEqReadback = FiioJa11DefaultsEqReadback.UNAVAILABLE,
+    val detail: String? = null,
+)
+
+enum class FiioJa11DefaultsEqReadback { MATCHED, CHANGED, UNAVAILABLE }
+
+sealed interface FiioJa11DefaultsResult {
+    data class Verified(val snapshot: FiioJa11DeviceSnapshot, val report: FiioJa11DefaultsOperationReport) : FiioJa11DefaultsResult
+    data class ReviewChanged(val snapshot: FiioJa11DeviceSnapshot) : FiioJa11DefaultsResult
+    data class Failed(val report: FiioJa11DefaultsOperationReport) : FiioJa11DefaultsResult
+}
+
+data class FiioJa11DefaultsRequest(
+    val reviewedSnapshot: FiioJa11DeviceSnapshot,
+    val requestedVolume: Int,
+    val requestedProgram: FiioJa11Protocol.EqProgram,
+    val targetControlId: DacControlId,
+) {
+    init {
+        require(requestedVolume in FiioJa11Protocol.MIN_OUTPUT_VOLUME..FiioJa11Protocol.MAX_OUTPUT_VOLUME)
+        require(targetControlId == FiioJa11DeviceControls.OUTPUT_VOLUME ||
+            targetControlId == FiioJa11DeviceControls.EQ_PROGRAM)
+        require(
+            if (targetControlId == FiioJa11DeviceControls.OUTPUT_VOLUME) {
+                requestedProgram == reviewedSnapshot.eqProgram
+            } else {
+                requestedVolume == reviewedSnapshot.outputVolume
+            },
+        )
+    }
+}
 
 sealed interface FiioJa11ControlWriteResult {
     data class Verified(
@@ -95,6 +166,202 @@ class FiioJa11ControlRepository(
     private val source: FiioJa11DeviceControlSource,
     private val operationGate: DacOperationGate = MutexDacOperationGate(),
 ) {
+    /** Runs one explicitly confirmed defaults operation while holding the shared JA11 gate. */
+    suspend fun setDefaults(request: FiioJa11DefaultsRequest): FiioJa11DefaultsResult =
+        operationGate.withExclusiveOperation {
+            setDefaultsUnlocked(request)
+        }
+
+    private suspend fun setDefaultsUnlocked(request: FiioJa11DefaultsRequest): FiioJa11DefaultsResult {
+        val operationId = java.util.UUID.randomUUID().toString()
+        var stage = FiioJa11DefaultsStage.BASELINE
+        var baseline: FiioJa11DeviceSnapshot? = null
+        var originalMic: Boolean? = null
+        var counts = FiioJa11DefaultsWriteCounts()
+
+        fun failed(detail: String, snapshot: FiioJa11DeviceSnapshot? = baseline): FiioJa11DefaultsResult.Failed =
+            FiioJa11DefaultsResult.Failed(
+                FiioJa11DefaultsOperationReport(
+                    operationId = operationId,
+                    stage = stage,
+                    originalMicEnabled = originalMic,
+                    requestedVolume = request.requestedVolume,
+                    requestedProgram = request.requestedProgram,
+                    counts = counts,
+                    lastVerifiedSnapshot = snapshot,
+                    detail = detail,
+                ),
+            )
+
+        stage = FiioJa11DefaultsStage.REVIEW_CURRENTNESS
+        val current = when (val result = readSnapshotUnlocked()) {
+            is FiioJa11ControlReadResult.Success -> result.snapshot
+            FiioJa11ControlReadResult.NotConnected -> return failed("JA11 is not connected to one current supported session.", null)
+            FiioJa11ControlReadResult.SessionChanged -> return failed("The JA11 session changed while checking the reviewed defaults.", null)
+            is FiioJa11ControlReadResult.ReadFailed -> return failed("Could not read ${result.field} before saving defaults.", null)
+        }
+        if (current.sessionGeneration != request.reviewedSnapshot.sessionGeneration ||
+            !sameRelevantState(current, request.reviewedSnapshot)
+        ) return FiioJa11DefaultsResult.ReviewChanged(current)
+
+        // Keep both optional EQ reads inside the same shared operation gate as the defaults
+        // transaction. This makes any comparison attributable to this operation's reconnects.
+        val initialEqSnapshot = if (current.eqProgram == FiioJa11Protocol.EqProgram.USER_1) {
+            source.readEqSnapshot()?.takeIf {
+                it.snapshot.sessionGeneration == current.sessionGeneration &&
+                    it.snapshot.activeProgram == FiioJa11Protocol.EqProgram.USER_1
+            }
+        } else null
+        baseline = current
+        originalMic = current.headsetControlEnabled
+
+        val originalVolume = current.outputVolume
+        val originalProgram = current.eqProgram
+        val originalMicValue = current.headsetControlEnabled
+        stage = FiioJa11DefaultsStage.TARGET_WRITE
+        if (request.requestedVolume != originalVolume) {
+            counts = counts.copy(volumeWrites = 1)
+            if (!source.writeOutputVolume(request.requestedVolume)) return failed("The requested volume write was not confirmed.")
+        }
+        if (request.requestedProgram != originalProgram) {
+            if (!source.isSessionCurrent(current.sessionGeneration)) {
+                return failed("The JA11 session changed before the requested program could be written.")
+            }
+            counts = counts.copy(programWrites = 1)
+            if (!source.writeEqProgram(request.requestedProgram)) return failed("The requested EQ program write was not confirmed.")
+        }
+
+        stage = FiioJa11DefaultsStage.TARGET_VERIFY
+        val afterTarget = when (val result = readSnapshotForGeneration(current.sessionGeneration)) {
+            is FiioJa11ControlReadResult.Success -> result.snapshot
+            else -> return failed("The runtime volume/program pair could not be verified before saving defaults.")
+        }
+        if (afterTarget.outputVolume != request.requestedVolume ||
+            afterTarget.eqProgram != request.requestedProgram ||
+            !sameCompanions(current, afterTarget)
+        ) return failed("The runtime pair or a companion setting changed before persistence.", afterTarget)
+        baseline = afterTarget
+
+        val temporaryMic = !requireNotNull(originalMic)
+        stage = FiioJa11DefaultsStage.MIC_TO_OPPOSITE
+        val firstGeneration = source.sessionGeneration
+        val firstDetach = source.detachGeneration
+        val firstSerial = source.connectedDeviceSerial?.trim()?.takeIf(String::isNotEmpty)
+        if (!source.isSessionCurrent(firstGeneration) || source.supportedCandidateCount != 1) {
+            return failed("The JA11 session was no longer current before the microphone transition.")
+        }
+        counts = counts.copy(micWrites = 1)
+        if (!source.writeHeadsetControlEnabled(temporaryMic)) return failed("The first microphone transition was not confirmed.")
+
+        stage = FiioJa11DefaultsStage.FIRST_REPLACEMENT
+        if (!awaitReplacement(firstGeneration, firstDetach, firstSerial)) {
+            return failed("The first microphone reconnect could not be verified.")
+        }
+        val afterFirstRestart = when (val result = readSnapshotUnlocked()) {
+            is FiioJa11ControlReadResult.Success -> result.snapshot
+            else -> return failed("The first replacement session could not be read.")
+        }
+        if (afterFirstRestart.headsetControlEnabled != temporaryMic ||
+            afterFirstRestart.outputVolume != request.requestedVolume ||
+            afterFirstRestart.eqProgram != request.requestedProgram ||
+            !sameCompanionsAfterRestart(current, afterFirstRestart)
+        ) return failed("The first replacement session did not verify the requested pair and unchanged companions.", afterFirstRestart)
+        baseline = afterFirstRestart
+
+        stage = FiioJa11DefaultsStage.MIC_RESTORE
+        val secondGeneration = source.sessionGeneration
+        val secondDetach = source.detachGeneration
+        val secondSerial = source.connectedDeviceSerial?.trim()?.takeIf(String::isNotEmpty)
+        if (!source.isSessionCurrent(secondGeneration) || source.supportedCandidateCount != 1) {
+            return failed("The first replacement session was no longer current before restoring the microphone.")
+        }
+        counts = counts.copy(micWrites = 2)
+        if (!source.writeHeadsetControlEnabled(originalMicValue)) return failed("Microphone restoration was not confirmed.")
+
+        stage = FiioJa11DefaultsStage.SECOND_REPLACEMENT
+        if (!awaitReplacement(secondGeneration, secondDetach, secondSerial)) {
+            return failed("The microphone restoration reconnect could not be verified.")
+        }
+        val finalSnapshot = when (val result = readSnapshotUnlocked()) {
+            is FiioJa11ControlReadResult.Success -> result.snapshot
+            else -> return failed("The final replacement session could not be read.")
+        }
+        stage = FiioJa11DefaultsStage.FINAL_VERIFY
+        if (finalSnapshot.outputVolume != request.requestedVolume ||
+            finalSnapshot.eqProgram != request.requestedProgram ||
+            finalSnapshot.headsetControlEnabled != originalMic ||
+            !sameCompanionsAfterRestart(current, finalSnapshot)
+        ) return failed("Final defaults or original microphone state did not verify.", finalSnapshot)
+
+        val finalEqSnapshot = if (finalSnapshot.eqProgram == FiioJa11Protocol.EqProgram.USER_1) {
+            source.readEqSnapshot()?.takeIf {
+                it.snapshot.sessionGeneration == finalSnapshot.sessionGeneration &&
+                    it.snapshot.activeProgram == FiioJa11Protocol.EqProgram.USER_1
+            }
+        } else null
+        val eqReadback = if (initialEqSnapshot != null && finalEqSnapshot != null) {
+            if (initialEqSnapshot.fingerprint == finalEqSnapshot.fingerprint) {
+                FiioJa11DefaultsEqReadback.MATCHED
+            } else {
+                FiioJa11DefaultsEqReadback.CHANGED
+            }
+        } else {
+            FiioJa11DefaultsEqReadback.UNAVAILABLE
+        }
+
+        stage = FiioJa11DefaultsStage.COMPLETE
+        val report = FiioJa11DefaultsOperationReport(
+            operationId = operationId,
+            stage = stage,
+            originalMicEnabled = originalMic,
+            requestedVolume = request.requestedVolume,
+            requestedProgram = request.requestedProgram,
+            counts = counts,
+            lastVerifiedSnapshot = finalSnapshot,
+            eqReadback = eqReadback,
+        )
+        return FiioJa11DefaultsResult.Verified(finalSnapshot, report)
+    }
+
+    private suspend fun awaitReplacement(generation: Long, detach: Long, serial: String?): Boolean =
+        source.awaitExpectedReplacementSession(
+            previousGeneration = generation,
+            previousDetachGeneration = detach,
+            previousSerial = serial,
+            timeoutMillis = EXPECTED_REPLACEMENT_TIMEOUT_MILLIS,
+        ) && source.sessionGeneration != generation &&
+            source.detachGeneration != detach && source.supportedCandidateCount == 1 &&
+            source.isSessionCurrent(source.sessionGeneration)
+
+    private suspend fun readSnapshotForGeneration(generation: Long): FiioJa11ControlReadResult {
+        if (!source.isSessionCurrent(generation) || source.sessionGeneration != generation) {
+            return FiioJa11ControlReadResult.SessionChanged
+        }
+        val result = readSnapshotUnlocked()
+        return if (result is FiioJa11ControlReadResult.Success && result.snapshot.sessionGeneration != generation) {
+            FiioJa11ControlReadResult.SessionChanged
+        } else result
+    }
+
+    private fun sameRelevantState(a: FiioJa11DeviceSnapshot, b: FiioJa11DeviceSnapshot): Boolean =
+        a.usbProductId == b.usbProductId &&
+            a.firmwareVersion == b.firmwareVersion &&
+            a.outputVolume == b.outputVolume &&
+            a.headsetControlEnabled == b.headsetControlEnabled &&
+            a.eqProgram == b.eqProgram &&
+            a.uacMode == b.uacMode
+
+    private fun sameCompanions(before: FiioJa11DeviceSnapshot, after: FiioJa11DeviceSnapshot): Boolean =
+        before.firmwareVersion == after.firmwareVersion &&
+            before.headsetControlEnabled == after.headsetControlEnabled &&
+            before.uacMode == after.uacMode &&
+            before.usbProductId == after.usbProductId
+
+    private fun sameCompanionsAfterRestart(before: FiioJa11DeviceSnapshot, after: FiioJa11DeviceSnapshot): Boolean =
+        before.firmwareVersion == after.firmwareVersion &&
+            before.uacMode == after.uacMode &&
+            before.usbProductId == after.usbProductId
+
     suspend fun readSnapshot(): FiioJa11ControlReadResult =
         operationGate.withExclusiveOperation { readSnapshotUnlocked() }
 
@@ -386,6 +653,7 @@ class SessionFiioJa11DeviceControlSource(
     override suspend fun readFirmwareVersion(): String? = sessions.fiioJa11Transport.readFirmwareVersion()
     override suspend fun readHeadsetControlEnabled(): Boolean? = sessions.fiioJa11Transport.readHeadsetControlEnabled()
     override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = sessions.fiioJa11Transport.readEqProgram()
+    override suspend fun readEqSnapshot(): HardwareEqSnapshotBundle? = sessions.readFiioJa11Snapshot()
     override suspend fun readUacMode(): FiioJa11Protocol.UacMode? = sessions.fiioJa11Transport.readUacMode()
     override suspend fun writeOutputVolume(level: Int): Boolean = sessions.fiioJa11Transport.writeOutputVolume(level)
     override suspend fun writeHeadsetControlEnabled(enabled: Boolean): Boolean =

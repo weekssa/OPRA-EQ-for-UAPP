@@ -25,6 +25,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
@@ -110,6 +111,7 @@ fun MyDacRootScreen(
     onReadFiioJa11DeviceControls: () -> Unit,
     onSetFiioJa11OutputVolume: (Int) -> Unit,
     onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
+    onSetFiioJa11Defaults: (FiioJa11DefaultsRequest) -> Unit = {},
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetFiioJa11FromMyDac: suspend () -> String,
@@ -225,6 +227,7 @@ fun MyDacRootScreen(
             onReadDeviceControls = onReadFiioJa11DeviceControls,
             onSetOutputVolume = onSetFiioJa11OutputVolume,
             onSetEqProgram = onSetFiioJa11EqProgram,
+            onSetDefaults = onSetFiioJa11Defaults,
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
             onResetEq = onResetFiioJa11FromMyDac,

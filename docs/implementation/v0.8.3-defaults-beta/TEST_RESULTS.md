@@ -1,0 +1,40 @@
+# v0.8.3 JA11 defaults beta test results
+
+Status: **CURRENT-SOURCE SOFTWARE CHECKS RUN; FINAL CANDIDATE GATES NOT RUN**. This file is append-only by phase; preserve failed results and superseded candidates.
+
+## Evidence matrix
+
+| Decision / gate | Evidence required | Current result | Candidate / limits |
+| --- | --- | --- | --- |
+| Runtime Apply | One changed volume/program write and exact same-session readback; no Save or mic/UAC action | SOFTWARE PASS | Repository/UI tests cover changed-only writes, staged cancellation and runtime Apply callbacks. The defaults source API has no Save/UAC/EQ-band/Apply methods; app-call counts are not USB bus captures. |
+| Staged program and Cancel | All five programs; local highlight distinct from hardware Current; selection/cancel sends zero writes | SOFTWARE PASS | UI covers local Classic staging, Cancel, Apply and confirmation Cancel returning to the staged value on min and modern emulator APIs. Repository tests cover all five program values. |
+| Changed default setting | One target write, target and companion verification, two mic writes with two verified replacements | SOFTWARE PASS / HARDWARE NOT RUN | Repository fixtures pass for changed volume/program and both original mic states. Physical implementation remains unqualified. |
+| Unchanged-current default | Zero target writes; two mic writes; pair shown before commit | SOFTWARE PASS | Repository fixture covers unchanged target; no target write occurs before the mic round trip. |
+| Forbidden-command absence | No `0x19`, `0x20`, `0x15`, `0x17`, `0x18`, helper `0x16`, or extra reset within defaults transaction | SOFTWARE SOURCE/API PASS | Call graph invokes only the target control and mic methods; report counters constrain app-level writes. No USB bus capture is claimed. |
+| Failure safety | Denial/timeout/detach/stale or ambiguous replacement/final mismatch/companion change; no replay or fallback | SOFTWARE PARTIAL | Defaults fixtures cover target rejection/mismatch, both reconnect timeouts, both mic write failures, failed reads on both replacements, identity/cardinality errors on both legs, final mic/volume mismatch, UAC/firmware/PID drift, stale review and serialization. Android USB permission behavior is not simulated. |
+| EQ-bank preservation | Applicable User 1 evidence before/after, without selecting User 1 as a helper | SOFTWARE IMPLEMENTED / PHYSICAL NOT VERIFIED | The repository performs optional read-only snapshots and compares fingerprints inside the shared JA11 operation gate only when both the initial and final current program expose User 1. Otherwise the result is UNAVAILABLE. It never switches programs to inspect the bank and never writes EQ-band data. Any physical run ending in an unavailable comparison leaves preservation unproven and needs an exact-candidate owner evidence exception or a bounded supported plan before a preservation claim. |
+| Existing behavior | JA11 Flash/editor/Reset, v0.8.2 My EQ/session convergence, non-JA11 regression | SOFTWARE PASS / API 26 BROAD SUITE EXCEPTION | Shared JVM and API 35 full UI suites pass. API 26 JA11 UI class passes; three unrelated broad-suite test failures are preserved below. |
+| Build and release | JVM, lint, debug/release/minified beta builds, R8, minimum and modern emulator install/UI | SOFTWARE PASS EXCEPT API 26 BROAD SUITE | Current source package, lint and test compilation gates pass; focused JA11 API 26 and full API 35 UI pass. Exact candidate install/signature checks remain. |
+| Owner hardware session | Wireless ADB install; current identity and baseline; bounded runtime/default checks; original mic restoration; selected physical power cycle | NOT RUN | Wait for readiness after all off-phone gates |
+
+## Run record
+
+- Latest source command `:app:testDebugUnitTest :app:lintDebug :app:lintBeta :app:assembleDebug :app:assembleRelease :app:assembleBeta :app:compileBetaAndroidTestKotlin` passed. This includes transaction tests for matched, changed, unavailable readback, and a final built-in program.
+- Exact current-source `:app:connectedBetaAndroidTest` passed 72/72 on API 35. Exact current-source focused `FiioJa11MyDacContentTest` passed 9/9 on API 26.
+- Preserved broad API 26 `:app:connectedBetaAndroidTest` result: 69/72 passed, 3 failed. Two `SavedEqCanonicalSnapshotMigrationTest` cases failed during legacy fixture setup because API 26 SQLite does not support the fixture's `ALTER TABLE ... DROP COLUMN`; one existing `UiModernizationFlowsTest.dpadNavigatesPersonalEqImportThroughSaveCallbackWithoutHardwareAction` timed out waiting for Compose idle. These are unrelated to JA11 defaults; the owner must explicitly accept a bounded substitute before the phone gate.
+
+## Preserved intermediate run history
+
+- Release-derived Beta build-type validation (uncommitted revision): `:app:testDebugUnitTest` passed after expanded transaction cases; `:app:lintDebug`, `:app:lintBeta`, `:app:assembleDebug`, `:app:assembleRelease`, `:app:assembleBeta`, and `:app:compileBetaAndroidTestKotlin` passed before the last test-only expansion. Beta R8 packaging completed. These are not frozen-candidate evidence.
+- Exact Beta JA11 UI class on API 35: first attempt exposed a missing Compose test activity manifest, then a duplicate-label assertion on restored staged UI. Both harness defects were fixed; rerun passed 9/9. API 26 rerun passed 9/9. These ran the release-derived, minified Beta variant with `local-unqualified` provenance.
+- Latest expanded `:app:testDebugUnitTest` passed after adding rejected target/mic writes, mismatching replacement identity on both legs, ambiguous second replacement, failed readback on both legs, final mic/volume mismatch, UAC/firmware/PID drift, exact app-write order, serialization, volume boundaries and all five program states.
+
+- Focused JA11 test startup initially failed before test execution with Gradle `worker.org.gradle.process.internal.worker.GradleWorkerMain` ClassNotFoundException in the pre-existing Gradle cache. Rerunning with `GRADLE_USER_HOME=/private/tmp/opra-v083-gradle` reached tests.
+- First focused repository run executed 18 tests and exposed two assertions that compared the intentional temporary Mic transition as an unchanged companion. The implementation now checks firmware/UAC/PID across the reconnect while separately verifying the intended Mic state. The focused suite then passed; a later expanded set added changed-program and second-reconnect failure/no-replay cases.
+- Full `:app:testProductionDebugUnitTest :app:testV083BetaDebugUnitTest` passed on the intermediate product-flavor source (`BUILD SUCCESSFUL`, 64 actionable tasks). These are not final-candidate evidence.
+- Intermediate `lintProductionDebug`, `lintV083BetaDebug`, `assembleProductionDebug`, `assembleProductionRelease`, and `assembleV083BetaRelease` all passed. Android-test compilation first failed at three call sites missing a new defaults callback; defaults were added and `:app:compileV083BetaDebugAndroidTestKotlin` then passed. These task names are superseded by the build-type conversion.
+- First API 35 instrumentation run: 7/8 completed, with one selector failure on the EQ option label `Classic`. The selector was changed to substring matching; rerun passed 8/8 with `:app:connectedV083BetaDebugAndroidTest`.
+- API 26 instrumentation on the same intermediate source passed 8/8. The installed intermediate beta and stable debug apps coexisted under distinct package IDs; intermediate beta dump showed `com.weekssa.opraeqforuapp.v083beta`, version `0.8.3-beta.1`, code 14. Direct emulator launch smoke passed after explicit install. No phone or DAC was accessed.
+- Independent reviewer found confirmation-cancel behavior, Mic direction copy and flavor workflow-path issues. The first two have been corrected; product flavors were replaced with a beta build type to preserve existing stable workflow paths. All final-source gates remain pending.
+
+Every later physical record must identify the frozen source SHA and exact APK tuple; never relabel these intermediate results to later documentation or candidate commits.

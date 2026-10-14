@@ -369,43 +369,53 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        val latestVersion = appPreferences.updates.latestVersion
+        val latestVersion = appPreferences.updates.latestVersion.takeIf { BuildConfig.UPDATE_CHECKS_ENABLED }
         val updateAvailable = latestVersion != null &&
             SemVer.parse(latestVersion)?.let { latest ->
                 SemVer.parse(BuildConfig.VERSION_NAME)?.let { installed -> latest > installed }
             } == true
-        when {
-            updateAvailable -> Text(
-                text = "Version $latestVersion is available.",
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.bodyMedium,
+        if (BuildConfig.UPDATE_CHECKS_ENABLED) {
+            when {
+                updateAvailable -> Text(
+                    text = "Version $latestVersion is available.",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                latestVersion != null -> Text(
+                    text = "You’re up to date.",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                else -> Text(
+                    text = "Update status not available yet.",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (BuildConfig.UPDATE_CHECKS_ENABLED) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onCheckForUpdates) { Text("Check for update") }
+                if (latestVersion != null && !appPreferences.updates.releaseNotes.isNullOrBlank()) {
+                    TextButton(onClick = onWhatsNew) { Text("What’s new") }
+                }
+                if (updateAvailable && appPreferences.updates.releaseUrl != null) {
+                    TextButton(onClick = onGetUpdate) { Text("Get update") }
+                }
+            }
+            Text(
+                text = "Updates are downloaded manually from the public GitHub Release page. EQ Library does not silently download or install APKs.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            latestVersion != null -> Text(
-                text = "You’re up to date.",
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            else -> Text(
-                text = "Update status not available yet.",
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.bodyMedium,
+        } else {
+            Text(
+                text = "Beta updates are provided separately from the public release channel.",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onCheckForUpdates) { Text("Check for update") }
-            if (latestVersion != null && !appPreferences.updates.releaseNotes.isNullOrBlank()) {
-                TextButton(onClick = onWhatsNew) { Text("What’s new") }
-            }
-            if (updateAvailable && appPreferences.updates.releaseUrl != null) {
-                TextButton(onClick = onGetUpdate) { Text("Get update") }
-            }
-        }
-        Text(
-            text = "Updates are downloaded manually from the public GitHub Release page. EQ Library does not silently download or install APKs.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
         SectionDivider()
         SectionTitle("Support & information")

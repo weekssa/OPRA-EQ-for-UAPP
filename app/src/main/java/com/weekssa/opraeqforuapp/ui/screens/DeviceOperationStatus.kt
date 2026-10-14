@@ -139,6 +139,7 @@ internal fun DeviceOperationStatusHeader(
     error: String?,
     enabled: Boolean,
     busy: Boolean,
+    operationMessage: String? = null,
     onRefresh: () -> Unit,
     controlName: (DacControlId) -> String,
 ) {
@@ -152,6 +153,7 @@ internal fun DeviceOperationStatusHeader(
         controlName = controlName,
     )
     val supportingText = when {
+        operationMessage != null -> operationMessage
         presentation.pendingMessage != null -> presentation.pendingMessage
         presentation.staleMessage != null -> presentation.staleMessage
         isWriting || isReading -> "Checking device settings…"

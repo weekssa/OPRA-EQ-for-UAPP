@@ -2881,6 +2881,7 @@ private fun noOpEqLibraryActions(
         onReadFiioJa11DeviceControls = {},
         onSetFiioJa11OutputVolume = {},
         onSetFiioJa11EqProgram = {},
+        onSetFiioJa11Defaults = {},
         onSetFiioJa11HeadsetControl = {},
         onSetFiioJa11UacMode = {},
         onFlashFiioJa11FromMyDac = { error("Hardware writes are not part of the app-shell test") },

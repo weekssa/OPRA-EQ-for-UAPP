@@ -15,6 +15,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStage
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
@@ -40,7 +41,7 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText(FIIO_JA11_READABLE_REPORT_LABEL).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(FIIO_JA11_TECHNICAL_REPORT_LABEL).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Flash successful", substring = true).assertDoesNotExist()
+        composeRule.onAllNodesWithText("Flash successful", substring = true).assertCountEquals(0)
     }
 
     @Test
@@ -73,7 +74,7 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText("was not verified", substring = true).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Do not retry", substring = true).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("final readback mismatch", substring = true).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Apply successful", substring = true).assertDoesNotExist()
+        composeRule.onAllNodesWithText("Apply successful", substring = true).assertCountEquals(0)
     }
 
     @Test
@@ -83,7 +84,7 @@ class FiioJa11MyDacContentTest {
         composeRule.mainClock.autoAdvance = false
         composeRule.mainClock.advanceTimeBy(FIIO_JA11_TERMINAL_SUCCESS_EXPIRY_MILLIS + 1L)
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("JA11 Apply verified").assertDoesNotExist()
+        composeRule.onAllNodesWithText("JA11 Apply verified").assertCountEquals(0)
     }
 
     @Test
@@ -93,13 +94,90 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result")
             .performScrollTo()
             .performClick()
-        composeRule.onNodeWithText("JA11 Apply verified").assertDoesNotExist()
+        composeRule.onAllNodesWithText("JA11 Apply verified").assertCountEquals(0)
+    }
+
+    @Test
+    fun stagedVolumeCancelDoesNotWriteAndApplyWritesOnlyRuntimeValue() {
+        var appliedVolume: Int? = null
+        setContentForTrace(editorApplyTrace(), onVolume = { appliedVolume = it })
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Device volume").performClick()
+        composeRule.onNodeWithText("+1").performClick()
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.runOnIdle { assertEquals(null, appliedVolume) }
+
+        composeRule.onNodeWithText("Device volume").performClick()
+        composeRule.onNodeWithText("+1").performClick()
+        composeRule.onNodeWithText("Apply").performClick()
+        composeRule.runOnIdle { assertEquals(21, appliedVolume) }
+    }
+
+    @Test
+    fun setAsDefaultRequiresConfirmationAndCapturesReviewedPair() {
+        var request: FiioJa11DefaultsRequest? = null
+        setContentForTrace(editorApplyTrace(), onDefaults = { request = it })
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Device volume").performClick()
+        composeRule.onNodeWithText("+1").performClick()
+        composeRule.onNodeWithText("Set as Default").performClick()
+        composeRule.onNodeWithText("Confirm and Set Default").assertIsDisplayed()
+        composeRule.onNodeWithText("on, then restore it to off", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("No EQ-band data is written", substring = true).assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(null, request) }
+        composeRule.onNodeWithText("Confirm and Set Default").performClick()
+        composeRule.runOnIdle {
+            assertEquals(21, request?.requestedVolume)
+            assertEquals(FiioJa11Protocol.EqProgram.USER_1, request?.requestedProgram)
+        }
+    }
+
+    @Test
+    fun cancellingDefaultConfirmationReturnsToStagedVolumeWithoutWriting() {
+        var applyCalls = 0
+        var defaultCalls = 0
+        setContentForTrace(
+            editorApplyTrace(),
+            onVolume = { applyCalls += 1 },
+            onDefaults = { defaultCalls += 1 },
+        )
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Device volume").performClick()
+        composeRule.onNodeWithText("+1").performClick()
+        composeRule.onNodeWithText("Set as Default").performClick()
+        composeRule.onNodeWithText("Cancel").performClick()
+
+        composeRule.onAllNodesWithText("Device volume").assertCountEquals(2)
+        composeRule.onNodeWithText("21 / 60").assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(0, applyCalls)
+            assertEquals(0, defaultCalls)
+        }
+    }
+
+    @Test
+    fun eqProgramSelectionStaysLocalUntilApply() {
+        val appliedPrograms = mutableListOf<FiioJa11Protocol.EqProgram>()
+        setContentForTrace(editorApplyTrace(), onProgram = { appliedPrograms += it })
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("EQ program").performClick()
+        composeRule.onNodeWithText("Classic", substring = true).performClick()
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.runOnIdle { assertEquals(emptyList<FiioJa11Protocol.EqProgram>(), appliedPrograms) }
+
+        composeRule.onNodeWithText("EQ program").performClick()
+        composeRule.onNodeWithText("Classic", substring = true).performClick()
+        composeRule.onNodeWithText("Apply").performClick()
+        composeRule.runOnIdle { assertEquals(listOf(FiioJa11Protocol.EqProgram.CLASSIC), appliedPrograms) }
     }
 
     private fun setContentForTrace(
         trace: FiioJa11OperationTrace,
         restorationTester: StateRestorationTester? = null,
         onApply: () -> Unit = {},
+        onVolume: (Int) -> Unit = {},
+        onProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
+        onDefaults: (FiioJa11DefaultsRequest) -> Unit = {},
     ) {
         val bundle = requireNotNull(
             HardwareEqSnapshotFactory.fiioJa11(
@@ -135,8 +213,9 @@ class FiioJa11MyDacContentTest {
                 ),
                 onConnect = {},
                 onReadDeviceControls = {},
-                onSetOutputVolume = {},
-                onSetEqProgram = {},
+                onSetOutputVolume = onVolume,
+                onSetEqProgram = onProgram,
+                onSetDefaults = onDefaults,
                 onSetHeadsetControl = {},
                 onSetUacMode = {},
                 onResetEq = { "" },
