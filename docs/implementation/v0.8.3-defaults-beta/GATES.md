@@ -26,19 +26,19 @@ Scope: Implement and qualify the separate production-quality v0.8.3 JA11 beta fo
   EXPECT: BUILD SUCCESSFUL
   EVIDENCE: exact-source command completed successfully on frozen `7cea454`; app/test APK provenance and exact source embedding are recorded in `ARTIFACTS.md`.
 
-- [ ] G7: Minimum-API and modern emulator install/launch/coexistence/UI instrumentation pass on disposable emulators where available; exact Beta instrumentation exception needs owner acceptance.
+- [x] G7: Emulator UI gate is satisfied by an owner-approved, bounded substitute; original failures remain recorded and are not relabeled as passes.
   CHECK: Exact Beta APK install/launch/coexistence on API 26 and 35; minified `:app:connectedBetaAndroidTest`; same-SHA Debug UI substitute.
   EXPECT: Exact Beta direct launch succeeds. The minified Beta instrumentation failure remains visible and may be substituted only by explicit owner acceptance; proposed substitute is Debug JA11 9/9 on API 26, full Debug 72/72 on API 35, plus direct minified Beta install/launch/coexistence on both. Full Debug API 26 is 68/72 with four unrelated failures; focused JA11 passes 9/9.
-  EVIDENCE: Exact source `7cea454`; Beta launches on both APIs; minified runner fails before test discovery because `androidx.tracing.Trace` is absent; substitute results and all four API 26 failures are in `TEST_RESULTS.md`. Await explicit owner exception.
+  EVIDENCE: Exact source `7cea454`; Beta launches on both APIs; minified runner fails before test discovery because `androidx.tracing.Trace` is absent; substitute results and all four API 26 failures are in `TEST_RESULTS.md`. Owner explicitly accepted the bounded substitution on 2026-10-14 before phone work.
 
 - [x] G8: Independent source/scope review has no unresolved safety finding; live exact-head checks are tied to the frozen candidate.
-  EVIDENCE: Independent architecture review found no product-code blocker after gate-bound EQ readback update. Draft PR #97 head `08acf3104734264aedc6142a54351631fcbfebfd` passed validation, priority-community coverage, dependency submission and `Analyze Kotlin` CodeQL; the separate generic `CodeQL` status is skipped. The PR carries the exact source and candidate evidence.
+  EVIDENCE: Independent architecture review found no product-code blocker after gate-bound EQ readback update. Draft PR #97 exact docs head `2359311c01c64e25c3930ee4af44203aaf059ecc` passed `validate`, `validate-priority-community`, `submit-gradle`, and `Analyze Kotlin` CodeQL; the separate generic `CodeQL` status is skipped. The PR carries the exact source and candidate evidence.
 
 - [x] G9: Private beta app/test APK provenance is frozen: source SHA, package/version/code, signer, digests, build command and test plan.
   EVIDENCE: `ARTIFACTS.md`, frozen source `7cea4545dddbee2da0b436e0684a9c489835e3cd`; exact SHA embedded in the app and test APK BuildConfigs and app DEX.
 
-- [ ] G10: Owner wireless-ADB session completed or stopped at the first failure, with exact beta and app data left installed and actual final settings reported.
-  EVIDENCE: Do not begin until the owner accepts the G7 substitution and confirms phone readiness. No owner device has been touched.
+- [x] G10: Owner wireless-ADB session completed with exact beta and app data left installed; final settings and evidence limits are recorded.
+  EVIDENCE: Owner accepted the G7 substitution, confirmed readiness, authorized USB `Always allow`, and later performed a 10-second physical JA11 power removal on 2026-10-14. Exact Beta v1 APK remains installed on Pixel 9 (API 37), package/version verified, with stable and earlier JA11 beta apps preserved. Runtime-only Apply, staged Cancel and three default transactions are recorded in `TEST_RESULTS.md` and J032 in the validation ledger. Mic restoration and fresh post-power-cycle readback passed for pair 19 / Classic. User 1 EQ comparison and unique device continuity remain unverified; see limits.
 
 - [ ] G11: Owner identifies the installed candidate as passing and directs publication; otherwise remain at the owner checkpoint with the beta installed.
   EVIDENCE: pending

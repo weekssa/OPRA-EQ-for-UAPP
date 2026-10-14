@@ -1,13 +1,13 @@
 # v0.8.3 release checklist
 
-Status: **BETA CANDIDATE FROZEN; OWNER EMULATOR-EXCEPTION DECISION AND PHONE VALIDATION PENDING**
+Status: **BETA CANDIDATE FROZEN; AUTOMATED PHONE PASS WITH LIMITS; OWNER MANUAL ACCEPTANCE/PUBLISH INSTRUCTION PENDING**
 
 - [x] Complete explicit-default behavior in the Beta build and shared stable-source implementation.
-- [ ] Complete off-phone validation. The minified Beta instrumentation suite crashes before test discovery on API 26 and API 35 because `androidx.tracing.Trace` is absent; a same-source Debug substitute is proposed and awaits the owner's explicit acceptance. Preserve the four unrelated API 26 broad-suite failures in `TEST_RESULTS.md`.
-- [ ] Resolve the handoff's User 1 bank-preservation gate with a bounded supported evidence plan or an explicit owner exception tied to the frozen candidate; never infer preservation from the absence of EQ writes.
+- [x] Complete off-phone validation with the owner's bounded exception for the minified Beta instrumentation failure and full API 26 Debug suite; preserve all original failures in `TEST_RESULTS.md`.
+- [ ] User 1 bank comparison remains unavailable for the tested Off/Classic programs. Do not claim bank preservation; the owner must knowingly accept this evidence limit before any broader preservation claim.
 - [x] Freeze the separate Beta v1 identity and private APK provenance; exact APK install/launch and package coexistence pass on API 26 and 35 emulators.
-- [ ] Install/test exact bytes over owner-confirmed wireless ADB after the owner accepts the emulator-gate substitution and confirms phone readiness.
-- [ ] Leave that exact beta and data installed after automated tests; present results and await owner confirmation that this candidate passes and instruction to publish.
+- [x] Install/test exact bytes over owner-confirmed wireless ADB. Runtime Apply, staged Cancel, changed/unchanged defaults, non-User-1 program default, mic restoration, and true power-cycle readback passed for the exact beta tuple with limits recorded in J032.
+- [x] Leave that exact beta and data installed for owner manual testing. Await the owner's identified-candidate pass and instruction to publish v0.8.3.
 - [ ] After that instruction, integrate reviewed source on main and pass exact-main checks.
 - [ ] Generate the official original-package 0.8.3 signed candidate from main; verify signer, package/version/code, R8, digest, alignment and provenance.
 - [ ] Verify stable clean install and v0.8.2 in-place upgrade on disposable emulators.

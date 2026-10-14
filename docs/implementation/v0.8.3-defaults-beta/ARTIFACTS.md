@@ -17,6 +17,6 @@ Beta v1 candidate bytes are frozen for owner review. The physical session is not
 | Signature / alignment / R8 | APK v2 signature verified; `zipalign -c -p 4` passed; `minifyBetaWithR8` and `minifyBetaAndroidTestWithR8` completed |
 | Embedded source identity | APK DEX string and both generated app/test `BuildConfig` files contain `7cea4545dddbee2da0b436e0684a9c489835e3cd` |
 | API 26 / modern install and coexistence | API 26 emulator `emulator-5556` and API 35 emulator `emulator-5554`: exact final beta installed, activity launch returned `Status: ok`; stable and beta package IDs coexist on both |
-| Wireless owner installation | NOT RUN; no phone was probed or modified |
+| Wireless owner installation and JA11 test | Installed 2026-10-14 on Pixel 9 / API 37 after owner-approved gate exception; `Status: ok` cold launch. Three defaults operations plus owner-confirmed physical power-cycle readback passed with limits. Final pair 19 / Classic; mic On; UAC 2.0; firmware 2.20; VID:PID 2972:0102. User 1 EQ comparison unavailable; no bank-preservation claim. Stable 0.8.2 and earlier JA11 beta remain installed. Private evidence: `/private/tmp/ja11-v083-session-20261014/`. |
 
 APK files and the R8 mapping are build outputs, not committed. Do not put private owner reports, raw coefficients, phone identifiers, logs, or screenshots in Git. Store those under a private evidence directory and record only sanitized outcome, safe paths, checksums, and evidence limits here.

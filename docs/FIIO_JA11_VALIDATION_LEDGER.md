@@ -671,3 +671,51 @@ The public release body matches the maintained v0.8.2 notes. Signed API 35 candi
 upgrade checks passed in runs `38475878287` and `38499666593`. Full asset and release metadata
 readbacks are in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`. Earlier J029 and other
 physical records retain their own exact source/APK boundaries.
+
+## 2026-10-14 J032 — v0.8.3 beta explicit defaults and power-cycle readback
+
+The tested application implementation is source `7cea4545dddbee2da0b436e0684a9c489835e3cd`,
+based on `origin/main` `575dab59fe774d3683a3714ca490a334f1b20764`. Exact Beta v1 APK SHA-256 is
+`ac982eafd76f4db80f48e0f26040bf1f849388c4f0a51f778b51c8c013c59ce5`, package
+`com.weekssa.opraeqforuapp.v083beta`, versionName `0.8.3-beta.1`, versionCode `14`, and debug
+signer certificate SHA-256
+`968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4`. The exact test-plan
+document was `docs/implementation/v0.8.3-defaults-beta/EXECUTION_HANDOFF.md`, SHA-256
+`e375559db37a32921f533f734d9c4588908b4ecc25dab8be18c046ce856231f9`. PR #97 was draft; the
+remote documentation head before this ledger closeout was `2359311c01c64e25c3930ee4af44203aaf059ecc`.
+
+The owner-authorized phone was a Pixel 9, Android API 37. The connected target reported FiiO JA11,
+firmware 2.20, VID/PID `0x2972:0x0102`. A unique USB serial/fingerprint was not captured, so no
+same-unit continuity claim is made beyond the sole supported returning JA11. Baseline was volume
+60/60, program Off, mic On, UAC 2.0, sample rate 48 kHz, and EQ Off/Flat.
+
+The exact beta installed and cold-launched successfully alongside the stable v0.8.2 app and the
+earlier JA11 beta; both existing packages/data remained installed. The owner authorized USB
+`Always allow`. Cancelled volume staging at 59 left fresh readback at 60. Staging Classic and
+cancelling left the program Off. Runtime-only Apply changed volume to 20 and fresh readback showed
+20/60, Off, mic On.
+
+Three explicit defaults operations then succeeded. Changed volume default 19 with Off reported
+app write counts volume/program/mic `1/0/2`; unchanged-current volume default 19 with Off reported
+`0/0/2`; non-User-1 Classic default at volume 19 reported `0/1/2`. Each completed with mic restored
+On, requested pair and companions verified, and app status stating no EQ-band data was written.
+These are application-reported counts, not USB bus captures. No native EQ Save, UAC, or EQ-band
+write was used. Each report stated User 1 EQ data could not be compared for these programs.
+
+After the owner physically disconnected JA11 power for 10 seconds and reconnected it, the app
+reacquired a connected supported JA11 and fresh readback showed volume 19/60, program Classic,
+mic On, UAC 2.0, sample rate 384 kHz, firmware 2.20, and VID/PID `0x2972:0x0102`. The selected
+volume/program pair therefore persisted across the observed power removal for this exact beta
+operation and profile. Sample rate changed from 48 kHz to 384 kHz while UAC remained 2.0. Outcome:
+**PASS WITH LIMITS** for this candidate-specific defaults flow; EQ-bank preservation remains
+unverified. Original volume 60 and program Off were intentionally not restored; final state is
+19/Classic, mic On, per the approved test instruction. Final EQ presentation reported last-read
+program Classic; its built-in coefficients are not exposed by maintained JA11 protocol evidence,
+so no response graph was invented. Stable/older beta data was left intact.
+
+Sanitized private session summary SHA-256 is `e5dd5e9d64e8111c0b3e22e1a8d9b319b30014c2754c00003e48cb8f1994815d`.
+Private evidence directory is `/private/tmp/ja11-v083-session-20261014/`; it contains the summary,
+screen/UI hierarchy captures and raw logcats. Final owner-screen screenshot SHA-256 is
+`0a65a27054ac98c078069f1613617322456398efd4df3be5dd2a8c6df648cb0`; matching UI hierarchy SHA-256
+is `a671f1d732ad0ecd6e7424b093aff41578e60999df3567df192fd7c144b14e96`. Raw logs/media, USB/phone
+identifiers and any user data remain outside Git.
