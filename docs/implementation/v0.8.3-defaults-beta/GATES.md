@@ -32,7 +32,7 @@ Scope: Implement and qualify the separate production-quality v0.8.3 JA11 beta fo
   EVIDENCE: Exact source `7cea454`; Beta launches on both APIs; minified runner fails before test discovery because `androidx.tracing.Trace` is absent; substitute results and all four API 26 failures are in `TEST_RESULTS.md`. Await explicit owner exception.
 
 - [x] G8: Independent source/scope review has no unresolved safety finding; live exact-head checks are tied to the frozen candidate.
-  EVIDENCE: Independent architecture review found no product-code blocker after gate-bound EQ readback update. Draft PR #97 validation, priority-community coverage, dependency submission and Kotlin CodeQL checks passed on the initial PR head; final docs-only update rechecks are running.
+  EVIDENCE: Independent architecture review found no product-code blocker after gate-bound EQ readback update. Draft PR #97 head `08acf3104734264aedc6142a54351631fcbfebfd` passed validation, priority-community coverage, dependency submission and `Analyze Kotlin` CodeQL; the separate generic `CodeQL` status is skipped. The PR carries the exact source and candidate evidence.
 
 - [x] G9: Private beta app/test APK provenance is frozen: source SHA, package/version/code, signer, digests, build command and test plan.
   EVIDENCE: `ARTIFACTS.md`, frozen source `7cea4545dddbee2da0b436e0684a9c489835e3cd`; exact SHA embedded in the app and test APK BuildConfigs and app DEX.
