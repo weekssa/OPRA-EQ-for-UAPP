@@ -1,6 +1,6 @@
 # v0.8.3 JA11 defaults beta artifacts
 
-Beta v1 candidate bytes are frozen for owner review. The physical session is not authorized to begin until the owner accepts the emulator instrumentation substitution recorded in `TEST_RESULTS.md` and confirms phone readiness.
+Beta v1 candidate bytes are frozen for owner review. The owner accepted the bounded emulator instrumentation substitution, authorized and completed the physical session, and the exact beta remains installed for manual owner review. Automated physical outcome: PASS WITH LIMITS; see `TEST_RESULTS.md`.
 
 | Field | Beta v1 |
 | --- | --- |
