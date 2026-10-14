@@ -8,26 +8,33 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.8.0** is the current stable public Android release. v0.7.2 is the previous stable release, and the immutable v0.8.0-beta remains historical prerelease evidence.
+**v0.8.2** is the current stable public Android release. v0.8.1 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
 
-[Download EQ Library v0.8.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.0/EQ-Library-v0.8.0.apk).
+[Download EQ Library v0.8.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.2) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.2/EQ-Library-v0.8.2.apk).
 
-- Package: `com.weekssa.opraeqforuapp`; versionName `0.8.0`; versionCode `11`
+- Package: `com.weekssa.opraeqforuapp`; versionName `0.8.2`; versionCode `13`
 - Android 8.0 / API 26 or newer
-- Install over v0.7.2 or v0.8.0-beta to keep local app data
+- Install over v0.8.1 to keep local app data
 - Signed with the project's permanent Android release identity
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
 The public APK SHA-256 is:
 
-`2ea1d4b76a840e7448fddba556c3dc03aba19870eeb2499182af7d5759cce54b`
+`df1ac78e7462da588e01f4aa39f5f23d0c05797d27eb2222d0650ce319c5d6e3`
 
-The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.0/EQ-Library-v0.8.0.apk.sha256) is published with the release.
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.2/EQ-Library-v0.8.2.apk.sha256) is published with the release.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## v0.8.0 highlights
+## v0.8.2 highlights
+
+- My EQs keeps saved items and open headphone detail visible during a brief Automatic-output change on JA11 reconnect.
+- An authorized JA11 Flash completes final verification and refreshes EQ and DEVICE state when its initiating screen is left.
+
+See the [v0.8.2 release notes](docs/releases/v0.8.2.md) for scope, compatibility, and install guidance.
+
+## v0.8.0 product modernization highlights
 
 - My EQs, EQ Library, and Settings are the three persistent app destinations; DAC access stays contextual.
 - Connected hardware and the selected EQ output target are shown separately, with distinct ownership for headphone, General, and Personal EQs.
@@ -36,9 +43,9 @@ Android may ask you to allow installation from the browser or file manager used 
 - UAPP/ToneBoosters export has a review and completion message; the exported file still needs to be imported in USB Audio Player PRO.
 - Settings, What's New, large-text layouts, screen-reader band values, keyboard/D-pad navigation, and safe reset-recovery presentation are improved.
 
-See the [v0.8.0 release notes](docs/releases/v0.8.0.md) for scope and compatibility.
+See the [v0.8.0 release notes](docs/releases/v0.8.0.md) for the original modernization scope.
 
-## v0.7.2 highlights (previous stable)
+## v0.7.2 highlights (historical release)
 
 - Large cached EQ catalogs load from disk without first copying the full catalog into a large in-memory string.
 - Dense response checks catch high-Q peaks missed by the fitting grid before generated headroom or a fitted EQ is accepted.
@@ -236,7 +243,7 @@ The complete release gates and evidence boundaries are recorded in the [v0.7.2 r
 
 The `0.x` line remains pre-1.0 under SemVer and can contain stable public releases. `1.0.0` will mark the first 1.x major release.
 
-## v0.8.0 stable release verification
+## Historical v0.8.0 stable release verification
 
 The public stable release was published from exact merged main `54823e1a464f8b716a32c4f4808037fc0cdd99bd` (tree `e20330e2c4921823ecdf2881db0bf6fa1b3c3c0d`). Official signing run `37769090436` produced artifact `11546549425`; promotion run `37770238047` passed both signed persisted-state upgrade paths and the clean-install/core smoke before publishing. The annotated `v0.8.0` tag and the six public asset digests were independently verified.
 

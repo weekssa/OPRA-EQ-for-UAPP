@@ -10,14 +10,18 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
-The 0.8.2 post-Flash candidate changes app completion ownership and preserves global My EQs rows during output transitions. Hardware controls, native EQ representation, protocol/Save behavior and the capability classifications below remain unchanged. Its new ViewModel-lifetime behavior still requires exact signed-candidate physical acceptance. J030's separate tracing-build healthy control is recorded in the validation ledger and does not qualify the 0.8.2 fix.
+The published 0.8.2 candidate changes app completion ownership and preserves global My EQs rows during output transitions. Hardware controls, native EQ representation, protocol/Save behavior and the capability classifications below remain unchanged. J031 accepted the exact signed candidate for same-process visible EQ/DEVICE convergence, editing/navigation, unchanged observed baseline, and cleanup, with limits recorded in the validation ledger. Raw mutation/replay telemetry, internal generations, ViewModel identity, unique same-unit continuity, and any additional persistence behavior remain unmeasured or unclaimed. J030's separate tracing-build healthy control is preserved and does not qualify the 0.8.2 fix.
 
-## 2026-10-12 v0.8.1 final capability disposition
+## Current capability disposition after v0.8.2 publication
 
-The published v0.8.1 release is qualified from source
-`d0b6fe143957012c138613d153896923d6d76369`. J029 remains reusable because the release-source
-changes after the accepted production source are limited to release workflow and stable-smoke
-helper infrastructure; no relevant `app/src/main` JA11 production/session/Flash source changed.
+The published v0.8.2 release is source `9983edf0b7fe437aeeec9ac3dcb3864705afa16a`, package
+`com.weekssa.opraeqforuapp`, versionName `0.8.2`, versionCode `13`, APK SHA-256
+`df1ac78e7462da588e01f4aa39f5f23d0c05797d27eb2222d0650ce319c5d6e3`. J031 adds candidate-bound
+evidence for visible same-process EQ/DEVICE convergence and the recorded UI/cleanup outcomes; it
+does not change any per-setting capability classification below. J029 remains the accepted ordered
+User 1 EQ/global-gain transaction and power-cycle evidence for its own exact tuple.
+
+The 2026-10-12 v0.8.1 capability disposition below is retained as historical release context.
 
 The final proven capability matrix is:
 
