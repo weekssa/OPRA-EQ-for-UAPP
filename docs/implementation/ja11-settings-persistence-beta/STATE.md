@@ -1,6 +1,6 @@
 # JA11 settings persistence beta state
 
-Status: **LOCAL SOFTWARE GATES PASS; EXACT-HEAD AND EXACT-APK GATES PENDING**. This is a private beta-only feature; no production support or hardware
+Status: **ALL OFF-PHONE SOFTWARE AND PRIVATE APK GATES PASS**. This is a private beta-only feature; no production support or hardware
 qualification claim is made by this implementation record.
 
 ## Mission tuple
@@ -10,8 +10,9 @@ qualification claim is made by this implementation record.
 - Branch: `codex/ja11-settings-persistence-beta`
 - Base: `421f03331e45e6c1bdc77e5442db1de467432930`
 - Plan commit: `9544bfded026229ee99944786995c7ab5e4ffb90`
-- Candidate source: pending the first frozen executable commit
-- PR / exact-head CI: pending
+- Candidate source: `620e1a46761de2d3621dbcd32135193efb42cf49`
+- Draft PR: [#96](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/96); executable candidate SHA `620e1a46761de2d3621dbcd32135193efb42cf49`
+- Exact-head workflow: [run 38512637427](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/38512637427), all four jobs passed against the exact candidate SHA
 
 ## Scope
 
@@ -38,10 +39,13 @@ claim USB bus counts or firmware reboot counts.
 | R8 mapping | PASS | `bash tools/verify-r8-mapping.sh`; at least one application class renamed |
 | Beta Android-test Kotlin compile | PASS | `:app:compileJa11BetaAndroidTestKotlin` |
 | API 35 beta instrumentation | PASS | All 70 tests passed on disposable `codex_ja11_beta_api35` (`emulator-5554`) |
-| API 35/API 26 exact-APK install and launch | PENDING | Must run on the frozen APK bytes; API 26 AVD remains to be started |
+| API 35 exact-APK install and cold launch | PASS | Exact APK installed alongside stable app on disposable `emulator-5554`; both packages remained installed |
+| API 26 exact-APK install and cold launch | PASS | Exact APK cold-launched on disposable `emulator-5556`; API 26 emulator shut down after verification |
 | Independent source review | PASS | Required scope/safety review complete; follow-up confirms initial findings closed |
-| Exact-head CI | NOT RUN | Candidate must be pushed; use exact-head fallback workflow |
-| Private beta APK provenance | PENDING | Build, signer/hash/alignment/package metadata, and exact-emulator verification pending |
+| Exact-head CI | PASS | Manual fallback run 38512637427; build, exact-head CodeQL, API 26 smoke, and API 35 UI jobs all passed against `620e1a46761de2d3621dbcd32135193efb42cf49` |
+| Private beta APK provenance | PASS | Exact APK metadata, injected source SHA, debug signer, alignment, checksum, and API 26/API 35 installs recorded in `ARTIFACTS.md` |
+| Standard Android CI workflow | FAIL (existing workflow) | Run 38512307326 fails before jobs exist; same known malformed-workflow issue on the base branch, not candidate-specific |
+| PR CodeQL | PASS | Run 38512320065 on exact PR head |
 | Phone install / physical use | NOT AUTHORIZED YET | Ask only after all off-phone gates; wait for owner confirmation |
 
 ## Safety boundary

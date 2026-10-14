@@ -671,3 +671,45 @@ The public release body matches the maintained v0.8.2 notes. Signed API 35 candi
 upgrade checks passed in runs `38475878287` and `38499666593`. Full asset and release metadata
 readbacks are in `docs/release-engineering/v0.8.2-stable/ARTIFACTS.md`. Earlier J029 and other
 physical records retain their own exact source/APK boundaries.
+
+## 2026-10-14 J032 — private JA11 settings-persistence beta software candidate
+
+This software-only record uses the prepared worktree at
+`/Users/stephenweeks/.codex/worktrees/ja11-settings-persistence-beta/OPRA-EQ-for-UAPP`, branch
+`codex/ja11-settings-persistence-beta`, based on `421f03331e45e6c1bdc77e5442db1de467432930`.
+Executable candidate source is `620e1a46761de2d3621dbcd32135193efb42cf49`, draft PR #96. The
+private test APK is `app/build/outputs/apk/ja11Beta/app-ja11Beta.apk`, SHA-256
+`63d6d1b63563f0c9129e45202eb9eec08a1424a6052e0bd9c3d1e767473600a1`, 23,209,361 bytes. Package
+`com.weekssa.opraeqforuapp.ja11beta`, version `0.8.2-ja11beta` / code `13`, minimum SDK 26, target
+SDK 36. The embedded candidate SHA was found in `classes11.dex` and `classes14.dex`. The APK
+verifies with the Android Debug test certificate SHA-256
+`968b15ab4802bba98fbd058d7b81f537da6c2c5542333d0b107b3495135587b4`; v2 APK signature verifies
+and `zipalign -c -v 4` passes. This is not signed by the official release key.
+
+The exact APK cold-launched on disposable API 35 emulator serial `emulator-5554`; the stable
+package `com.weekssa.opraeqforuapp` and separate beta package coexisted. It also cold-launched on
+disposable API 26 serial `emulator-5556`. Both emulators were shut down after their checks. The
+candidate's full debug and beta JVM suites, beta Android instrumentation (70/70), debug and beta
+lint, debug and release assembly, beta Android-test Kotlin compilation, and R8 mapping verification
+passed as recorded in the implementation state. Exact-head fallback workflow run `38512637427`
+was dispatched with `source_sha` equal to the candidate SHA and was queued at the time this entry
+was written; hosted results remain pending. PR CodeQL run `38512320065` was still running. The
+push-triggered legacy Android CI run `38512307326` failed before jobs started, matching the
+known malformed workflow on the base branch. No normal Android CI success is claimed.
+
+No physical phone or JA11 connection was made, no hardware operation was performed, and no
+physical claim is supported by this entry. Phone installation remains gated on the owner's
+explicit readiness confirmation and wireless-debugging availability. Artifact details and the
+current hosted status are maintained in
+`docs/implementation/ja11-settings-persistence-beta/ARTIFACTS.md` and `STATE.md`.
+
+### J032 hosted-gate closeout
+
+Exact-head workflow run `38512637427` completed successfully against the unchanged candidate SHA;
+all four jobs passed: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`. PR
+CodeQL run `38512320065` (`Analyze Kotlin`), Priority community coverage run `38512320099`, and
+Catalog currentness run `38512320115` also passed for PR #96's exact candidate head. The legacy
+push-triggered Android CI run `38512307326` failed before creating any jobs; no result from it is
+counted as a software pass. The private local test APK provenance and disposable local API 26/API
+35 install results remain as recorded above. No phone or JA11 has been accessed. This closes the
+off-phone software and artifact gates only; owner-led physical testing remains pending.
