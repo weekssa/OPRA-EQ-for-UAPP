@@ -39,7 +39,7 @@ android {
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
-        buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
+        buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "true")
     }
 
