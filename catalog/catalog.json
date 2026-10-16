@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-16T14:59:29Z",
+  "generated_at": "2026-10-16T16:31:40Z",
   "headphone_aliases": [
     {
       "aliases": [
@@ -1046543,6 +1046543,22 @@
               "source_vendor_id": "Philips",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/FengChiWei-official/krummholz-buecherstube/blob/b701f13789318eedf59a5f9acf450fbb8f5670e8/archives/Philips SHP9500 ParametricEq.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "SHP9500",
+              "source_record_id": "FengChiWei-official/krummholz-buecherstube:archives/Philips SHP9500 ParametricEq.txt:3cd150f254e4ad8a7ecd1e7413e30d6faaeec220",
+              "source_vendor_id": "Philips",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/FengChiWei-official/krummholz-buecherstube/blob/cdc64dcb44d221471b4e40167ea70ba7f5c35dfe/archives/Philips SHP9500 ParametricEq.txt"
             },
             {
               "creator": null,
