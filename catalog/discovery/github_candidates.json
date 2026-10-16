@@ -210,6 +210,32 @@
       "url": "https://github.com/AlbertH0ng/headphones-eq-match/blob/3707e05b453049ac53091043f41aba3fe6e403ac/results/KZ ZSN (Rtings) ParametricEQ.txt"
     },
     {
+      "candidate_id": "github-b3f31c91faeb317bf5c9bcc2",
+      "content_sha": "9de01204a4a519f4614916a71ec50338032ce403",
+      "creator": null,
+      "creator_is_explicit": false,
+      "license_review_required": false,
+      "path": "results/KZ ZST (Rtings) ParametricEQ.txt",
+      "platform": "github_code",
+      "publication_eligible": false,
+      "qualification_required": [
+        "source_provenance",
+        "headphone_identity",
+        "structured_eq_parse",
+        "canonical_dedupe"
+      ],
+      "raw_url": null,
+      "redistribution": "structured-data-only",
+      "repository": "AlbertH0ng/headphones-eq-match",
+      "source_account": "AlbertH0ng",
+      "source_id": "github-community",
+      "source_kind": "community_repository",
+      "source_record_id": "AlbertH0ng/headphones-eq-match:results/KZ ZST (Rtings) ParametricEQ.txt:9de01204a4a519f4614916a71ec50338032ce403",
+      "source_updated_at": null,
+      "status": "new_candidate",
+      "url": "https://github.com/AlbertH0ng/headphones-eq-match/blob/3707e05b453049ac53091043f41aba3fe6e403ac/results/KZ ZST (Rtings) ParametricEQ.txt"
+    },
+    {
       "candidate_id": "github-f69e13bb45c5661323ceb54a",
       "content_sha": "801aa5641e8998ec69ea7e008384edbb53c1b614",
       "creator": null,
@@ -262,7 +288,7 @@
       "url": "https://github.com/AlbertH0ng/headphones-eq-match/blob/3707e05b453049ac53091043f41aba3fe6e403ac/results/TRN MT3 (Harpo) ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-88ff6fc3aa47933dfccb5099",
+      "candidate_id": "github-6a52fc0e5a961e9fcc5f2878",
       "content_sha": "3cd150f254e4ad8a7ecd1e7413e30d6faaeec220",
       "creator": null,
       "creator_is_explicit": false,
@@ -285,7 +311,7 @@
       "source_record_id": "FengChiWei-official/krummholz-buecherstube:archives/Philips SHP9500 ParametricEq.txt:3cd150f254e4ad8a7ecd1e7413e30d6faaeec220",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/FengChiWei-official/krummholz-buecherstube/blob/7ee6dccaa531c6585d8885291dd6ed98d37336db/archives/Philips SHP9500 ParametricEq.txt"
+      "url": "https://github.com/FengChiWei-official/krummholz-buecherstube/blob/cdc64dcb44d221471b4e40167ea70ba7f5c35dfe/archives/Philips SHP9500 ParametricEq.txt"
     },
     {
       "candidate_id": "github-c2932e2c5bdb6757669fbb12",
@@ -1118,32 +1144,6 @@
       "source_updated_at": null,
       "status": "new_candidate",
       "url": "https://github.com/obreitwi/dotfiles_desktop/blob/a740f9f84ead56f8f6ee2ffae376e8ada47c65fb/autoeq/SoundMAGIC E11 ParametricEQ.txt"
-    },
-    {
-      "candidate_id": "github-ad439e1c87c78a87b1499d8e",
-      "content_sha": "6c9673fa50b7e92e24bfad76d73301e3d8103ae4",
-      "creator": null,
-      "creator_is_explicit": false,
-      "license_review_required": false,
-      "path": "profiles/JBL Live 770NC ParametricEQ.txt",
-      "platform": "github_code",
-      "publication_eligible": false,
-      "qualification_required": [
-        "source_provenance",
-        "headphone_identity",
-        "structured_eq_parse",
-        "canonical_dedupe"
-      ],
-      "raw_url": null,
-      "redistribution": "structured-data-only",
-      "repository": "peterhbj/headphone-eq",
-      "source_account": "peterhbj",
-      "source_id": "github-community",
-      "source_kind": "community_repository",
-      "source_record_id": "peterhbj/headphone-eq:profiles/JBL Live 770NC ParametricEQ.txt:6c9673fa50b7e92e24bfad76d73301e3d8103ae4",
-      "source_updated_at": null,
-      "status": "new_candidate",
-      "url": "https://github.com/peterhbj/headphone-eq/blob/585c0c7a23341e26f908c3697a2dadba2bc8a597/profiles/JBL Live 770NC ParametricEQ.txt"
     },
     {
       "candidate_id": "github-b35335a13e8b107984168836",
