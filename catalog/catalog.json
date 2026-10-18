@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T14:08:43Z",
+  "generated_at": "2026-10-18T15:46:36Z",
   "headphone_aliases": [
     {
       "aliases": [
@@ -171866,10 +171866,27 @@
               "source_vendor_id": "JBL",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/Rtings/Bruel%20%26%20Kjaer%205128%20over-ear/JBL%20Live%20770NC/JBL%20Live%20770NC%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Live 770NC",
+              "source_record_id": "peterhbj/headphone-eq:profiles/JBL Live 770NC ParametricEQ.txt:6c9673fa50b7e92e24bfad76d73301e3d8103ae4",
+              "source_vendor_id": "JBL",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/peterhbj/headphone-eq/blob/585c0c7a23341e26f908c3697a2dadba2bc8a597/profiles/JBL Live 770NC ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 e270bc89909596983b39816610eaa5205bf036def7ff6033195ad9f8ed8b6974"
+          "source_version_label": "6c9673fa50b7e92e24bfad76d73301e3d8103ae4",
+          "verification_status": "verified"
         }
       ],
       "target": {
