@@ -6,7 +6,7 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 
 ## Foundation tracking issue
 
-[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) tracks this mission. Draft [PR #100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100) is open from `chore/repository-foundation-v0.8.3` to `main`, current candidate head at this checkpoint `d065462bbfe3051a7391b400d98f08a75462093c`.
+[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) tracks this mission. Draft [PR #100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100) is open from `chore/repository-foundation-v0.8.3` to `main`, exact-head validation snapshot `8862fcf7f4c922c2585f7787106494389b91e47f`.
 
 ## Current issues and pull requests
 
@@ -29,15 +29,15 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 - Current main automatic dependency submission: run `39466646926` succeeded.
 - Dependabot run `39467268390` failed on current main. Its job log reports `dependency_not_found`: security-update dependencies were absent from the dependency snapshot and no configured Gradle group matched. This is an automation/snapshot issue, not an Android app CI failure. Investigate separately.
 - GitHub's read-only alert API reports 56 open Maven Dependabot alerts on current main: 3 critical, 22 high, 28 moderate, 3 low. All list `settings.gradle.kts` as the manifest. This inventory does not prove runtime APK inclusion or reachability; perform a separate dependency review.
-- PR #100 checks on `d065462bbfe3051a7391b400d98f08a75462093c`: `Analyze Kotlin`, `CodeQL`, and `submit-gradle` all passed.
-- Exact-head workflow run [39503776205](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39503776205) passed all four jobs on that exact SHA: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`. The `build` job includes documentation validation, release-contract tests, unit tests, lint, debug and release assembly, and R8 mapping verification.
-- The ordinary `.github/workflows/android-ci.yml` push run [39503670690](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39503670690) on the same SHA has conclusion `failure` but zero jobs and no downloadable logs (API 404). The cause is unknown; do not call it a job-level Android failure or a pass. The same no-job pattern occurred on superseded candidate SHAs `9de1b4d…` (run `39503458930`) and `33066be…` (run `39503573060`). Exact-head workflow run 39503776205 is the actual Android CI evidence for d065.
-- No checks are pending or skipped for the completed exact-head run. The final report-only commit will receive a separate exact-head run; consult the live PR/issue for that head's status.
+- On exact PR head `8862fcf7f4c922c2585f7787106494389b91e47f`, PR check-runs `Analyze Kotlin`, `CodeQL`, and `submit-gradle` all completed successfully.
+- Exact-head workflow run [39505611435](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39505611435) passed all four jobs on that exact SHA: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`. The build includes documentation validation, release-contract tests, unit tests, lint, debug/release assembly, and R8 mapping verification; API 26 smoke launch and API 35 connected UI tests passed. No exact-head job failed, skipped, or remained pending.
+- Ordinary `.github/workflows/android-ci.yml` push run [39505582203](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39505582203) on the same SHA has conclusion `failure` but zero jobs and no downloadable logs (API 404). Cause is unknown; do not call it a job-level Android failure or a pass. The same no-job pattern occurred on superseded candidate SHAs including `9de1b4d…`, `33066be…`, and `d065462…`.
+- The completed exact-head CI above is evidence for the SHA it tested. For any later PR head, consult issue #99 and PR #100 for its exact SHA and separately dispatched exact-head result before merge.
 - No current CI conclusion on main should be generalized from the source-health/dependency jobs alone. Refresh exact relevant check runs before final delivery.
 
 ## Required update
 
-Issue #99 and draft PR #100 exist. The PR checks and exact-head run above passed on `d065462b…`; refresh for the final report-only commit and record that SHA/run in issue #99. Keep issue progress factual and link local docs by repository path. Never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
+Issue #99 and draft PR #100 exist. The PR checks and exact-head run above passed on `8862fcf…`. The final closeout-only documentation update may advance the PR head; issue #99 and PR #100 must identify the new head and its separately dispatched exact-head run. Keep issue progress factual and link local docs by repository path. Never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
 
 ## Open PR snapshot (2026-10-20)
 

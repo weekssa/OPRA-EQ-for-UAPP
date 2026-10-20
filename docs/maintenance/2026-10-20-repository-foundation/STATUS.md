@@ -1,8 +1,8 @@
 # Repository Foundation Status
 
 Last updated: 2026-10-20\
-Current phase: P9 draft PR and delivery\
-Overall: IN PROGRESS
+Current phase: P9 draft PR validation complete\
+Overall: READY FOR OWNER REVIEW
 
 ## Verified starting state
 
@@ -37,11 +37,11 @@ Overall: IN PROGRESS
 
 ## Remaining
 
-- Record final-head exact CI in issue #99 and refresh PR #100 after the closeout-only documentation commit.
-- Keep the PR draft; integration still requires owner approval.
+- Owner review of draft PR #100 and explicit approval before merge.
+- Keep installed-device v0.8.3 provenance unverified; no device was connected.
+- Track the 56 Dependabot alerts and failed dependency snapshot automation as separate security/automation follow-up work.
 - Do not merge or publish; leave final integration as an owner decision.
 
 ## Checkpoint
 
-Current cleanup HEAD at last CI check: `d065462bbfe3051a7391b400d98f08a75462093c`\
-Current branch is clean at the recorded checkpoint. Draft PR #100 is open. Exact-head run `39503776205` passed four jobs on `d065462bbfe3051a7391b400d98f08a75462093c`; the ordinary push workflow anomalously failed with zero jobs and no logs. A final report-only commit and its own exact-head validation are the remaining delivery steps.
+Exact-head validation snapshot: PR head `8862fcf7f4c922c2585f7787106494389b91e47f`. Exact-head run [39505611435](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39505611435) completed successfully across all four jobs. PR checks `Analyze Kotlin`, `CodeQL`, and `submit-gradle` also passed. The ordinary push workflow run [39505582203](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39505582203) failed with zero jobs and no logs, the same documented anomaly. A documentation-only closeout update now records these results; after its commit, issue #99 and PR #100 are the live source for the newest PR SHA and its separate exact-head run. No application files change.
