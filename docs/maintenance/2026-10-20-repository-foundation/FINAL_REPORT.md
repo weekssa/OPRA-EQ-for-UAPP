@@ -1,6 +1,6 @@
 # Final Report — Repository Foundation and v0.8.3 Consolidation
 
-Status: DRAFT PR OPEN; FINAL CI CLOSEOUT IN PROGRESS
+Status: DRAFT PR OPEN; FINAL CLOSEOUT CI PENDING
 
 ## Executive summary
 
@@ -12,7 +12,7 @@ A protected private full-copy backup passed manifest, `git fsck --full`, and sep
 
 ## Work summary
 
-Canonical state, goals, known issues, operating workflow, active instructions and CI documentation checks have been consolidated. The branch, documentation, skills, GitHub and release audit records are in `BRANCH_INVENTORY.md`, `DOCUMENTATION_AUDIT.md`, `CONTRADICTION_REGISTER.md`, `GITHUB_TRIAGE.md`, and `VALIDATION_REPORT.md`. Documentation validation and the Android unit-test/lint/debug-assembly command passed. Independent review found no remaining actionable findings. Candidate PR CI is pending.
+Canonical state, goals, known issues, operating workflow, active instructions and CI documentation checks have been consolidated. The branch, documentation, skills, GitHub and release audit records are in `BRANCH_INVENTORY.md`, `DOCUMENTATION_AUDIT.md`, `CONTRADICTION_REGISTER.md`, `GITHUB_TRIAGE.md`, and `VALIDATION_REPORT.md`. Documentation validation and local Android unit-test/lint/debug assembly passed. Exact-head CI run `39503776205` passed all four jobs on `d065462bbfe3051a7391b400d98f08a75462093c`; PR checks `Analyze Kotlin`, `CodeQL`, and `submit-gradle` also passed. A separate ordinary push workflow run on d065 failed with zero jobs and no downloadable logs, cause unknown. The final report-only commit still requires its own exact-head run.
 
 ## Approval gates
 
@@ -23,4 +23,4 @@ Canonical state, goals, known issues, operating workflow, active instructions an
 
 Tracking issue: [#99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99).\
 Draft PR: [#100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100), candidate `33066be171b4bb2d0639341019a9c7c52cdc9415`.\
-At draft creation CodeQL is in progress and Android PR checks are not yet visible. Recommended next action: verify CI on the final documented PR head, then present the merge recommendation. Merge remains an explicit owner approval gate.
+The d065 candidate passed its exact-head checks; the next report-only commit requires the same exact-head workflow. Recommended next action: verify that final run, then present the merge recommendation. Merge remains an explicit owner approval gate.

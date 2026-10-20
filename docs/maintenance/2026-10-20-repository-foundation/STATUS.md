@@ -37,11 +37,11 @@ Overall: IN PROGRESS
 
 ## Remaining
 
-- Refresh and record PR #100 CI on the final documented candidate head.
-- Update issue #99 and final delivery records after the final PR check results.
+- Record final-head exact CI in issue #99 and refresh PR #100 after the closeout-only documentation commit.
+- Keep the PR draft; integration still requires owner approval.
 - Do not merge or publish; leave final integration as an owner decision.
 
 ## Checkpoint
 
-Current cleanup HEAD at draft PR creation: `33066be171b4bb2d0639341019a9c7c52cdc9415`\
-Current branch status at draft PR creation: clean. The authored and pushed maintenance commits are `9de1b4d509fb6de0d97f63ed36ad1dcc81e34c9e` and `33066be171b4bb2d0639341019a9c7c52cdc9415`. Draft PR #100 is open; exact-head CI refresh remains pending.
+Current cleanup HEAD at last CI check: `d065462bbfe3051a7391b400d98f08a75462093c`\
+Current branch is clean at the recorded checkpoint. Draft PR #100 is open. Exact-head run `39503776205` passed four jobs on `d065462bbfe3051a7391b400d98f08a75462093c`; the ordinary push workflow anomalously failed with zero jobs and no logs. A final report-only commit and its own exact-head validation are the remaining delivery steps.

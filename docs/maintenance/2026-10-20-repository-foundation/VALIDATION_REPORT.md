@@ -22,7 +22,10 @@ Base: `origin/main` `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 - `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` completed with `BUILD SUCCESSFUL` in 3m 24s; existing deprecation, Kotlin/lint and native-symbol-strip warnings only.
 - Independent factual/sensitivity review found no remaining actionable findings; no local paths or raw private reports in reviewed changes.
 - Original checkout HEAD and full `git status --short --branch` match the private preflight snapshot exactly.
-- Draft PR #100 opened on candidate `33066be171b4bb2d0639341019a9c7c52cdc9415`; CodeQL is in progress, and Android PR checks were not yet visible at the last refresh. Refresh after the final documentation commit.
+- PR #100's `Analyze Kotlin`, `CodeQL`, and `submit-gradle` checks passed on `d065462bbfe3051a7391b400d98f08a75462093c`.
+- Exact-head run [39503776205](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39503776205) passed all four jobs (`build`, `CodeQL exact head`, `min-api-smoke`, `emulator-ui-test`) on the exact d065 SHA.
+- Ordinary push workflow run [39503670690](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39503670690) on d065 failed before creating any jobs; its job list is empty and logs return 404. Cause remains unknown. The same no-job failure appeared on two superseded candidate heads and is recorded in `GITHUB_TRIAGE.md`.
+- No checks are pending or skipped on the completed d065 exact-head run. A final report-only commit still needs an exact-head run; consult PR #100 and issue #99 for the final head.
 
 ## Limits
 

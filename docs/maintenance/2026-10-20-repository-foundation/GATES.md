@@ -25,7 +25,7 @@ Scope: consolidate active project guidance and validate it without changing appl
 - [x] G5: applicable Android unit tests, lint, and debug assembly pass
   CHECK: ./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug
   EXPECT: BUILD SUCCESSFUL
-  EVIDENCE: `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` completed with `BUILD SUCCESSFUL` in 3m 24s. Existing deprecation, Kotlin, and native-symbol-strip warnings were emitted; no failures.
+  EVIDENCE: Local `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` completed with `BUILD SUCCESSFUL` in 3m 24s, existing warnings only. Exact-head run 39503776205 passed all four jobs on `d065462bbfe3051a7391b400d98f08a75462093c`; PR checks Analyze Kotlin, CodeQL, and submit-gradle passed. Ordinary push workflow run 39503670690 on d065 failed with zero jobs/no logs; cause unknown. The final closeout-only commit still gets its own exact-head run.
 
 - [x] G6: reviewer confirms factual boundaries and sensitive files are excluded
   EVIDENCE: Independent read-only review found no remaining actionable findings; reviewed changes contain no local filesystem paths or raw private reports and no application/build/release behavior changes.
