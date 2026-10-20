@@ -12,6 +12,7 @@ Base: `origin/main` `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 - `./tools/codex-android adb devices -l` returned no connected devices. No install, flash, uninstall, reset, or mutation was attempted.
 - Git LFS checks: no `.gitattributes` file or `.git/lfs` directory exists in the fetched repository; global filters are configured, but the `git-lfs` CLI was unavailable to enumerate remote pointers. No submodules are configured.
 - Public v0.8.3 release evidence matches maintained artifact record: source `899755507f812c940f3ab9381a856c80c6030885`; package `com.weekssa.opraeqforuapp`; version `0.8.3` / code `14`; APK SHA-256 `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`; signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- GitHub Dependabot alert API reports 56 open Maven alerts (3 critical, 22 high, 28 moderate, 3 low), all attributed to `settings.gradle.kts`; this audit does not classify runtime packaging/reachability or remediate them.
 
 ## Pending validation
 

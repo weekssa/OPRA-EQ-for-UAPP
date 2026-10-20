@@ -26,6 +26,7 @@ The v0.8.3 release records say the owner's Pixel retained the separate debug-sig
 - Open draft PR #96 reports `FINAL_EQ_MISMATCH` on JA11 Off-to-User 1 selection after Save; restoration of the original state is not verified. Mutation remains on hold. No replay is authorized by this status summary.
 - Open draft PR #93 investigates JA11 post-Flash state acquisition; root cause and physical reproduction remain unresolved. Its owner phone authorization was revoked in that handoff.
 - Current-main Dependabot run `39467268390` failed because its Gradle security-update job requested dependencies absent from the dependency snapshot. This is an automation/snapshot mismatch; investigate separately. Do not treat this as a failed Android CI build or as proof that the app is vulnerable or clear.
+- GitHub reports 56 open Maven Dependabot alerts on current `main` (3 critical, 22 high, 28 moderate, 3 low), all attributed by the API to `settings.gradle.kts`. APK inclusion/reachability is not established by this inventory; see [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for the required separate security review.
 - Historical EW300, v0.7 and Favorite pull requests remain open for evidence/history; do not close them as part of routine maintenance.
 
 See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) and [`PUBLIC_RELEASE_CHECKLIST.md`](PUBLIC_RELEASE_CHECKLIST.md) for current trackers and detailed release state.
