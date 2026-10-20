@@ -27,6 +27,8 @@ At the start of every substantive task:
 4. Read the current validation ledger, capability matrix, and release-specific status/checklist when present.
 5. Refresh the remote branch, PR, CI, and release state before relying on historical summaries.
 
+For the concise verified release/device state, read `docs/PROJECT_STATE.md`. Read `docs/GOALS_AND_SCOPE.md` for approved product intent and `docs/OPERATING_RUNBOOK.md` for the standard work/review/release process. `docs/CHATGPT_PROJECT_RUNBOOK.md` remains the detailed product and evidence record; its dated entries are historical snapshots unless later maintained state says otherwise.
+
 The maintained repository files and current remote evidence are authoritative. Historical chats, handoff summaries, old plans, preserved branches, and old PRs are evidence—not controlling instructions when newer maintained documents supersede them.
 
 If instructions conflict, apply this order:
@@ -87,12 +89,14 @@ Update the maintained documents in the same workstream when a later decision sup
 - Standard development checks include `./gradlew :app:testDebugUnitTest`, `./gradlew lintDebug`, and `./gradlew assembleDebug`. Use the smallest relevant check during iteration and run the complete applicable gates on a coherent candidate head.
 - In the Codex macOS environment, prefer `./tools/codex-android <Gradle task or Android command>`. It selects the local JDK/SDK, exposes `adb`, `android`, `avdmanager`, and `emulator`, and routes Gradle caches to a writable temporary location. Examples: `./tools/codex-android :app:testDebugUnitTest`, `./tools/codex-android adb devices`, and `./tools/codex-android emulator -list-avds`.
 
+The current public release and verified source/artifact tuple are maintained in `docs/PROJECT_STATE.md` and `docs/PUBLIC_RELEASE_CHECKLIST.md`. Release provenance does not establish which artifact is installed on a physical device.
+
 ## Android skill routing
 
 - Use the installed global Android skills rather than copying their cache files into the repository. `android-skills:android-dev` is the baseline for every Android/Kotlin/Gradle task.
 - Add the narrow skills relevant to the work: `android-skills:android-testing`, `android-skills:android-debugging`, `android-skills:compose`, `android-skills:android-ux`, `android-skills:kotlin-coroutines`, `android-skills:kotlin-flows`, `android-skills:android-gradle-logic`, `android-skills:android-source-search`, and `android-skills:modularization` as applicable.
 - The Android CLI-managed project skills currently installed under `.agents/skills/` are `android-cli`, `testing-setup`, `android-profiler`, `r8-analyzer`, `android-permissions-security`, `android-intent-security`, `adaptive`, and `edge-to-edge`. Use them when their trigger matches the task; do not install unrelated Android skills merely to enlarge the inventory.
-- Use the repository-local DAC skills under `.agents/skills/` for protocol, transaction, physical-validation, and release-readiness work. Do not claim emulator or physical-device evidence unless the corresponding command output is captured.
+- Use repository-local DAC skills for protocol, transaction, physical-validation, and release-readiness work only when those skill files are present in the selected checkout and reviewed for current scope. The default-branch Android CLI-managed skills are `android-cli`, `testing-setup`, `android-profiler`, `r8-analyzer`, `android-permissions-security`, `android-intent-security`, `adaptive`, and `edge-to-edge`. Do not assume local untracked task skills are part of the repository. Do not claim emulator or physical-device evidence unless the corresponding command output is captured.
 
 ## Codex multi-agent orchestration
 
@@ -136,7 +140,7 @@ For release work, continue through:
 - prepared draft release, release notes, checksum, install/upgrade guidance, known limitations, attribution, and rollback guidance; and
 - a plain-language owner go/no-go package.
 
-Use SemVer. During development use `0.x`; the current EW300 milestone targets `versionName 0.7.0` and `versionCode 7` unless maintained release documents record a later owner-approved decision.
+Use SemVer. During development use `0.x`; the current public stable release is recorded in `docs/PROJECT_STATE.md` (v0.8.3 / versionCode 14 as of 2026-10-20). The v0.7.0 EW300 milestone is historical. Update canonical release state when a release changes; do not treat this instruction as a manually advanced version source.
 
 Never merge, close preserved evidence PRs, publish a release, or make a public hardware-support claim without explicit owner approval. After approval, complete the authorized merge/publication action and verify the public tag, release page, APK, checksum, signer/provenance, and update metadata.
 

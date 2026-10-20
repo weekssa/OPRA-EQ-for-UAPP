@@ -24,6 +24,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      - name: Validate current project documentation
+        run: python3 tools/validate-repository-foundation.py
+
       - name: Test exact-candidate release promotion contract
         run: |
           python3 -m unittest discover -s tools -p 'test_promote_release_candidate.py' -v
