@@ -6,7 +6,7 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 
 ## Foundation tracking issue
 
-[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) was created after the read-only search found no matching tracking issue. It tracks this mission only. The cleanup branch is local at this checkpoint; add its PR URL after the draft PR is created.
+[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) tracks this mission. Draft [PR #100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100) is open from `chore/repository-foundation-v0.8.3` to `main`, candidate head `33066be171b4bb2d0639341019a9c7c52cdc9415`. At this checkpoint CodeQL is in progress and Android PR checks are not yet visible.
 
 ## Current issues and pull requests
 
@@ -33,7 +33,7 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 
 ## Required update
 
-Issue #99 exists; add the draft PR URL here and to `STATUS.md` after creation. Keep issue progress factual and link local docs by repository path. Never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
+Issue #99 and draft PR #100 exist. Refresh exact-head CI status after final documentation updates; keep issue progress factual and link local docs by repository path. Never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
 
 ## Open PR snapshot (2026-10-20)
 

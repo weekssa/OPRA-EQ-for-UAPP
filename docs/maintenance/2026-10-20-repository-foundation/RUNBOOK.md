@@ -32,7 +32,7 @@ Establish a reliable, evidence-based foundation for future Android development w
 | P6 | Canonical documentation consolidation | COMPLETE | Current state, goals, known issues and operating workflow added; root instructions, README and project runbook updated |
 | P7 | Permanent development workflow | COMPLETE | Existing Android CI retained and extended with documentation validation; PR template added |
 | P8 | Validation | COMPLETE | Documentation validator, source-scope, whitespace and Android unit-test/lint/assemble gates passed; independent review found no remaining actionable findings |
-| P9 | Draft PR and delivery | IN_PROGRESS | Final diff, commit, push, draft PR and exact-head CI verification remain; do not merge |
+| P9 | Draft PR and delivery | IN_PROGRESS | Draft PR #100 is open at candidate `33066be171b4bb2d0639341019a9c7c52cdc9415`; exact-head CI refresh and final closeout remain; do not merge |
 | P10 | Owner approval | NOT AUTHORIZED | Merge, close, branch retirement and device actions remain gated |
 
 ## Resume procedure

@@ -1,6 +1,6 @@
 # Final Report — Repository Foundation and v0.8.3 Consolidation
 
-Status: DRAFT PR PREPARATION IN PROGRESS
+Status: DRAFT PR OPEN; FINAL CI CLOSEOUT IN PROGRESS
 
 ## Executive summary
 
@@ -22,5 +22,5 @@ Canonical state, goals, known issues, operating workflow, active instructions an
 ## Delivery
 
 Tracking issue: [#99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99).\
-Draft PR: pending.\
-Recommended next action: complete the reviewed local commit, push the dedicated branch, create a draft PR, and verify candidate CI. Merge remains an explicit owner approval gate.
+Draft PR: [#100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100), candidate `33066be171b4bb2d0639341019a9c7c52cdc9415`.\
+At draft creation CodeQL is in progress and Android PR checks are not yet visible. Recommended next action: verify CI on the final documented PR head, then present the merge recommendation. Merge remains an explicit owner approval gate.

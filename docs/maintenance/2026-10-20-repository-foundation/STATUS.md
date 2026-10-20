@@ -37,11 +37,11 @@ Overall: IN PROGRESS
 
 ## Remaining
 
-- Add a final factual progress update to issue #99.
-- Review the full diff and rerun changed-file sensitive-data and original-checkout preservation checks.
-- Commit and push only the dedicated branch, create a draft PR, attach it to this task, and verify PR CI. Do not merge or publish.
+- Refresh and record PR #100 CI on the final documented candidate head.
+- Update issue #99 and final delivery records after the final PR check results.
+- Do not merge or publish; leave final integration as an owner decision.
 
 ## Checkpoint
 
-Current cleanup HEAD: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`\
-Current branch status: intentionally contains modified tracked documentation/workflow files and new selected maintenance artifacts for this deliverable. Generated Gradle/build outputs, when present, are ignored and are not staged. The authoritative pending file list is `git status --short`.
+Current cleanup HEAD at draft PR creation: `33066be171b4bb2d0639341019a9c7c52cdc9415`\
+Current branch status at draft PR creation: clean. The authored and pushed maintenance commits are `9de1b4d509fb6de0d97f63ed36ad1dcc81e34c9e` and `33066be171b4bb2d0639341019a9c7c52cdc9415`. Draft PR #100 is open; exact-head CI refresh remains pending.

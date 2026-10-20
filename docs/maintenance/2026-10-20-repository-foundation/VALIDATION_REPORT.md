@@ -22,7 +22,7 @@ Base: `origin/main` `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 - `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` completed with `BUILD SUCCESSFUL` in 3m 24s; existing deprecation, Kotlin/lint and native-symbol-strip warnings only.
 - Independent factual/sensitivity review found no remaining actionable findings; no local paths or raw private reports in reviewed changes.
 - Original checkout HEAD and full `git status --short --branch` match the private preflight snapshot exactly.
-- Draft PR checks on the pushed candidate head remain pending.
+- Draft PR #100 opened on candidate `33066be171b4bb2d0639341019a9c7c52cdc9415`; CodeQL is in progress, and Android PR checks were not yet visible at the last refresh. Refresh after the final documentation commit.
 
 ## Limits
 
