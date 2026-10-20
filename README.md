@@ -4,6 +4,8 @@
 
 The project began as **OPRA EQ for UAPP**. The repository and Android application ID remain `com.weekssa.opraeqforuapp` so existing installations continue to upgrade normally, but the product is now source-agnostic: **OPRA is one attributed EQ source, not the product identity.**
 
+For current source/artifact provenance, device-evidence limits, approved goals, open work, and development steps, see [Project State](docs/PROJECT_STATE.md), [Goals and Scope](docs/GOALS_AND_SCOPE.md), [Known Issues](docs/KNOWN_ISSUES.md), and the [Operating Runbook](docs/OPERATING_RUNBOOK.md). Detailed release and hardware evidence remains in its versioned records.
+
 EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It downloads a validated canonical catalog, keeps a last-known-good local cache, and remains useful offline after the first successful sync.
 
 ## Current release

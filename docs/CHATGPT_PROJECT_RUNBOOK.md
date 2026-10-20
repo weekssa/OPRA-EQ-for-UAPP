@@ -2,6 +2,8 @@
 
 This is the maintained operational source of truth for work on **OPRA EQ for UAPP / EQ Library**. Read it before substantive work. Later explicit user decisions supersede older planning text; when that happens, update this runbook in the same workstream rather than restoring obsolete behavior.
 
+For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
+
 ## 1. Mandatory reading
 
 Before substantive work, read this file and the current documents relevant to the task:

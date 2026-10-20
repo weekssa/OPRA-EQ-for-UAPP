@@ -31,6 +31,8 @@ Changes must preserve the project's established behavior unless a deliberate pro
 
 See `docs/CHATGPT_PROJECT_RUNBOOK.md`, `docs/ARCHITECTURE.md`, and `docs/PHASE1_DECISIONS.md` for the maintained product and architecture rules.
 
+Before substantive work, also check [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) and follow [`docs/OPERATING_RUNBOOK.md`](docs/OPERATING_RUNBOOK.md) for worktrees, current instructions and skills, validation, documentation, pull request review, releases, and session handoff. Preserve dirty and untracked user data; tie hardware, release, and approval claims to exact evidence.
+
 ## Development baseline
 
 - Java 17

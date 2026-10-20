@@ -1,0 +1,17 @@
+# Evidence Index
+
+Sensitive inventories, complete hash manifests, raw command output, and backup internals are kept outside the repository in the protected local audit/backup location.
+
+| ID | Source | Observation | Method | Confidence | Sensitivity |
+| --- | --- | --- | --- | --- | --- |
+| E-001 | Original checkout Git status and HEAD, saved in private backup audit files | `codex/ja11-protocol-evidence` at `dc34db33258159a7f73e92df0c792908c92166c8`, 17 commits behind remote, extensive pre-existing untracked/ignored files | Read-only Git inspection before fetch/worktree | High | Private local path inventory |
+| E-002 | Private full-copy backup manifest | 16,383 entries compared; 14,131 regular files; file SHA-256, path, type, mode, size and available xattr digests match; no missing/extra/different entries | `ditto --rsrc --extattr --acl`; Python lstat/no-follow inventory and hash comparison | High | Private |
+| E-003 | Private `all-available-refs.bundle` | Bundle verifies against the source and lists 291 captured refs, but a standalone mirror clone fails because the original repository is shallow and the bundle lacks a parent beyond its shallow boundary. Do not treat the bundle as a complete independent restore. The full-copy restore test succeeds and preserves the shallow boundary. | `git bundle verify`; attempted mirror clone; `ditto` restore test; `git fsck --full` on full copy | High; bundle limitation explicit | Private |
+| E-009 | Private full-copy restore check and fsck log | `git fsck --full` exits 0 with dangling-object diagnostics and no missing/corrupt-object errors; a second `ditto` copy opens at the original HEAD with the shallow flag and baseline worktree status intact | Full-copy `git fsck`; non-destructive full-copy restore check | High for copied repository state, with source's shallow history limit | Private |
+| E-004 | `docs/release-engineering/v0.8.3-stable/ARTIFACTS.md`; GitHub release/tag | Public stable v0.8.3, tag peels to `899755507f812c940f3ab9381a856c80c6030885`; exact APK/checksum/signer tuple recorded | Local maintained release record plus live GitHub inventory | High for public artifact/release | Public |
+| E-005 | `docs/implementation/v0.8.3-defaults-beta/STATE.md`; `RELEASE_CHECKLIST.md` | Pixel retained separately signed Beta v1 and its data after acceptance; no production APK installed over it | Maintained release evidence | High for recorded 2026-10-14 state; current device state unverified | Public/sanitized |
+| E-006 | `./tools/codex-android adb devices -l` | No connected devices listed | Read-only ADB device enumeration | High for this execution | None |
+| E-007 | Live GitHub repo metadata and refreshed refs | Default branch `main`; latest tip `35e91c2170786ae4afc7a6679ba9ba34a01511a8` | GitHub connector and `git fetch origin --tags` | High at collection time | Public |
+| E-008 | Fetched `origin/main` root `AGENTS.md`; README, runbook, release checklist | The base branch's root instructions still call 0.7.0/code 7 the current EW300 milestone despite verified 0.8.3 release. The cleanup branch updates this to identify v0.7 as historical. | Base-versus-candidate document comparison | High | Public |
+
+The current installed APK identity, current device app data, and exact source/artifact match are unknown because no device is available. Do not inspect or upload private application data.

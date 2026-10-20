@@ -82,6 +82,9 @@ jobs:
           printf '## Exact-head Android CI\n\n- Requested source SHA: `%s`\n- Checked-out source SHA: `%s`\n' "$SOURCE_SHA" "$actual_sha" >> "$GITHUB_STEP_SUMMARY"
           test "$actual_sha" = "$SOURCE_SHA"
 
+      - name: Validate current project documentation
+        run: python3 tools/validate-repository-foundation.py
+
       - name: Test exact-candidate release promotion contract
         run: |
           python3 -m unittest discover -s tools -p 'test_promote_release_candidate.py' -v
