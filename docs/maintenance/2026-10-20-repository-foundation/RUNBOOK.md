@@ -32,8 +32,8 @@ Establish a reliable, evidence-based foundation for future Android development w
 | P6 | Canonical documentation consolidation | COMPLETE | Current state, goals, known issues and operating workflow added; root instructions, README and project runbook updated |
 | P7 | Permanent development workflow | COMPLETE | Existing Android CI retained and extended with documentation validation; PR template added |
 | P8 | Validation | COMPLETE | Documentation validator, source-scope, whitespace and Android unit-test/lint/assemble gates passed; independent review found no remaining actionable findings |
-| P9 | Draft PR and delivery | COMPLETE SUBJECT TO FINAL HEAD CI | Draft PR #100 is open. Exact-head run `39507302003` attempt 2 passed all four jobs on `e955f62db0bb7ab96182ee3964aa579a6cb9d186`; see issue #99 for current-head readback. A documentation correction to this dossier will advance the head and must receive a fresh exact-head run. Do not merge |
-| P10 | Pre-merge owner review and approval | PENDING | Correct stale dossier snapshots, complete final review against the resulting remote PR head, verify all applicable CI/checks, report GO/NO-GO, and obtain explicit owner approval. No merge before approval |
+| P9 | Draft PR and delivery | COMPLETE | Draft PR #100 is open. Final read-only review and exact-head validation passed; the live PR SHA and run/check outcomes are recorded in issue #99 and PR #100. Do not merge without approval |
+| P10 | Owner merge approval | PENDING OWNER | Final review recommendation is GO for owner review/merge consideration. Only explicit owner approval remains before a merge; PR #100 stays draft and unmerged |
 | P11 | Post-merge verification and local synchronization | NOT STARTED | Only after approval: verify merge SHA on actual default branch, create a clean development worktree from merged `main`, prove original checkout and backup unchanged, and verify canonical docs/AGENTS are available there. Do not reset/overwrite/clean the original checkout |
 | P12 | Independent follow-up work | TRACKED SEPARATELY | Issues #101-#107 track Dependabot/security, zero-job push workflow, emulator focus flakiness, installed-device provenance, external backup retention, external Codex/ChatGPT instructions, and historical branch disposition. No dependency/application/security remediation is part of PR #100 |
 
@@ -41,9 +41,9 @@ Establish a reliable, evidence-based foundation for future Android development w
 
 ### Required before merging PR #100
 
-- Reconcile this dossier's stale commit/run snapshots with the verified run on `e955f62…` and mark the exact-head status as live in issue #99.
-- Review the complete final PR diff, active instructions/skills/docs, CI and validator security, ruleset requirements, and actual remote head.
-- Verify checks on the exact final PR SHA and record successful, failed, skipped, pending, and no-job workflow outcomes in issue #99/PR #100.
+- [x] Reconcile stale dossier snapshots and name issue #99 / PR #100 as the live record for head-specific results.
+- [x] Review the complete final PR diff, active instructions/skills/docs, CI and validator security, ruleset requirements, and actual remote head.
+- [x] Verify checks on the reviewed exact PR SHA and record successful, failed, skipped, pending, and no-job workflow outcomes in issue #99/PR #100.
 - Obtain explicit owner approval. PR #100 remains draft and unmerged until then.
 
 ### Required immediately after an approved merge

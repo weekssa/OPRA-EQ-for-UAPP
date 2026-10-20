@@ -1,6 +1,6 @@
 # Final Report — Repository Foundation and v0.8.3 Consolidation
 
-Status: PRE-MERGE REVIEW; NOT INTEGRATED
+Status: PRE-MERGE; GO RECOMMENDATION; OWNER APPROVAL PENDING
 
 ## Executive summary
 
@@ -14,15 +14,15 @@ The original Mac checkout and its user-owned files remain preserved. No existing
 
 Canonical state, goals, known issues, operating workflow, active instructions, Android skills routing, and CI documentation validation were consolidated. The validator and PR template are included in draft PR #100. Local documentation validation, diff/scope checks, and Android unit-test/lint/debug assembly passed.
 
-On prior PR head `e955f62db0bb7ab96182ee3964aa579a6cb9d186`, exact-head run [39507302003](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507302003) attempt 2 passed all four jobs: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`; no jobs were skipped. Attempt 1 on that same SHA failed 8/72 emulator UI tests because Activity focus was false (0 skipped); attempt 2 passed all 72 without source changes. PR check-runs `Analyze Kotlin`, `CodeQL`, and `submit-gradle` passed. Ordinary push run [39507297134](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507297134) failed with zero jobs and no downloadable logs (API 404); its cause is unknown. A correction to these stale records advances the PR SHA; exact-head validation must be checked on that final head. Issue #99 and PR #100 hold the live SHA and run readback.
+At the previous PR checkpoint, exact-head run [39507302003](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507302003) on `e955f62db0bb7ab96182ee3964aa579a6cb9d186` passed on attempt 2; attempt 1 had 8/72 Activity-focus emulator failures, with 0 skipped, and unchanged-SHA attempt 2 passed. Ordinary push run [39507297134](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507297134) failed with zero jobs and no downloadable logs; cause unknown. The latest reviewed SHA and its successful exact-head/PR checks are maintained live in issue #99 and PR #100. The no-job anomaly remains a separate follow-up, not a blocker to the successful exact-head result.
 
 GitHub reports 56 open Maven Dependabot alerts on `main` (3 critical, 22 high, 28 moderate, 3 low), attributed to `settings.gradle.kts`. Runtime inclusion/reachability is unclassified. Separate follow-ups #101-#107 track security, CI, emulator flakiness, physical provenance, backup retention, external instruction reconciliation, and historical branch disposition. No dependency remediation is in this PR.
 
 ## Before merge
 
-- Finish the exact remote PR review and verify CI/checks against the final SHA.
-- Confirm no sensitive/private material and no application changes in the final diff.
-- Report a GO/NO-GO recommendation and obtain explicit owner approval. The PR remains draft and unmerged until approved.
+- Final remote PR review and exact-head checks passed; the current remote SHA and result are recorded on issue #99 and PR #100.
+- The reviewed diff contains no sensitive/private material and no application, dependency, signing, package identity, or release changes.
+- Recommendation: GO for owner review/merge consideration. Explicit owner approval remains required; the PR stays draft and unmerged until approved.
 
 The active `Protect main` ruleset prevents deletion and non-fast-forward updates but enforces no required review count or check contexts. The task's owner-approval gate applies regardless.
 

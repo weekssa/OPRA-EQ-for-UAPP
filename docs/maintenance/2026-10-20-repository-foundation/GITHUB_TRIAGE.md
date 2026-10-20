@@ -6,7 +6,7 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 
 ## Foundation tracking issue
 
-[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) tracks this mission. Draft [PR #100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100) is open from `chore/repository-foundation-v0.8.3` to `main`. At the start of final review its remote head was `e955f62db0bb7ab96182ee3964aa579a6cb9d186`; this report correction advances the PR head, so read issue #99 and PR #100 for the current SHA and exact-head checks.
+[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) tracks this mission. Draft [PR #100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100) is open from `chore/repository-foundation-v0.8.3` to `main`. Its latest reviewed remote SHA, exact-head CI, and standard check states are recorded live in issue #99 and PR #100; do not use the historical snapshots below to infer current PR status.
 
 ## Current issues and pull requests
 
@@ -34,7 +34,7 @@ Exact PR-head history captured on 2026-10-20:
 - On prior PR head `e955f62db0bb7ab96182ee3964aa579a6cb9d186`, exact-head run [39507302003](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507302003) attempt 2 passed all four jobs: `build`, `CodeQL exact head`, `min-api-smoke`, `emulator-ui-test`. No jobs were skipped. Attempt 1 failed only the emulator UI job, 8/72 tests because Activity focus was false (0 skipped); same-SHA attempt 2 passed all 72. No source change occurred between attempts.
 - PR check-runs `Analyze Kotlin`, `CodeQL`, and `submit-gradle` were all successful on that prior head, with none pending or skipped.
 - Ordinary push run [39507297134](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507297134) on that same SHA failed with zero jobs and no logs (API 404). Cause is unknown. It is not a job-level Android failure and is not a pass.
-- These results apply only to `e955f62…`. This report correction advances the PR SHA; verify the exact final head and record its current successful, failed, skipped, pending, and no-job outcomes on issue #99/PR #100. Do not add a commit only to repeat CI status.
+- These results apply only to `e955f62…`. The latest reviewed head was independently validated; issue #99 and PR #100 contain its exact SHA and current successful, failed, skipped, pending, and no-job outcomes. Do not add a commit only to repeat CI status.
 
 
 - Public v0.8.3 release is immutable, non-draft/non-prerelease, `/releases/latest`; tag peels to `899755507f812c940f3ab9381a856c80c6030885`.
@@ -47,7 +47,7 @@ Exact PR-head history captured on 2026-10-20:
 
 ## Required update
 
-Issue #99 and draft PR #100 exist. Separate actionable follow-ups are tracked in #101 (P1 security triage), #102 (P2 zero-job push workflow), #103 (P2 emulator Activity focus), #104 (P2 physical device provenance with owner/device gate), #105 (P3 external backup retention), #106 (P3 external Codex/ChatGPT instruction reconciliation), and #107 (P2 historical branch disposition). Each links back to #99. No dependency or application remediation is in PR #100. Keep #99 and PR #100 current with final-head CI; never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
+Issue #99 and draft PR #100 exist. Final review recommends GO for owner review/merge consideration; explicit owner approval remains mandatory. Separate actionable follow-ups are tracked in #101 (P1 security triage), #102 (P2 zero-job push workflow), #103 (P2 emulator Activity focus), #104 (P2 physical device provenance with owner/device gate), #105 (P3 external backup retention), #106 (P3 external Codex/ChatGPT instruction reconciliation), and #107 (P2 historical branch disposition). Each links back to #99. No dependency or application remediation is in PR #100. Never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
 
 ## Open PR snapshot (2026-10-20)
 

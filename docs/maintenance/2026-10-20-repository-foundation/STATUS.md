@@ -1,7 +1,7 @@
 # Repository Foundation Status
 
 Last updated: 2026-10-20
-Current phase: P10 final remote PR review and owner approval pending
+Current phase: P10 owner merge approval pending
 Overall: PRE-MERGE REVIEW, NOT INTEGRATED
 
 ## Verified starting state
@@ -32,15 +32,12 @@ Overall: PRE-MERGE REVIEW, NOT INTEGRATED
 - P2-P5: branch/release provenance, skills/documentation and GitHub/CI/release inventories.
 - P6-P7: canonical documentation and future development/release workflow consolidated; existing CI now runs the documentation validator.
 - P8: documentation/scope checks and `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` passed. The PR diff contains no application source, Gradle, manifest, signing, dependency, or release changes.
-- P9: draft PR #100 exists. Previous head `e955f62db0bb7ab96182ee3964aa579a6cb9d186` exact-head CI attempt 2 passed all four jobs; current documentation correction advances that head and needs its own exact-head run.
+- P9: draft PR #100 exists. Final read-only review and exact-head validation passed. The live PR SHA, check states, and run outcomes are maintained in issue #99 and PR #100; earlier SHA results in this dossier are historical evidence only.
 - P12 tracking: issue #99 is the parent. Separate actionable follow-ups #101-#107 were created for security, push workflow, emulator flakiness, device provenance, backup retention, external instructions, and historical branch disposition.
 
 ## Remaining before merge
 
-1. Finish stale evidence/status reconciliation in this dossier.
-2. Complete the final read-only review of the actual remote PR head, including the full diff, active instructions/skills, project docs/runbooks, validator/workflow permissions, exact-head CI/checks, and ruleset.
-3. Verify exact-head CI for the final PR SHA. Record successful, failed, skipped, pending and no-job outcomes on issue #99/PR #100; do not create a commit just to repeat those results.
-4. Present GO/NO-GO and any true blockers. PR #100 remains draft and unmerged until explicit owner approval.
+1. Obtain explicit owner approval or decline for the reviewed PR #100. Recommendation is GO for owner review/merge consideration; the zero-job push workflow anomaly remains tracked separately as #102. PR #100 remains draft and unmerged until approved.
 
 ## Immediately after approved merge
 
@@ -62,9 +59,9 @@ Overall: PRE-MERGE REVIEW, NOT INTEGRATED
 
 ## Exact-head CI snapshot and live source
 
-On previous PR head `e955f62db0bb7ab96182ee3964aa579a6cb9d186`, exact-head run [39507302003](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507302003) attempt 2 passed all four jobs: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`; no job was skipped. Attempt 1 on the same SHA failed 8/72 emulator UI tests because Activity focus was false (0 skipped); attempt 2 passed all 72 without source changes. PR check-runs `Analyze Kotlin`, `CodeQL`, and `submit-gradle` passed with none pending or skipped. Ordinary push workflow [39507297134](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507297134) failed with zero jobs and no downloadable logs (API 404); cause unknown.
+At the preceding PR checkpoint, head `e955f62db0bb7ab96182ee3964aa579a6cb9d186` exact-head run [39507302003](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507302003) attempt 2 passed all four jobs: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`; no job was skipped. Attempt 1 on the same SHA failed 8/72 emulator UI tests because Activity focus was false (0 skipped); attempt 2 passed all 72 without source changes. Ordinary push workflow [39507297134](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507297134) failed with zero jobs and no downloadable logs (API 404); cause unknown. The latest reviewed PR head and its exact-head results are in issue #99 and PR #100; do not infer them from this earlier snapshot.
 
-The current corrected dossier commit advances the PR head and therefore requires a fresh exact-head run. Because reporting that result alone must not create another commit, issue #99 and PR #100 are the live record for the latest SHA and completed run. The active `Protect main` ruleset prevents deletion and non-fast-forward updates but defines no required review count or check contexts; the owner approval gate remains mandatory for this mission regardless of configured rules.
+The current exact-head run and standard PR check-runs are recorded live on issue #99 and PR #100. Later report-only CI outcomes belong in those GitHub records, not a new commit. The active `Protect main` ruleset prevents deletion and non-fast-forward updates but defines no required review count or check contexts; the owner approval gate remains mandatory for this mission regardless of configured rules.
 
 ## Original checkout and branch preservation
 
