@@ -1,6 +1,6 @@
 # Validation Report
 
-Status: LOCAL AND PR VALIDATION PASSED FOR RECORDED HEAD\
+Status: LOCAL VALIDATION PASSED; EXACT-HEAD RESULT IS PR-HEAD-SPECIFIC\
 Base: `origin/main` `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 
 ## Safety and provenance checks completed
@@ -22,10 +22,10 @@ Base: `origin/main` `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 - `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` completed with `BUILD SUCCESSFUL` in 3m 24s; existing deprecation, Kotlin/lint and native-symbol-strip warnings only.
 - Independent factual/sensitivity review found no remaining actionable findings; no local paths or raw private reports in reviewed changes.
 - Original checkout HEAD and full `git status --short --branch` match the private preflight snapshot exactly.
-- PR #100's `Analyze Kotlin`, `CodeQL`, and `submit-gradle` checks passed on `d065462bbfe3051a7391b400d98f08a75462093c`.
-- Exact-head run [39503776205](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39503776205) passed all four jobs (`build`, `CodeQL exact head`, `min-api-smoke`, `emulator-ui-test`) on the exact d065 SHA.
-- Ordinary push workflow run [39503670690](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39503670690) on d065 failed before creating any jobs; its job list is empty and logs return 404. Cause remains unknown. The same no-job failure appeared on two superseded candidate heads and is recorded in `GITHUB_TRIAGE.md`.
-- No checks are pending or skipped on the completed d065 exact-head run. A final report-only commit still needs an exact-head run; consult PR #100 and issue #99 for the final head.
+- On prior PR head `e955f62db0bb7ab96182ee3964aa579a6cb9d186`, exact-head run [39507302003](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507302003) attempt 2 passed all four jobs (`build`, `CodeQL exact head`, `min-api-smoke`, `emulator-ui-test`). Attempt 1 on the same SHA failed 8/72 emulator UI tests because Activity window focus was false (0 skipped); the unchanged-SHA retry passed all 72 (0 skipped). This is a follow-up flake, not a source fix or physical-device validation.
+- On that same prior head, PR check-runs `Analyze Kotlin`, `CodeQL`, and `submit-gradle` passed, with no pending or skipped check-runs. Ordinary push run [39507297134](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507297134) failed before creating any jobs; its job list is empty and logs return 404. Cause remains unknown and is separately tracked.
+- The status commit correcting this dossier advances the PR SHA. Exact-head validation must be refreshed on that resulting remote head before merge. Issue #99 and PR #100 are the live location for the newest SHA and its run result; do not create a further commit solely to restate CI results.
+- Workflow disposition is explicit: successful checks above apply only to their exact SHA; failed emulator attempt is recorded; successful retry had no skipped jobs; push workflow failed with no jobs/logs; later-head/pending states are read from GitHub, not inferred from the prior run.
 
 ## Limits
 

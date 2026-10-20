@@ -25,7 +25,7 @@ Scope: consolidate active project guidance and validate it without changing appl
 - [x] G5: applicable Android unit tests, lint, and debug assembly pass
   CHECK: ./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug
   EXPECT: BUILD SUCCESSFUL
-  EVIDENCE: Local `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` completed with `BUILD SUCCESSFUL` in 3m 24s, existing warnings only. Exact-head run 39503776205 passed all four jobs on `d065462bbfe3051a7391b400d98f08a75462093c`; PR checks Analyze Kotlin, CodeQL, and submit-gradle passed. Ordinary push workflow run 39503670690 on d065 failed with zero jobs/no logs; cause unknown. The final closeout-only commit still gets its own exact-head run.
+  EVIDENCE: Local `./tools/codex-android :app:testDebugUnitTest lintDebug assembleDebug` completed with `BUILD SUCCESSFUL` in 3m 24s, existing warnings only. On prior PR head `e955f62db0bb7ab96182ee3964aa579a6cb9d186`, exact-head run 39507302003 attempt 2 passed all four jobs. Attempt 1 failed 8/72 emulator UI tests due to Activity focus false (0 skipped); same-SHA attempt 2 passed all 72 (0 skipped). PR check-runs Analyze Kotlin, CodeQL, and submit-gradle passed. Ordinary push run 39507297134 failed with zero jobs and no logs; cause unknown. This dossier correction advances the head and needs exact-head verification; issue #99 records the live head/result without a CI-only commit.
 
 - [x] G6: reviewer confirms factual boundaries and sensitive files are excluded
   EVIDENCE: Independent read-only review found no remaining actionable findings; reviewed changes contain no local filesystem paths or raw private reports and no application/build/release behavior changes.

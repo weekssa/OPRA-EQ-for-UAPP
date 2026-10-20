@@ -6,7 +6,7 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 
 ## Foundation tracking issue
 
-[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) tracks this mission. Draft [PR #100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100) is open from `chore/repository-foundation-v0.8.3` to `main`, exact-head validation snapshot `8862fcf7f4c922c2585f7787106494389b91e47f`.
+[Issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99) tracks this mission. Draft [PR #100](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/100) is open from `chore/repository-foundation-v0.8.3` to `main`. At the start of final review its remote head was `e955f62db0bb7ab96182ee3964aa579a6cb9d186`; this report correction advances the PR head, so read issue #99 and PR #100 for the current SHA and exact-head checks.
 
 ## Current issues and pull requests
 
@@ -15,6 +15,13 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 | Issue #99, repository foundation | Active tracking issue | Created 2026-10-20 after a repository-scoped search returned no matching issue. Keep open through owner review. |
 | Closed issue #2 | Historical discussion | v0.3-era; leave unchanged |
 | Closed issue #9 | Historical source-currentness tracking | Leave unchanged |
+| #101 | Open, P1 security follow-up | Triage all 56 Dependabot alerts, 3 critical first; runtime reachability unknown; no dependency changes in PR #100. |
+| #102 | Open, P2 CI follow-up | Diagnose ordinary push workflow failure with zero jobs/no logs. |
+| #103 | Open, P2 CI reliability follow-up | Diagnose same-SHA emulator Activity-focus flake without masking tests. |
+| #104 | Open, P2 owner/device follow-up | Read-only installed v0.8.3 provenance when device and fresh authorization are available. |
+| #105 | Open, P3 backup follow-up | External backup availability, retention, and restore cadence. |
+| #106 | Open, P3 documentation governance follow-up | Reconcile obsolete external Codex/ChatGPT instructions; preserve unique history. |
+| #107 | Open, P2 repository stewardship follow-up | Review unmerged historical branch disposition; no automatic deletion or merge. |
 | PR #96, private JA11 settings persistence beta | Active unresolved physical failure | `FINAL_EQ_MISMATCH`; Save `0x19`; original-state restoration is not verified per the owner report recorded on the PR and its cited validation ledger. Preserve draft. Do not replay mutation or merge. Follow current PR evidence; owner/device gate remains separate. |
 | PR #93, JA11 post-Flash diagnostic trace | Historical/active draft investigation | Physical reproduction/root cause remains incomplete per current report. Preserve; no hardware action in this mission. |
 | PR #97, JA11 explicit defaults | Merged release integration | Merged at `899755507f812c940f3ab9381a856c80c6030885`; retain as release history |
@@ -23,21 +30,24 @@ Latest fetched main: `35e91c2170786ae4afc7a6679ba9ba34a01511a8`
 
 ## Current CI/release evidence
 
+Exact PR-head history captured on 2026-10-20:
+- On prior PR head `e955f62db0bb7ab96182ee3964aa579a6cb9d186`, exact-head run [39507302003](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507302003) attempt 2 passed all four jobs: `build`, `CodeQL exact head`, `min-api-smoke`, `emulator-ui-test`. No jobs were skipped. Attempt 1 failed only the emulator UI job, 8/72 tests because Activity focus was false (0 skipped); same-SHA attempt 2 passed all 72. No source change occurred between attempts.
+- PR check-runs `Analyze Kotlin`, `CodeQL`, and `submit-gradle` were all successful on that prior head, with none pending or skipped.
+- Ordinary push run [39507297134](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39507297134) on that same SHA failed with zero jobs and no logs (API 404). Cause is unknown. It is not a job-level Android failure and is not a pass.
+- These results apply only to `e955f62…`. This report correction advances the PR SHA; verify the exact final head and record its current successful, failed, skipped, pending, and no-job outcomes on issue #99/PR #100. Do not add a commit only to repeat CI status.
+
+
 - Public v0.8.3 release is immutable, non-draft/non-prerelease, `/releases/latest`; tag peels to `899755507f812c940f3ab9381a856c80c6030885`.
 - Historical exact-main Android CI for release source: run `38648012952`, all four jobs passed on exact `899755...`.
 - Current main source-health workflow: run `39471956137` succeeded.
 - Current main automatic dependency submission: run `39466646926` succeeded.
 - Dependabot run `39467268390` failed on current main. Its job log reports `dependency_not_found`: security-update dependencies were absent from the dependency snapshot and no configured Gradle group matched. This is an automation/snapshot issue, not an Android app CI failure. Investigate separately.
 - GitHub's read-only alert API reports 56 open Maven Dependabot alerts on current main: 3 critical, 22 high, 28 moderate, 3 low. All list `settings.gradle.kts` as the manifest. This inventory does not prove runtime APK inclusion or reachability; perform a separate dependency review.
-- On exact PR head `8862fcf7f4c922c2585f7787106494389b91e47f`, PR check-runs `Analyze Kotlin`, `CodeQL`, and `submit-gradle` all completed successfully.
-- Exact-head workflow run [39505611435](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39505611435) passed all four jobs on that exact SHA: `build`, `CodeQL exact head`, `min-api-smoke`, and `emulator-ui-test`. The build includes documentation validation, release-contract tests, unit tests, lint, debug/release assembly, and R8 mapping verification; API 26 smoke launch and API 35 connected UI tests passed. No exact-head job failed, skipped, or remained pending.
-- Ordinary `.github/workflows/android-ci.yml` push run [39505582203](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39505582203) on the same SHA has conclusion `failure` but zero jobs and no downloadable logs (API 404). Cause is unknown; do not call it a job-level Android failure or a pass. The same no-job pattern occurred on superseded candidate SHAs including `9de1b4d…`, `33066be…`, and `d065462…`.
-- The completed exact-head CI above is evidence for the SHA it tested. For any later PR head, consult issue #99 and PR #100 for its exact SHA and separately dispatched exact-head result before merge.
 - No current CI conclusion on main should be generalized from the source-health/dependency jobs alone. Refresh exact relevant check runs before final delivery.
 
 ## Required update
 
-Issue #99 and draft PR #100 exist. The PR checks and exact-head run above passed on `8862fcf…`. The final closeout-only documentation update may advance the PR head; issue #99 and PR #100 must identify the new head and its separately dispatched exact-head run. Keep issue progress factual and link local docs by repository path. Never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
+Issue #99 and draft PR #100 exist. Separate actionable follow-ups are tracked in #101 (P1 security triage), #102 (P2 zero-job push workflow), #103 (P2 emulator Activity focus), #104 (P2 physical device provenance with owner/device gate), #105 (P3 external backup retention), #106 (P3 external Codex/ChatGPT instruction reconciliation), and #107 (P2 historical branch disposition). Each links back to #99. No dependency or application remediation is in PR #100. Keep #99 and PR #100 current with final-head CI; never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
 
 ## Open PR snapshot (2026-10-20)
 
