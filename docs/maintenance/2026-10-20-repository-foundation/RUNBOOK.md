@@ -46,7 +46,7 @@ Establish a reliable, evidence-based foundation for future Android development w
 - [x] Verify checks on the reviewed exact PR SHA and record successful, failed, skipped, pending, and no-job workflow outcomes in issue #99/PR #100.
 - [x] Owner approved; PR #100 was marked ready and merged normally into `main` at `1599ab451f711d8a27adfefbcba10293cd53dd84`.
 
-The original foundation Definition of Done (P0-P10) is satisfied: preserved application/history, verified v0.8.3 baseline and backup, reconciled instructions/docs and GitHub inventory, consolidated README/development/Android guidance, and a validated post-merge development handoff. P12 follow-up issues are not completion criteria. The live canonical copies on `main` still need the factual synchronization currently prepared in draft PR #108; do not treat its old-base draft as integrated. Exact current main and Mac baseline are in `STATUS.md`.
+The original foundation Definition of Done (P0-P10) is satisfied: preserved application/history, verified v0.8.3 baseline and backup, reconciled instructions/docs and GitHub inventory, consolidated README/development/Android guidance, and a validated post-merge development handoff. P12 follow-up issues are not completion criteria. PR #108 merged the factual foundation synchronization into `main` at `54fe191f327cfe6c6bd929b412462705f6839ae0`. The remaining installed-device correction is in draft PR #116 and the dependency-alert correction is in draft PR #111; neither has merged. Exact current main and Mac baseline are in `STATUS.md`.
 
 ### Required immediately after an approved merge
 
@@ -85,7 +85,7 @@ PR #116's verified Pixel record remains unchanged. Its validator is being correc
 
 PR #111 contains unique accurate dependency-alert closeout facts absent from current main (56 fixed, zero open or dismissed, issue #101 closed) and corrects `PROJECT_STATE.md`. It remains an existing draft and is recommended for retention as a separate issue #101 record; merge or closure remains owner-controlled.
 
-The primary Mac development folder remains at `6047d45d0e8377f29bc9deb5580191ae44b37793`, 19 commits behind current `origin/main`, with three pre-existing untracked paths preserved. Synchronize only after the authorized documentation merges, using a saved-state checkpoint and a clean separate worktree or a carefully reviewed fast-forward; do not reset or clean this checkout.
+At the pre-merge refresh, the primary Mac development folder was at `6047d45d0e8377f29bc9deb5580191ae44b37793`, 19 commits behind then-current `origin/main`, with three pre-existing untracked paths preserved. After PR #108 merged, the same untouched checkout is 25 commits behind current main. Synchronize only after the authorized documentation merges, using a saved-state checkpoint and a clean separate worktree or a carefully reviewed fast-forward; do not reset or clean this checkout.
 
 
 ## Post-merge record (2026-10-21)
