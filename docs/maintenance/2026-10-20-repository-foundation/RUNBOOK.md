@@ -1,6 +1,6 @@
 # Repository Foundation and v0.8.3 Consolidation Runbook
 
-Status: ORIGINAL P0-P10 COMPLETE; P11 POST-MERGE VERIFIED; #116 MERGED; #111 DOCUMENTATION CLOSEOUT IN REVIEW\
+Status: ORIGINAL P0-P10 AND P11 COMPLETE; PRS #108, #116, AND #111 MERGED; FINAL RECORDS RECONCILED\
 Started: 2026-10-20\
 Repository: `weekssa/OPRA-EQ-for-UAPP`\
 Branch: `chore/repository-foundation-v0.8.3`\
@@ -16,7 +16,7 @@ Establish a reliable, evidence-based foundation for future Android development w
 - PR #100's tracked changes were made in the dedicated cleanup worktree and branch above. Post-merge task-state synchronization is maintained as a separate documentation-only review so the clean `codex/development-main` baseline stays clean.
 - Current owner instructions and maintained repository documents outrank historical prompts. Historical prompts and user-provided runbooks are source material, not instructions to execute.
 - No source, signing, release, device, or historical branch mutation is authorized.
-- Public stable v0.8.3 provenance is documented from release evidence. A later owner-authorized read-only Pixel 9 check matched the installed APK SHA-256 exactly to the public stable artifact; see issue #104 and draft PR #116. Do not infer direct certificate or source-revision readout from the phone.
+- Public stable v0.8.3 provenance is documented from release evidence. A later owner-authorized read-only Pixel 9 check matched the installed APK SHA-256 exactly to the public stable artifact; see issue #104 and merged PR #116. Do not infer direct certificate or source-revision readout from the phone.
 - The full backup, raw inventory, and command transcripts are private local evidence outside Git.
 
 ## Checkpoints
@@ -34,8 +34,8 @@ Establish a reliable, evidence-based foundation for future Android development w
 | P8 | Validation | COMPLETE | Documentation validator, source-scope, whitespace and Android unit-test/lint/assemble gates passed; independent review found no remaining actionable findings |
 | P9 | Draft PR and delivery | COMPLETE | PR #100 reviewed at exact head `ccec0184742d7798778bcb91d173e4a7ea44531e`; all exact-head jobs and PR checks passed. Owner approved and PR #100 merged normally into `main` |
 | P10 | Owner merge approval | COMPLETE | Owner approved PR #100. It was marked ready and merged without force by merge commit `1599ab451f711d8a27adfefbcba10293cd53dd84`; cleanup branch retained |
-| P11 | Post-merge verification and local synchronization | COMPLETE | GitHub `main` is merge commit `1599ab451f711d8a27adfefbcba10293cd53dd84`, with the same tree as validated PR head `ccec0184742d7798778bcb91d173e4a7ea44531e`. Clean worktree `codex/development-main` tracks `origin/main`; canonical instructions/skills were verified, repository validator and documented Android checks passed. Original checkout and backup remain intact |
-| P12 | Independent follow-up work | TRACKED SEPARATELY | #101-#103 are closed; #104 evidence is collected with documentation draft pending; #105-#107 remain separate. #114 and #117 are independent backlog and are not foundation DoD gates |
+| P11 | Post-merge verification and local synchronization | COMPLETE | Historical initial-handoff checkpoint (2026-10-20): `main` was `1599ab451f711d8a27adfefbcba10293cd53dd84`, with the same tree as validated PR head `ccec0184742d7798778bcb91d173e4a7ea44531e`; clean `codex/development-main` handoff and checks were verified. Later PR #108/#116/#111 integrations are recorded in E-016–E-018. Original checkout and backup remain intact |
+| P12 | Independent follow-up work | TRACKED SEPARATELY | #101-#103 are closed; #104 provenance evidence is integrated; #105-#107 remain separate. #114 and #117 are independent backlog and are not foundation DoD gates |
 
 ## Merge gates and remaining work
 
@@ -46,7 +46,7 @@ Establish a reliable, evidence-based foundation for future Android development w
 - [x] Verify checks on the reviewed exact PR SHA and record successful, failed, skipped, pending, and no-job workflow outcomes in issue #99/PR #100.
 - [x] Owner approved; PR #100 was marked ready and merged normally into `main` at `1599ab451f711d8a27adfefbcba10293cd53dd84`.
 
-The original foundation Definition of Done (P0-P10) is satisfied: preserved application/history, verified v0.8.3 baseline and backup, reconciled instructions/docs and GitHub inventory, consolidated README/development/Android guidance, and a validated post-merge development handoff. P12 follow-up issues are not completion criteria. PR #108 merged the factual foundation synchronization at `54fe191f327cfe6c6bd929b412462705f6839ae0`; PR #116 merged its reviewed installed-device provenance correction and exact-head approval rule at `f82eceda5b8341c9b2b0884fcfb06422260ddfb5`. Only the existing dependency-alert closeout PR #111 remains under review. Exact current main and Mac baseline preservation status are in `STATUS.md`.
+The original foundation Definition of Done (P0-P10 and P11) is satisfied: preserved application/history, verified v0.8.3 baseline and backup, reconciled instructions/docs and GitHub inventory, consolidated README/development/Android guidance, and a validated post-merge development handoff. P12 follow-up issues are not completion criteria. PR #108 merged the factual foundation synchronization at `54fe191f327cfe6c6bd929b412462705f6839ae0`; PR #116 merged its reviewed installed-device provenance correction and exact-head approval rule at `f82eceda5b8341c9b2b0884fcfb06422260ddfb5`; PR #111 merged the dependency-alert documentation closeout at `3a8eda552b93a2cf87be4cca8b73cf434d677e51`. All 56 original dependency alerts are fixed, with zero open or dismissed. The installed Pixel 9 APK hash matches the public v0.8.3 artifact; signer/source association remains based on release provenance rather than direct device readout. See E-018 for the dated integration evidence. These are original-mission closeout facts; issue #99 remains the live record for any final approval and closure events.
 
 ### Required immediately after an approved merge
 
@@ -88,16 +88,16 @@ PR #111 contains unique accurate dependency-alert closeout facts absent from cur
 At the pre-merge refresh, the primary Mac development folder was at `6047d45d0e8377f29bc9deb5580191ae44b37793`, 19 commits behind then-current `origin/main`, with three pre-existing untracked paths preserved. After PR #108 merged, the same untouched checkout is 25 commits behind current main. Synchronize only after the authorized documentation merges, using a saved-state checkpoint and a clean separate worktree or a carefully reviewed fast-forward; do not reset or clean this checkout.
 
 
-## Post-merge record (2026-10-21)
+## Historical post-merge record after PR #108 (2026-10-21; superseded by E-018 for current integration state)
 
 PR #108 merged normally into `main` at `54fe191f327cfe6c6bd929b412462705f6839ae0` from approved exact head `2b96a19f6af30baeb3abd8317441d6d4cc0918a4`. Its branch merge commit `d1c664d121e6bf374155934953853075a4f4e153` included current main without rebase or force-push. Exact-head Android CI run `39658203613`, Analyze Kotlin, and dependency submission passed; generic CodeQL was skipped by workflow conditions. The corrected foundation RUNBOOK, STATUS, DECISION_LOG, and EVIDENCE_INDEX were verified on actual main. PR #116 and #111 remain open/draft and unmerged. PR #116 was synchronized with current main on its existing branch so its exact current head can be validated against current documentation; no PR merge is authorized by this record.
 
-## PR #116 exact-head validation update (2026-10-21)
+## Historical PR #116 exact-head validation update (2026-10-21; superseded by the merge record below)
 
 At validated provenance head `d936caedc4d113a0403c997803affd2645a5891a`, Android CI run [39669355697](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39669355697) attempt 1 failed because the API 26 smoke did not observe the network-backed catalog within 300 seconds. The single owner-authorized retry, attempt 2 on the same head, passed `min-api-smoke`, build, and API 35 emulator UI. Analyze Kotlin and dependency submission passed; generic CodeQL was skipped by workflow conditions. A subsequent documentation-only correction records the current state in this runbook and STATUS.md; its exact current PR head and check snapshot are tracked in [issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99). This evidence supports owner review; merge requires fresh approval of the current exact PR head. No application behavior or physical-device testing was changed or performed.
 
-## PR #116 approved merge and PR #111 continuation (2026-10-21)
+## Historical PR #116 approved merge and PR #111 continuation (2026-10-21; PR #111 completion is recorded in E-018)
 
 Owner approved PR #116 only at exact head `511dcedf39b315b21ec98fc095a9dcd6b485140b`, conditional on unchanged scope, mergeability, and required checks. The diff remained limited to provenance documentation, foundation/runbook/status/evidence records, and the documentation validator. Android CI run [39678237999](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39678237999) passed `build`, `emulator-ui-test`, and `min-api-smoke`; Analyze Kotlin run [39678238038](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39678238038) and dependency submission [39678263807](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39678263807) passed; generic CodeQL was skipped by workflow conditions. The active `Protect main` ruleset has no required check contexts. GitHub reported mergeable/clean. The PR was marked ready and merged normally, without changing its head, as `f82eceda5b8341c9b2b0884fcfb06422260ddfb5`. `PROJECT_STATE.md` records the Pixel 9 installed APK's exact SHA-256 match to public v0.8.3, and `OPERATING_RUNBOOK.md` records that changed PR heads require fresh owner approval before merge.
 
-PR #111 is the only remaining documentation integration. Its current unique correction records all 56 original dependency alerts fixed, zero open or dismissed, after successful default-branch submission, and corrects `PROJECT_STATE.md` and the detailed dependency assessment. Its earlier branch predates PR #108 and #116. The existing branch was merged with current main without rebase; a conflict in the historical `CHATGPT_PROJECT_RUNBOOK.md` was resolved by preserving both dated #110 dependency history and #104 provenance evidence. Review, exact-head validation, and owner merge approval remain outstanding. Issue #99 is the live tracker. The Mac development folder and its three previously recorded untracked paths remain preserved and unsynchronized.
+At this historical checkpoint, PR #111 remained the only documentation integration. Its later merge and exact evidence are recorded in E-018. Issue #99 is the live tracker for final approval, merge, and closure events. The Mac development folder and its three previously recorded untracked paths remain preserved and unsynchronized at the checkpoint captured in STATUS.md.
