@@ -1,0 +1,192 @@
+# Issue #103: API 35 emulator Activity-focus reliability
+
+## Scope and guardrails
+
+- Primary tracker: [issue #103](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/103).
+- Base: `origin/main` at `6047d45d0e8377f29bc9deb5580191ae44b37793`.
+- Branch: `codex/issue-103-api35-focus` in the isolated issue-103 worktree.
+- Keep changes limited to emulator/test infrastructure unless evidence proves an application defect.
+- Keep the v0.8.3 release configuration, all 72 existing UI tests, their assertions, and required CI safeguards intact.
+- Do not merge without owner approval. Draft PRs #108 and #111 are separate and must remain untouched.
+
+## Historical evidence
+
+Issue #103 records exact-head Android CI run `39507302003`, attempt 1, on source
+`e955f62db0bb7ab96182ee3964aa579a6cb9d186`: 8 of 72 tests failed and 0 were skipped. The unchanged-SHA
+retry passed 72/72 with 0 skipped. The attempt-1 instrumentation log shows failures across unrelated
+UI paths, including D-pad export/editor/recovery, Back navigation, hardware-key search, accessibility,
+and Black Pearl reset lifecycle. Diagnostics report `windowFocus=false`, `decorHasFocus=false`, no
+focused view, 1080x2400 viewport, and hidden IME; Espresso also reports `RootViewWithoutFocusException`.
+The retry passed despite an emulator-console startup warning, so that warning alone does not explain
+the failure. The evidence demonstrates a real instrumentation failure but does not identify a single
+root cause at the time of the initial investigation.
+
+## Code inspection
+
+- The CI workflow waited for ADB and `sys.boot_completed`, sent keyevent 82, then launched tests. It
+  did not confirm that the emulator was unlocked or that its Home window held focus before starting
+  instrumentation.
+- `UiModernizationFlowsTest.waitForActivityWindowFocus` already waits up to 10 seconds for a resumed
+  Activity with window focus, then asserts with window and IME diagnostics. The focus assertions and
+  test count must remain intact.
+- `MainActivity` has no custom window-focus lifecycle handling. Several affected Compose-only tests
+  run through the test host rather than the product Activity. No application focus defect is
+  demonstrated.
+
+## Candidate correction
+
+The first CI candidate dismissed the emulator keyguard, woke the display, and waited for an unlocked
+focused Home window. Exact-head rerun on `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7` disproved that
+gate as sufficient: the API 35 job failed 8/72 tests with `RootViewWithoutFocusException`, matching
+the historical failure class. Its uploaded `window.txt` shows a Nexus Launcher ANR at 06:36:09 with
+reason `Input dispatching timed out (Application does not have a focused window)`. The gate checked
+whether the current focus line contained the Home package; Android's `Application Not Responding:`
+dialog includes that package name, so the unhealthy ANR surface passed the string check. The ANR
+occurred before instrumentation and belongs to `com.google.android.apps.nexuslauncher`, not OPRA.
+
+The second candidate matched a real Home activity window (`$home_package/`) and rejected an
+`Application Not Responding:` focus surface. It still failed: the job's captured last-ANR time was
+06:50:44, about one second before the readiness step reported the focused Home package. The
+launcher ANR therefore raced the snapshot, and the gate started instrumentation immediately after
+the ANR record was written.
+
+Candidate `fbb03e96da28fccd0000c5e5d0b82831837dc564` added last-ANR inspection but its readiness
+job failed before instrumentation because `cmd package resolve-activity ... HOME` returned
+`com.google.android.googlesdksetup/.DefaultActivity` while WindowManager showed the real
+Nexus Launcher focused and `topDisplayFocusedRootTask=... type=home`, with no ANR. The Android HOME
+intent resolver selected a transient setup activity. Candidate `b1ad3e831facc5ae00e1d6d74d534a470a5c86b9`
+then used the HOME role holder, but the hosted emulator temporarily returned
+`com.google.android.googlesdksetup` there as well. The current gate no longer trusts either transient
+package selection: it checks for a `type=home` top focused task and verifies that WindowManager's
+focused window belongs to its focused ActivityRecord.
+
+The current correction checks `dumpsys window lastanr` during the readiness wait for the specific
+Home-launcher failure `Input dispatching timed out (Application does not have a focused window)`.
+If that event occurred before instrumentation, CI reboots the fresh emulator once, waits for boot,
+and requires a responsive, unlocked Home task with no new no-focused-window ANR record. A second
+readiness recovery attempt showed another Home no-focused-window ANR during that same startup
+sequence. The workflow had sent legacy `KEYCODE_MENU` (`82`) after both initial boot and recovery,
+before confirming Home focus. Its timing coincides with the repeated ANR, so the current candidate
+removes that input; wake and keyguard dismissal remain. This is an infrastructure hypothesis to
+validate with exact-hosted runs, not a proven cause. If recovery does not establish readiness, the
+job fails with window, last-ANR, ActivityManager, and emulator logs. No test is retried or skipped,
+and all 72 tests must run on a ready emulator. Post-test logcat, window, and ActivityManager
+snapshots remain downloadable. No application, test-source, dependency, version, or release
+configuration is changed.
+
+Before merge review, an independent safety check found that the initial recovery condition also
+accepted any generic `Application Not Responding:` window. The guard was narrowed so recovery now
+requires all three signals before any reboot: `mCurrentFocus` is the ANR dialog naming
+`com.google.android.apps.nexuslauncher`, `mFocusedApp` is that exact launcher package, and
+`dumpsys window lastanr` reports the no-focused-window reason above. Other ANRs and generic focus
+timeouts fail closed without reboot. Revalidate the revised exact PR head and retain its pre-test
+readiness outcome plus post-test diagnostics before merge.
+
+## Validation record
+
+- Unmodified base `6047d45d0e8377f29bc9deb5580191ae44b37793`, local API 35 Google APIs Pixel 6 arm64
+  AVD `issue103_api35_pixel6`: `:app:connectedDebugAndroidTest` passed 72/72, 0 skipped, 0 failed,
+  in 2m51s. This did not reproduce the historical failure and is not an x86_64 hosted-runner result.
+- Candidate's unlocked focused-Home readiness shell logic passed on that API 35 AVD.
+- Candidate on the same local API 35 AVD passed three sequential full runs: 72/72, 0 skipped, 0 failed
+  each, in 2m03s, 2m03s, and 2m00s. The historical failure was not reproduced; these runs show no
+  regression under local repetition but do not establish an x86_64 hosted-runner failure rate.
+- Initial workflow candidate source head `2f8409e9e7c3d2a8ee7b5351791eb3b536db4437`, Android CI run
+  `39551959584`: build, unit tests, lint, debug/release assembly, and R8 passed. API 35 jobs
+  `119066463106` and `119069475293` passed 72/72, 0 skipped, 0 failed. API 26 initially failed its
+  catalog readiness assertion, then passed unchanged rerun `119066461359`; no smoke assertion was
+  changed. CodeQL run `39551959547` passed on this candidate.
+- Exact final-documentation-head SHA `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`, run
+  `39554995338`: CodeQL `39554995413`, build (unit tests, lint, debug/release assembly, R8), and API
+  26 smoke passed. API 35 job `119072593792` passed 72/72, 0 skipped, 0 failed. Its same-head repeat
+  `119076456986` reproduced 8 failures of 72, 0 skipped, including `RootViewWithoutFocusException`;
+  artifact `12326003108` contains the evidence. The `window.txt` last-ANR record and focused-window
+  dump identify the system Home ANR and the false-positive preflight check described above.
+- First stricter-focus candidate `659ce3d68068bd5ff4ca9ee905b0d016f0cd29b7`, run
+  `39557792944`: build, unit tests, lint, debug/release assembly, R8, API 26 smoke, and CodeQL passed.
+  API 35 job `119081562822` again failed 8/72 with 0 skipped and `RootViewWithoutFocusException`.
+  It reports a focused Home activity at readiness, but the uploaded artifact `12326698357` records
+  a Home no-focused-window ANR at 06:50:44, roughly one second earlier. This confirms a race between
+  the actual system ANR and a single focus snapshot; the test gate did not hide or retry it.
+- Last-ANR candidate `fbb03e96da28fccd0000c5e5d0b82831837dc564`, Android CI run
+  `39559156367`: API 35 readiness failed closed before starting the 72 tests because the package
+  resolver selected SDK Setup instead of the actual HOME role holder. No UI result is claimed from
+  that attempt; build, API 26, and CodeQL were still pending when this record was updated.
+- HOME-role candidate `b1ad3e831facc5ae00e1d6d74d534a470a5c86b9`, Android CI run
+  `39559603074`: API 35 readiness detected the no-focused-window ANR, rebooted once, then detected
+  the same ANR pattern after the second boot and failed closed before instrumentation.
+  Artifact log timestamps place the repeated ANR at 07:09:42 after recovery, with `mCurrentFocus`
+  showing a SystemUI ANR dialog and `mFocusedApp` the Nexus Launcher. The workflow still sent
+  legacy `KEYCODE_MENU` after each boot; that input is now removed, and the Home check is task-based.
+- Task-based candidate `119fe0373aadd720a503a1a8b9835ee5c5cf8c82`, Android CI run
+  `39560874718`: the API 35 gate failed closed without any ANR. Its diagnostics showed the Nexus
+  Launcher `mCurrentFocus` and `mFocusedApp` matched and `topDisplayFocusedRootTask` was `type=home`.
+  A shell `sed` expression intended to parse the window package did not match Android's `Window{...}`
+  format, causing a false negative; the current version matches the window line against the
+  independently parsed `mFocusedApp` package directly. Instrumentation did not run on this attempt.
+- Current code candidate `0bd92f2b399e4f861721234f36dc0634191e8126`, Android CI run
+  `39561383373`: build, unit tests, lint, debug/release assembly, R8, API 26 smoke, CodeQL
+  `39561383193`, and Automatic Dependency Submission `39561381826` passed. Hosted API 35 jobs
+  `119093375926` and `119097722467` both completed all 72 tests with 0 skips and 0 failures. The
+  readiness gate passed without reboot on both runs. Artifact `12328498136` confirms a Home task,
+  matching Nexus Launcher current focus and focused ActivityRecord, unlocked keyguard, and
+  `<no ANR has occurred since boot>`. This is the first same-head pair after removing pre-focus
+  `KEYCODE_MENU`; it supports the startup-input hypothesis but is too small to prove a long-term
+  flake-rate reduction.
+- Documentation-updated head `b8e8b7d86c4a02ef0866df509058b146cc3c04ef`, Android CI run
+  `39564032480`, CodeQL `39564032725`, and Automatic Dependency Submission `39564024196` all
+  passed. API 35 job `119101879025` and same-SHA repeat `119106816304` both completed 72/72 with 0
+  skipped and 0 failed. The retry job used unchanged code and showed successful readiness; the
+  earlier code-equivalent head's diagnostic artifact `12328498136` confirmed no ANR after boot.
+- Automatic Dependency Submission run `39555003303` succeeded on SHA
+  `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`. Separate historical KSP 2.3.12 failure remains tracked
+  in issue #114; no dependency change is in this PR.
+- The current last-ANR-aware, Home-task-based correction removes the pre-focus `KEYCODE_MENU` input.
+  Code and documentation through `b8e8b7d86c4a02ef0866df509058b146cc3c04ef` passed the full normal
+  Android workflow, CodeQL, and two same-SHA hosted API 35 runs. This record update makes a
+  documentation-only commit; re-run the normal Android workflow and CodeQL on the resulting exact
+  head, repeat API 35 once, and write those final run IDs and results to issue #103 and PR #115.
+  After that exact-head validation, make no further source or documentation changes. Failure results
+  must remain visible; earlier passing runs do not erase the reproduced failures.
+
+## Resume checklist
+
+1. Run the full normal Android CI workflow and CodeQL on the documentation-updated exact PR head;
+   repeat API 35 once and inspect readiness logs, test reports, and emulator snapshots.
+2. Record that final exact SHA, run/job IDs, pass/fail/skip counts, and uncertainty on issue #103 and
+   PR #115; then make no more changes to this branch.
+   Preserve application and release configuration, and leave PR #115 as draft.
+3. Confirm draft PRs #108 and #111 remain untouched, and stop before merge for owner approval.
+
+## 2026-10-21 owner-approved merge continuation
+
+The owner approved merging PR #115 subject to explicit safety verification. The live PR head at
+the start of that review was `1f059371f45e8827e662b5b040e8269b809255d1`, but independent review
+found the recovery branch also rebooted on any generic ANR window. That did not satisfy the owner's
+requirement that recovery be limited to the matching pre-instrumentation launcher ANR. The guard was
+narrowed in commit `633ebd4f8090179af4c0ddd4497ff1b353bc1717`, and a second independent review
+confirmed the one reboot now requires the current focused window to name the Nexus Launcher ANR,
+the focused ActivityRecord package to equal `com.google.android.apps.nexuslauncher`, and the exact
+no-focused-window `lastanr` reason. Other ANRs/focus timeouts fail closed with diagnostics; no test
+retry/skip or pass-on-failure path was added.
+
+On exact code head `633ebd4f8090179af4c0ddd4497ff1b353bc1717`, Android CI run
+`39616021869` attempt 3 passed all three jobs: `build` (`119283095847`), `emulator-ui-test`
+(`119288092493`), and `min-api-smoke` (`119283095411`). The API 35 run completed all 72 tests with
+0 skipped and 0 failed. Both API 35 runs on this exact code head, jobs `119277160677` and
+`119288092493`, passed Home readiness without using the recovery reboot. CodeQL run `39616022059`
+and Automatic Dependency Submission run `39616013535` passed on the same head. The API 26 smoke
+first failed in run `39616021869` attempt 1: the emulator framework's system process died and
+Zygote restarted; Android apps logged `DeadSystemException`, and catalog readiness did not recover
+after its single built-in retry. Artifact `12353716400` preserves that failure. No OPRA process
+crash was observed. An unchanged rerun of only the failed API 26 job passed in attempt 2 as job
+`119283429555`; the populated catalog appeared, and the smoke completed successfully. Preserve the
+first failure as infrastructure evidence; its underlying system restart trigger is unknown.
+
+The isolated branch and original development checkout remained clean aside from this branch's
+intended tracked files; `main` remained at the PR base `6047d45d0e8377f29bc9deb5580191ae44b37793`.
+This record update is documentation-only and requires final exact-PR-head validation before merge.
+After updating this record, do not edit branch files again; put any final run IDs/status in the PR
+body and issue #103. The PR must remain a draft until the final exact head passes and the owner
+approval is exercised by a normal merge. If any required check fails again, leave issue #103 open
+and investigate without weakening the workflow.

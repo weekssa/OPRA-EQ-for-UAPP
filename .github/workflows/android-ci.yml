@@ -126,6 +126,7 @@ jobs:
           test -f "$avd_home/opra_ci_api_35.ini"
 
       - name: Start emulator
+        id: start_emulator
         shell: bash
         run: |
           set -euo pipefail
@@ -160,7 +161,83 @@ jobs:
             cat "$RUNNER_TEMP/emulator.log"
             exit 1
           fi
-          adb shell input keyevent 82
+          adb shell wm dismiss-keyguard
+          adb shell input keyevent KEYCODE_WAKEUP
+
+      - name: Wait for API 35 emulator window readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          wait_for_home_window() {
+            for attempt in $(seq 1 30); do
+              window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+              activity_state="$(adb shell dumpsys activity activities 2>/dev/null || true)"
+              last_anr_state="$(adb shell dumpsys window lastanr 2>/dev/null || true)"
+              focus_line="$(grep -F 'mCurrentFocus=Window{' <<< "$window_state" || true)"
+              focused_app_line="$(grep -F 'mFocusedApp=ActivityRecord{' <<< "$window_state" || true)"
+              focused_root_line="$(grep -F 'topDisplayFocusedRootTask=' <<< "$activity_state" || true)"
+              if grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; then
+                return 1
+              fi
+              focused_app_package="$(sed -nE 's/.*mFocusedApp=ActivityRecord\{[^ ]+ u[0-9]+ ([^/ ]+)\/.*/\1/p' <<< "$focused_app_line")"
+              if [[ -n "$focused_app_package" ]] && \
+                [[ "$focus_line" == *"$focused_app_package/"* ]] && \
+                grep -Fq 'type=home' <<< "$focused_root_line" && \
+                grep -Fq 'isKeyguardShowing=false' <<< "$window_state" && \
+                grep -Fq 'mDreamingLockscreen=false' <<< "$window_state"; then
+                return 0
+              fi
+              sleep 1
+            done
+            return 1
+          }
+
+          print_window_diagnostics() {
+            adb shell dumpsys window >&2 || true
+            adb shell dumpsys window lastanr >&2 || true
+            adb shell dumpsys activity activities >&2 || true
+          }
+
+          if ! wait_for_home_window; then
+            window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+            last_anr_state="$(adb shell dumpsys window lastanr 2>/dev/null || true)"
+            anr_focus_line="$(grep -F 'mCurrentFocus=Window{' <<< "$window_state" || true)"
+            anr_focused_app_line="$(grep -F 'mFocusedApp=ActivityRecord{' <<< "$window_state" || true)"
+            anr_focused_app_package="$(sed -nE 's/.*mFocusedApp=ActivityRecord\{[^ ]+ u[0-9]+ ([^/ ]+)\/.*/\1/p' <<< "$anr_focused_app_line")"
+            if [[ "$anr_focus_line" == *'Application Not Responding:'*'com.google.android.apps.nexuslauncher'* ]] && \
+              [[ "$anr_focused_app_package" == "com.google.android.apps.nexuslauncher" ]] && \
+              grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; then
+              printf 'Android reported a no-focused-window ANR before instrumentation; rebooting this fresh emulator once.\n'
+              adb reboot
+              adb wait-for-device
+              boot_completed=""
+              for attempt in $(seq 1 48); do
+                boot_completed="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+                if [[ "$boot_completed" == "1" ]]; then
+                  break
+                fi
+                sleep 5
+              done
+              if [[ "$boot_completed" != "1" ]]; then
+                printf 'API 35 emulator did not finish rebooting after the Home ANR.\n' >&2
+                cat "$RUNNER_TEMP/emulator.log" >&2 || true
+                print_window_diagnostics
+                exit 1
+              fi
+              adb shell wm dismiss-keyguard
+              adb shell input keyevent KEYCODE_WAKEUP
+              if ! wait_for_home_window; then
+                printf 'API 35 emulator did not reach a responsive, unlocked Home task with matching focus after readiness recovery.\n' >&2
+                print_window_diagnostics
+                exit 1
+              fi
+            else
+              printf 'API 35 emulator did not reach an unlocked Home task with matching focused activity.\n' >&2
+              print_window_diagnostics
+              exit 1
+            fi
+          fi
+          printf 'API 35 emulator ready with an unlocked Home task and matching focused activity.\n'
 
       - name: Enable software keyboard with emulated keyboard
         shell: bash
@@ -182,6 +259,15 @@ jobs:
         id: connected_ui_tests
         run: gradle :app:connectedDebugAndroidTest --stacktrace
 
+      - name: Capture emulator state after UI tests
+        if: ${{ always() && steps.start_emulator.outcome == 'success' }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/ui-test-diagnostics"
+          adb logcat -d -v threadtime > "$RUNNER_TEMP/ui-test-diagnostics/logcat.txt" 2>&1 || true
+          adb shell dumpsys window > "$RUNNER_TEMP/ui-test-diagnostics/window.txt" 2>&1 || true
+          adb shell dumpsys activity activities > "$RUNNER_TEMP/ui-test-diagnostics/activities.txt" 2>&1 || true
+
       - name: Upload emulator diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -189,6 +275,7 @@ jobs:
           name: android-emulator-ui-test-reports
           path: |
             ${{ runner.temp }}/emulator.log
+            ${{ runner.temp }}/ui-test-diagnostics/
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: ignore
