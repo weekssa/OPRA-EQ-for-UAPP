@@ -14,6 +14,10 @@ I resolved the actual Gradle configurations and compared them with the GitHub De
 
 The proposed Gradle constraints are limited to the buildscript plugin classpath and dependency configurations of project subprojects. AGP 9.2.0, Gradle 9.4.1, app version 0.8.3/code 14, signing setup, and release configuration remain unchanged. The Kotlin plugin moves to 2.4.21 and KSP to 2.3.12. Kotlin documents KGP 2.4.20 compatibility through Gradle 9.7.0 and AGP 9.3.1; the selected Gradle 9.4.1 and AGP 9.2.0 are within that range, and the 2.4.21/KSP 2.3.12 combination passed the checks below. Alert #1 is left unchanged because the current resolved version is already 4.5.14, beyond its fixed version; GitHub should refresh that graph.
 
+## Current candidate comparison
+
+GitHub Dependency Review compared exact base `1599ab451f711d8a27adfefbcba10293cd53dd84` with PR #109 head `72a46e4dc1be4a94f65fa07476e83ef1208c6e0d`. The API returned 126 dependency changes: 64 removed and 62 added. It removed the old vulnerable Netty, Bouncy Castle, Commons Lang, jose4j, JDOM, Kotlin/KSP, Guava, and jsoup selections, and added their patched versions. None of the 62 added components carried a known advisory in the API response. This compares the candidate graph to main; it does not close default-branch Dependabot alerts. See GitHub’s [dependency review API](https://docs.github.com/en/rest/dependency-graph/dependency-review).
+
 ## Complete alert inventory
 
 | Alert | Severity | Advisory and issue | Alert snapshot / affected range | Current path and resolved version | First fixed version | Disposition |
@@ -76,12 +80,14 @@ The proposed Gradle constraints are limited to the buildscript plugin classpath 
 | [#56](https://github.com/weekssa/OPRA-EQ-for-UAPP/security/dependabot/56) | high | [GHSA-65r4-943x-97jj](https://github.com/advisories/GHSA-65r4-943x-97jj)<br>CVE-2026-75140<br>jsoup XmlTreeBuilder vulnerable to memory exhaustion through deeply nested namespace declarations | `org.jsoup:jsoup`<br>alert snapshot `1.12.2`; vulnerable `< 1.23.2` | `debugAndroidTestRuntimeClasspath` via AndroidX accessibility test framework; Android test only<br>Resolved: 1.23.2 (constraint in this PR) | `1.23.2` | Remediated in this PR; Android test only. |
 ## Primary advisory records
 
+The exact candidate dependency delta uses GitHub’s [dependency review API](https://docs.github.com/en/rest/dependency-graph/dependency-review).
+
 Kotlin toolchain references: [Kotlin Gradle plugin compatibility](https://kotlinlang.org/docs/gradle-configure-project.html), [Kotlin 2.4.21 release record](https://kotlinlang.org/releases.html), and [Google KSP releases](https://github.com/google/ksp/releases/tag/2.3.12).
 
 The linked GHSA pages in the alert table are the primary descriptions and affected/fixed ranges. Key records for the critical alerts: [GHSA-574f-3g2m-x479](https://github.com/advisories/GHSA-574f-3g2m-x479), [GHSA-c4c3-7fpv-j4q5](https://github.com/advisories/GHSA-c4c3-7fpv-j4q5), and [GHSA-9pwp-9qqc-pr26](https://github.com/advisories/GHSA-9pwp-9qqc-pr26).
 
 ## Validation limits and follow-up
 
-This is dependency-graph and advisory analysis, not a penetration test. `releaseRuntimeClasspath` absence supports the finding that the flagged artifacts are not packaged as app runtime dependencies; it does not prove the absence of unrelated copies, reflectively loaded code, or future graph changes. CI’s previous dependency-submission failure (`dependency_not_found` while parsing `GITHUB_REGISTRIES_PROXY`) is not considered evidence of safety or remediation. The candidate passed `./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --console=plain` on this branch. After these constraints land in a separate draft PR, refresh the GitHub dependency graph and confirm alert closure/update. KSP/KGP compatibility for the selected versions was validated by the build and test run above.
+This is dependency-graph and advisory analysis, not a penetration test. `releaseRuntimeClasspath` absence supports the finding that the flagged artifacts are not packaged as app runtime dependencies; it does not prove the absence of unrelated copies, reflectively loaded code, or future graph changes. CI’s previous dependency-submission failure (`dependency_not_found` while parsing `GITHUB_REGISTRIES_PROXY`) is not considered evidence of safety or remediation. The candidate passed `./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --console=plain` on this branch. The PR-head automatic dependency submission passed (run 39520168814). The CodeQL Kotlin build and analysis passed on PR head `72a46e4dc1be4a94f65fa07476e83ef1208c6e0d` (run 39520155513). Android CI did not start automatically for the draft PR; manual dispatch was rejected because GitHub reported no `workflow_dispatch` trigger. After owner-approved integration, refresh the default-branch dependency graph and confirm alert closure/update. KSP/KGP compatibility for the selected versions was validated by the build and test run above.
 
 This assessment is linked to [issue #101](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/101) and parent [issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99). It does not authorize merge or release changes.
