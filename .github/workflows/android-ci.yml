@@ -169,10 +169,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          home_component="$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tr -d '\r' | tail -n 1)"
-          home_package="${home_component%%/*}"
+          home_package="$(adb shell cmd role get-role-holders --user 0 android.app.role.HOME | tr -d '\r' | head -n 1)"
           if [[ -z "$home_package" ]]; then
-            printf 'Unable to resolve the emulator Home activity.\n' >&2
+            printf 'Unable to identify the emulator Home role holder.\n' >&2
             adb shell dumpsys window >&2 || true
             exit 1
           fi
@@ -198,7 +197,7 @@ jobs:
           }
 
           print_window_diagnostics() {
-            printf 'Resolved Home component: %s\n' "$home_component" >&2
+            printf 'Home role holder: %s\n' "$home_package" >&2
             adb shell dumpsys window >&2 || true
             adb shell dumpsys window lastanr >&2 || true
             adb shell dumpsys activity activities >&2 || true

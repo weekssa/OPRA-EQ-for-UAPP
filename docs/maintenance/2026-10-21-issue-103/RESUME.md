@@ -50,14 +50,22 @@ The second candidate matched a real Home activity window (`$home_package/`) and 
 launcher ANR therefore raced the snapshot, and the gate started instrumentation immediately after
 the ANR record was written.
 
-The current correction also checks `dumpsys window lastanr` during the readiness wait for the
-specific Home-launcher failure `Input dispatching timed out (Application does not have a focused
-window)`. If that event occurred before instrumentation, CI reboots the fresh emulator once, waits
-for boot, and requires a responsive, unlocked Home activity with no new matching ANR record. If
-recovery does not establish that precondition, the job fails with window, last-ANR, ActivityManager,
-and emulator logs. No test is retried or skipped, and all 72 tests must run on a ready emulator.
-Post-test logcat, window, and ActivityManager snapshots remain downloadable. No application,
-test-source, dependency, version, or release configuration is changed.
+Candidate `fbb03e96da28fccd0000c5e5d0b82831837dc564` added last-ANR inspection but its readiness
+job failed before instrumentation because `cmd package resolve-activity ... HOME` returned
+`com.google.android.googlesdksetup/.DefaultActivity` while WindowManager showed the real
+Nexus Launcher focused and `topDisplayFocusedRootTask=... type=home`, with no ANR. The Android HOME
+intent resolver selected a transient setup activity. On the local API 35 AVD,
+`cmd role get-role-holders --user 0 android.app.role.HOME` correctly returns
+`com.google.android.apps.nexuslauncher`; the current gate now uses the HOME role holder.
+
+The current correction checks `dumpsys window lastanr` during the readiness wait for the specific
+Home-launcher failure `Input dispatching timed out (Application does not have a focused window)`.
+If that event occurred before instrumentation, CI reboots the fresh emulator once, waits for boot,
+and requires a responsive, unlocked Home activity with no new matching ANR record. If recovery does
+not establish that precondition, the job fails with window, last-ANR, ActivityManager, and emulator
+logs. No test is retried or skipped, and all 72 tests must run on a ready emulator. Post-test logcat,
+window, and ActivityManager snapshots remain downloadable. No application, test-source, dependency,
+version, or release configuration is changed.
 
 ## Validation record
 
@@ -85,13 +93,18 @@ test-source, dependency, version, or release configuration is changed.
   It reports a focused Home activity at readiness, but the uploaded artifact `12326698357` records
   a Home no-focused-window ANR at 06:50:44, roughly one second earlier. This confirms a race between
   the actual system ANR and a single focus snapshot; the test gate did not hide or retry it.
+- Last-ANR candidate `fbb03e96da28fccd0000c5e5d0b82831837dc564`, Android CI run
+  `39559156367`: API 35 readiness failed closed before starting the 72 tests because the package
+  resolver selected SDK Setup instead of the actual HOME role holder. No UI result is claimed from
+  that attempt; build, API 26, and CodeQL were still pending when this record was updated.
 - Automatic Dependency Submission run `39555003303` succeeded on SHA
   `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`. Separate historical KSP 2.3.12 failure remains tracked
   in issue #114; no dependency change is in this PR.
-- The current last-ANR-aware correction and this failure analysis are on a new candidate head. Run
-  the full normal Android workflow and CodeQL on that exact head, repeat API 35 at least twice, and
-  inspect whether the preflight performs recovery or refuses to start instrumentation on the ANR
-  state. Failure results must remain visible; earlier passing runs do not erase these reproductions.
+- The current last-ANR-aware, HOME-role-based correction and this failure analysis are on a new
+  candidate head. Run the full normal Android workflow and CodeQL on that exact head, repeat API 35
+  at least twice, and inspect whether the preflight performs recovery or refuses to start
+  instrumentation on the ANR state. Failure results must remain visible; earlier passing runs do
+  not erase these reproductions.
 
 ## Resume checklist
 
