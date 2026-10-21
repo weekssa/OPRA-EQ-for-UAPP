@@ -125,21 +125,27 @@ configuration is changed.
   `<no ANR has occurred since boot>`. This is the first same-head pair after removing pre-focus
   `KEYCODE_MENU`; it supports the startup-input hypothesis but is too small to prove a long-term
   flake-rate reduction.
+- Documentation-updated head `b8e8b7d86c4a02ef0866df509058b146cc3c04ef`, Android CI run
+  `39564032480`, CodeQL `39564032725`, and Automatic Dependency Submission `39564024196` all
+  passed. API 35 job `119101879025` and same-SHA repeat `119106816304` both completed 72/72 with 0
+  skipped and 0 failed. The retry job used unchanged code and showed successful readiness; the
+  earlier code-equivalent head's diagnostic artifact `12328498136` confirmed no ANR after boot.
 - Automatic Dependency Submission run `39555003303` succeeded on SHA
   `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`. Separate historical KSP 2.3.12 failure remains tracked
   in issue #114; no dependency change is in this PR.
 - The current last-ANR-aware, Home-task-based correction removes the pre-focus `KEYCODE_MENU` input.
-  These changes are validated on `0bd92f2b399e4f861721234f36dc0634191e8126`; this progress-record
-  update creates a documentation-only head. Re-run the normal Android workflow and CodeQL on that
-  exact head, then repeat API 35 at least once more. Inspect whether startup reaches a responsive
-  Home window without an ANR. Failure results must remain visible; earlier passing runs do not
-  erase the reproduced failures.
+  Code and documentation through `b8e8b7d86c4a02ef0866df509058b146cc3c04ef` passed the full normal
+  Android workflow, CodeQL, and two same-SHA hosted API 35 runs. This record update makes a
+  documentation-only commit; re-run the normal Android workflow and CodeQL on the resulting exact
+  head, repeat API 35 once, and write those final run IDs and results to issue #103 and PR #115.
+  After that exact-head validation, make no further source or documentation changes. Failure results
+  must remain visible; earlier passing runs do not erase the reproduced failures.
 
 ## Resume checklist
 
 1. Run the full normal Android CI workflow and CodeQL on the documentation-updated exact PR head;
-   repeat API 35 and inspect readiness logs, test reports, and emulator snapshots.
-2. Update issue #103 and PR #115 with the final exact SHA, run/job IDs, pass/fail/skip counts, and
-   uncertainty.
+   repeat API 35 once and inspect readiness logs, test reports, and emulator snapshots.
+2. Record that final exact SHA, run/job IDs, pass/fail/skip counts, and uncertainty on issue #103 and
+   PR #115; then make no more changes to this branch.
    Preserve application and release configuration, and leave PR #115 as draft.
 3. Confirm draft PRs #108 and #111 remain untouched, and stop before merge for owner approval.
