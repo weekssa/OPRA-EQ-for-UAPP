@@ -44,13 +44,20 @@ whether the current focus line contained the Home package; Android's `Applicatio
 dialog includes that package name, so the unhealthy ANR surface passed the string check. The ANR
 occurred before instrumentation and belongs to `com.google.android.apps.nexuslauncher`, not OPRA.
 
-The corrected readiness gate matches a real Home activity window (`$home_package/`) and explicitly
-rejects an `Application Not Responding:` focus surface. If the fresh emulator presents a Home ANR
-before instrumentation, CI reboots that emulator once, waits for boot, and requires a responsive,
-unlocked Home activity again. If recovery does not establish that precondition, the job fails with
-window, last-ANR, ActivityManager, and emulator logs. No test is retried or skipped, and all 72 tests
-must run on a ready emulator. Post-test logcat, window, and ActivityManager snapshots remain
-downloadable. No application, test-source, dependency, version, or release configuration is changed.
+The second candidate matched a real Home activity window (`$home_package/`) and rejected an
+`Application Not Responding:` focus surface. It still failed: the job's captured last-ANR time was
+06:50:44, about one second before the readiness step reported the focused Home package. The
+launcher ANR therefore raced the snapshot, and the gate started instrumentation immediately after
+the ANR record was written.
+
+The current correction also checks `dumpsys window lastanr` during the readiness wait for the
+specific Home-launcher failure `Input dispatching timed out (Application does not have a focused
+window)`. If that event occurred before instrumentation, CI reboots the fresh emulator once, waits
+for boot, and requires a responsive, unlocked Home activity with no new matching ANR record. If
+recovery does not establish that precondition, the job fails with window, last-ANR, ActivityManager,
+and emulator logs. No test is retried or skipped, and all 72 tests must run on a ready emulator.
+Post-test logcat, window, and ActivityManager snapshots remain downloadable. No application,
+test-source, dependency, version, or release configuration is changed.
 
 ## Validation record
 
@@ -72,18 +79,24 @@ downloadable. No application, test-source, dependency, version, or release confi
   `119076456986` reproduced 8 failures of 72, 0 skipped, including `RootViewWithoutFocusException`;
   artifact `12326003108` contains the evidence. The `window.txt` last-ANR record and focused-window
   dump identify the system Home ANR and the false-positive preflight check described above.
+- First stricter-focus candidate `659ce3d68068bd5ff4ca9ee905b0d016f0cd29b7`, run
+  `39557792944`: build, unit tests, lint, debug/release assembly, R8, API 26 smoke, and CodeQL passed.
+  API 35 job `119081562822` again failed 8/72 with 0 skipped and `RootViewWithoutFocusException`.
+  It reports a focused Home activity at readiness, but the uploaded artifact `12326698357` records
+  a Home no-focused-window ANR at 06:50:44, roughly one second earlier. This confirms a race between
+  the actual system ANR and a single focus snapshot; the test gate did not hide or retry it.
 - Automatic Dependency Submission run `39555003303` succeeded on SHA
   `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`. Separate historical KSP 2.3.12 failure remains tracked
   in issue #114; no dependency change is in this PR.
-- Corrected workflow and this failure analysis are now on a new candidate head. Run the full normal
-  Android workflow and CodeQL on that exact head, repeat API 35 at least twice, and inspect whether
-  the preflight performs recovery or refuses to start instrumentation on the ANR state. Failure
-  results must remain visible; the prior passing runs do not erase this reproduced failure.
+- The current last-ANR-aware correction and this failure analysis are on a new candidate head. Run
+  the full normal Android workflow and CodeQL on that exact head, repeat API 35 at least twice, and
+  inspect whether the preflight performs recovery or refuses to start instrumentation on the ANR
+  state. Failure results must remain visible; earlier passing runs do not erase these reproductions.
 
 ## Resume checklist
 
-1. Run the full normal Android CI workflow and CodeQL on the new corrected-workflow head; repeat API
-   35 at least twice and inspect readiness logs, test reports, and emulator snapshots.
+1. Run the full normal Android CI workflow and CodeQL on the last-ANR-aware workflow head; repeat
+   API 35 at least twice and inspect readiness logs, test reports, and emulator snapshots.
 2. Update issue #103 and PR #115 with exact SHAs, run/job IDs, pass/fail/skip counts, and uncertainty.
    Preserve application and release configuration, and leave PR #115 as draft.
 3. Confirm draft PRs #108 and #111 remain untouched, and stop before merge for owner approval.

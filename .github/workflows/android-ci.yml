@@ -180,7 +180,12 @@ jobs:
           wait_for_home_window() {
             for attempt in $(seq 1 30); do
               window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+              last_anr_state="$(adb shell dumpsys window lastanr 2>/dev/null || true)"
               focus_line="$(grep -F 'mCurrentFocus=Window{' <<< "$window_state" || true)"
+              if grep -Fq "$home_package" <<< "$last_anr_state" && \
+                grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; then
+                return 1
+              fi
               if [[ "$focus_line" == *"$home_package/"* ]] && \
                 [[ "$focus_line" != *'Application Not Responding:'* ]] && \
                 grep -Fq 'isKeyguardShowing=false' <<< "$window_state" && \
@@ -201,8 +206,11 @@ jobs:
 
           if ! wait_for_home_window; then
             window_state="$(adb shell dumpsys window 2>/dev/null || true)"
-            if grep -Fq "Application Not Responding: $home_package" <<< "$window_state"; then
-              printf 'Home is showing an Android ANR window before instrumentation; rebooting this fresh emulator once.\n'
+            last_anr_state="$(adb shell dumpsys window lastanr 2>/dev/null || true)"
+            if grep -Fq "Application Not Responding: $home_package" <<< "$window_state" || \
+              { grep -Fq "$home_package" <<< "$last_anr_state" && \
+                grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; }; then
+              printf 'Home encountered a no-focused-window ANR before instrumentation; rebooting this fresh emulator once.\n'
               adb reboot
               adb wait-for-device
               boot_completed=""
