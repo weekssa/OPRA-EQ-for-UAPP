@@ -54,15 +54,33 @@ claiming reduced flakiness.
 - Candidate on the same local API 35 AVD passed three sequential full runs: 72/72, 0 skipped, 0 failed
   each, in 2m03s, 2m03s, and 2m00s. The historical failure was not reproduced; these runs show no
   regression under local repetition but do not establish an x86_64 hosted-runner failure rate.
-- Exact-head hosted CI repetition, plus unit tests, lint, debug/release builds, R8, API 26 smoke, and
-  CodeQL: pending.
+- Candidate source head `2f8409e9e7c3d2a8ee7b5351791eb3b536db4437`, PR #115, exact-head Android CI run
+  `39551959584`: its build job passed documentation and release-promotion contracts, unit tests,
+  lint, debug/release assembly, and minified-release/R8 checks. API 35 job `119066463106` passed
+  72/72 with 0 skipped and 0 failed in 8m59s. The separate API 26 smoke job
+  initially failed its catalog readiness assertion after observing a retryable catalog error; its
+  same-head rerun `119066461359` passed. No smoke assertion was changed.
+- A further API 35 repeat on the same exact source head, job `119069475293`, passed 72/72 with
+  0 skipped and 0 failed. Its log shows the emulator readiness gate passed, every progress sample
+  reported 0 skipped and 0 failed, and post-run logcat, WindowManager, and ActivityManager captures
+  were uploaded in artifact `android-emulator-ui-test-reports` (ID `12323449036`). The run also
+  emitted the same emulator-console startup warning as the historical passing retry, confirming
+  that warning is not predictive of the focus failure.
+- The CodeQL PR run `39551959547` passed on the same source head. The hosted API 35 repetition plus
+  the local arm64 runs provide evidence that the readiness mitigation introduces no observed UI
+  test regressions. Because the historical failure was intermittent and not reproduced, this small
+  sample cannot prove a lower long-term failure rate or a unique causal mechanism.
+- API 26 first-attempt smoke failure and successful unchanged rerun demonstrate a separate transient
+  catalog-readiness event; its exact-head safeguard passed on retry and remains unchanged.
+- A documentation-only validation update will produce a new PR head. Re-run the normal Android CI
+  workflow and CodeQL on that final exact head, including at least two hosted API 35 runs, before
+  handing the PR off.
 
 ## Resume checklist
 
-1. Commit, push, and prepare a draft PR linked to #103.
-2. Verify the exact PR-head Android CI workflow, including build/unit/lint/debug+release/R8, CodeQL,
-   API 35 UI tests, and API 26 release smoke.
-3. Repeat the API 35 hosted UI job on the same exact PR head and inspect all test/emulator diagnostics.
-4. Update this record and issue #103 with exact SHAs, run/job IDs, pass/fail/skip counts, and remaining
-   uncertainty. Preserve application and release configuration.
-5. Stop before merge for owner approval.
+1. Update this record with the final documentation commit SHA and rerun outcomes.
+2. Verify normal Android CI and CodeQL against that exact final PR head, including two API 35 UI runs;
+   inspect all test and emulator diagnostics.
+3. Update issue #103 and PR #115 with exact SHAs, run/job IDs, pass/fail/skip counts, and uncertainty.
+   Preserve application and release configuration, and leave PR #115 as draft.
+4. Confirm draft PRs #108 and #111 remain untouched, and stop before merge for owner approval.
