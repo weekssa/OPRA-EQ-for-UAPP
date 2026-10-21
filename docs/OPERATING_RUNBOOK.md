@@ -61,7 +61,7 @@ A PR should state scope, exact base and head, product behavior changed, evidence
 
 ## 7. Merge and release
 
-Only merge after required review and checks and with explicit owner approval. Do not close preserved PRs or branches automatically.
+Only merge after required review and checks and with explicit owner approval. Approval applies to the exact PR head the owner reviewed; if that head changes after approval, obtain fresh explicit owner approval before merging. Do not close preserved PRs or branches automatically.
 
 For releases, follow the existing main-only signed-candidate and promotion workflows and versioned release checklist. Verify source/tag SHA, APK package/version/code, checksum, pinned signer, release state/assets and update metadata. Promote the exact signed candidate without rebuilding or substituting it. Publication, release changes and signing changes require explicit owner approval.
 
