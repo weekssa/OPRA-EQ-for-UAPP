@@ -47,7 +47,15 @@ Exact PR-head history captured on 2026-10-20:
 
 ## Required update
 
-Issue #99 and draft PR #100 exist. Final review recommends GO for owner review/merge consideration; explicit owner approval remains mandatory. Separate actionable follow-ups are tracked in #101 (P1 security triage), #102 (P2 zero-job push workflow), #103 (P2 emulator Activity focus), #104 (P2 physical device provenance with owner/device gate), #105 (P3 external backup retention), #106 (P3 external Codex/ChatGPT instruction reconciliation), and #107 (P2 historical branch disposition). Each links back to #99. No dependency or application remediation is in PR #100. Never close an existing issue, modify an unrelated PR, or merge this PR without owner approval.
+Issue #99 remains open as the parent mission record. PR #100 was approved by the owner and merged normally into `main` at `1599ab451f711d8a27adfefbcba10293cd53dd84`; its cleanup branch was retained. Separate actionable follow-ups remain open: #101 (P1, assess all 56 Dependabot alerts, 3 critical first, and diagnose the updater snapshot failure), #102 (P2, repeated zero-job push workflow), #103 (P2, emulator Activity-focus flakiness), #104 (P2, physical installed-device provenance when available/authorized), #105 (P3, external backup retention), #106 (P3, external Codex/ChatGPT instruction reconciliation), and #107 (P2, historical branch disposition). Each links back to #99. No dependency or application remediation was included in PR #100. Do not close unrelated issues or PRs, or merge any other work without owner approval.
+
+## Post-merge verification (2026-10-20)
+
+- PR #100 merged at `1599ab451f711d8a27adfefbcba10293cd53dd84`; `main` is at that commit and its tree equals exact-head-tested PR source `ccec0184742d7798778bcb91d173e4a7ea44531e`. Exact-head run [39513136561](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39513136561) passed all four jobs; live PR checks Analyze Kotlin, CodeQL, and submit-gradle passed.
+- Clean local baseline worktree `codex/development-main` tracks `origin/main`; the documentation validator and documented unit-test/lint/debug assembly checks passed. The original checkout status and verified full-copy backup remain unchanged.
+- Android push run [39514881784](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39514881784) on merge SHA failed before job creation (zero jobs; no logs). This is assigned to #102.
+- Dependabot security-update run [39514901376](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39514901376) failed with `dependency_not_found`: requested security-update dependencies were absent from the dependency snapshot. This is assigned to #101; the 56-alert risk assessment remains open and must not be inferred from the failed updater run.
+- Main CodeQL push run [39514883158](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39514883158) completed successfully on the merge commit.
 
 ## Open PR snapshot (2026-10-20)
 
