@@ -3,11 +3,11 @@
   "sources": [
     {
       "consecutive_failures": 0,
-      "cursor": "1a516e6bf20a65ba63fb7e557bbdbdf867d9958381a024290db67d02cc227161",
-      "last_attempt_at": "2026-10-13T19:30:46Z",
-      "last_content_fingerprint": "bdad803c96faf8a20390ede98e8b1256b464b45295bc8123902511749f6e2337",
+      "cursor": "eff5e90df5f6deccbf4471a8c0b043bb0c5cea486f0abc1f701fe93a622f392e",
+      "last_attempt_at": "2026-10-21T17:37:33Z",
+      "last_content_fingerprint": "a63cfb31d0aa7bb299b153d9cd48ac1becc5096096289c910dfeed520e93fd77",
       "last_error": null,
-      "last_successful_scan_at": "2026-10-13T19:30:46Z",
+      "last_successful_scan_at": "2026-10-21T17:37:33Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -16,10 +16,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "7ae0f56d53074872b028649617a22bbb4232feb7",
-      "last_attempt_at": "2026-10-20T14:17:42Z",
+      "last_attempt_at": "2026-10-21T14:28:40Z",
       "last_content_fingerprint": "3468bb71c0da0be7c08ff1014a8505f626b221177cc2261f53a3bb6efeacfb3e",
       "last_error": null,
-      "last_successful_scan_at": "2026-10-20T14:17:42Z",
+      "last_successful_scan_at": "2026-10-21T14:28:40Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -28,10 +28,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "993d03c9bc9e010e224b3cf1b43df03cef12d46e661948ae4cdf248dac49de6a",
-      "last_attempt_at": "2026-10-20T14:17:45Z",
+      "last_attempt_at": "2026-10-21T14:28:44Z",
       "last_content_fingerprint": "a027a48be56756a34560b37bab2e4809e1626b2bd85529ed4abb7965c74ed321",
       "last_error": null,
-      "last_successful_scan_at": "2026-10-20T14:17:45Z",
+      "last_successful_scan_at": "2026-10-21T14:28:44Z",
       "last_terms_review_at": null,
       "lifecycle": "active",
       "parser_version": "2",
@@ -40,10 +40,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "f223fb948d204e33344aeccc39770229ad3f6cd72c3b0d65ec53eedcd073a3aa",
-      "last_attempt_at": "2026-10-19T18:40:51Z",
+      "last_attempt_at": "2026-10-21T17:04:31Z",
       "last_content_fingerprint": "181e731028320b84871c5321752cb51ae1f2448a58951e6e9c9d4b7bc4eae178",
       "last_error": null,
-      "last_successful_scan_at": "2026-10-19T18:40:51Z",
+      "last_successful_scan_at": "2026-10-21T17:04:31Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -100,10 +100,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "ff03705f4872c6f12628f87bbb9d02802a8294eece0aa955747d0821c04e1882",
-      "last_attempt_at": "2026-10-20T14:17:44Z",
+      "last_attempt_at": "2026-10-21T14:28:43Z",
       "last_content_fingerprint": "845e704fb2a598938e5fe0728d3fb4884ca6e200b0d968f169df3349f4972a3c",
       "last_error": null,
-      "last_successful_scan_at": "2026-10-20T14:17:44Z",
+      "last_successful_scan_at": "2026-10-21T14:28:43Z",
       "last_terms_review_at": null,
       "lifecycle": "active",
       "parser_version": "2",
@@ -182,5 +182,5 @@
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-10-20T17:29:35Z"
+  "updated_at": "2026-10-21T17:37:34Z"
 }

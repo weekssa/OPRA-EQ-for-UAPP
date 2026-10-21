@@ -126,6 +126,7 @@ jobs:
           test -f "$avd_home/opra_ci_api_35.ini"
 
       - name: Start emulator
+        id: start_emulator
         shell: bash
         run: |
           set -euo pipefail
@@ -160,7 +161,83 @@ jobs:
             cat "$RUNNER_TEMP/emulator.log"
             exit 1
           fi
-          adb shell input keyevent 82
+          adb shell wm dismiss-keyguard
+          adb shell input keyevent KEYCODE_WAKEUP
+
+      - name: Wait for API 35 emulator window readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          wait_for_home_window() {
+            for attempt in $(seq 1 30); do
+              window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+              activity_state="$(adb shell dumpsys activity activities 2>/dev/null || true)"
+              last_anr_state="$(adb shell dumpsys window lastanr 2>/dev/null || true)"
+              focus_line="$(grep -F 'mCurrentFocus=Window{' <<< "$window_state" || true)"
+              focused_app_line="$(grep -F 'mFocusedApp=ActivityRecord{' <<< "$window_state" || true)"
+              focused_root_line="$(grep -F 'topDisplayFocusedRootTask=' <<< "$activity_state" || true)"
+              if grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; then
+                return 1
+              fi
+              focused_app_package="$(sed -nE 's/.*mFocusedApp=ActivityRecord\{[^ ]+ u[0-9]+ ([^/ ]+)\/.*/\1/p' <<< "$focused_app_line")"
+              if [[ -n "$focused_app_package" ]] && \
+                [[ "$focus_line" == *"$focused_app_package/"* ]] && \
+                grep -Fq 'type=home' <<< "$focused_root_line" && \
+                grep -Fq 'isKeyguardShowing=false' <<< "$window_state" && \
+                grep -Fq 'mDreamingLockscreen=false' <<< "$window_state"; then
+                return 0
+              fi
+              sleep 1
+            done
+            return 1
+          }
+
+          print_window_diagnostics() {
+            adb shell dumpsys window >&2 || true
+            adb shell dumpsys window lastanr >&2 || true
+            adb shell dumpsys activity activities >&2 || true
+          }
+
+          if ! wait_for_home_window; then
+            window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+            last_anr_state="$(adb shell dumpsys window lastanr 2>/dev/null || true)"
+            anr_focus_line="$(grep -F 'mCurrentFocus=Window{' <<< "$window_state" || true)"
+            anr_focused_app_line="$(grep -F 'mFocusedApp=ActivityRecord{' <<< "$window_state" || true)"
+            anr_focused_app_package="$(sed -nE 's/.*mFocusedApp=ActivityRecord\{[^ ]+ u[0-9]+ ([^/ ]+)\/.*/\1/p' <<< "$anr_focused_app_line")"
+            if [[ "$anr_focus_line" == *'Application Not Responding:'*'com.google.android.apps.nexuslauncher'* ]] && \
+              [[ "$anr_focused_app_package" == "com.google.android.apps.nexuslauncher" ]] && \
+              grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; then
+              printf 'Android reported a no-focused-window ANR before instrumentation; rebooting this fresh emulator once.\n'
+              adb reboot
+              adb wait-for-device
+              boot_completed=""
+              for attempt in $(seq 1 48); do
+                boot_completed="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+                if [[ "$boot_completed" == "1" ]]; then
+                  break
+                fi
+                sleep 5
+              done
+              if [[ "$boot_completed" != "1" ]]; then
+                printf 'API 35 emulator did not finish rebooting after the Home ANR.\n' >&2
+                cat "$RUNNER_TEMP/emulator.log" >&2 || true
+                print_window_diagnostics
+                exit 1
+              fi
+              adb shell wm dismiss-keyguard
+              adb shell input keyevent KEYCODE_WAKEUP
+              if ! wait_for_home_window; then
+                printf 'API 35 emulator did not reach a responsive, unlocked Home task with matching focus after readiness recovery.\n' >&2
+                print_window_diagnostics
+                exit 1
+              fi
+            else
+              printf 'API 35 emulator did not reach an unlocked Home task with matching focused activity.\n' >&2
+              print_window_diagnostics
+              exit 1
+            fi
+          fi
+          printf 'API 35 emulator ready with an unlocked Home task and matching focused activity.\n'
 
       - name: Enable software keyboard with emulated keyboard
         shell: bash
@@ -182,6 +259,15 @@ jobs:
         id: connected_ui_tests
         run: gradle :app:connectedDebugAndroidTest --stacktrace
 
+      - name: Capture emulator state after UI tests
+        if: ${{ always() && steps.start_emulator.outcome == 'success' }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/ui-test-diagnostics"
+          adb logcat -d -v threadtime > "$RUNNER_TEMP/ui-test-diagnostics/logcat.txt" 2>&1 || true
+          adb shell dumpsys window > "$RUNNER_TEMP/ui-test-diagnostics/window.txt" 2>&1 || true
+          adb shell dumpsys activity activities > "$RUNNER_TEMP/ui-test-diagnostics/activities.txt" 2>&1 || true
+
       - name: Upload emulator diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -189,6 +275,7 @@ jobs:
           name: android-emulator-ui-test-reports
           path: |
             ${{ runner.temp }}/emulator.log
+            ${{ runner.temp }}/ui-test-diagnostics/
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: ignore
@@ -241,11 +328,33 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
+          adb_bin="$(command -v adb)"
+          adb_timeout_report="$RUNNER_TEMP/min-api-adb-timeout.txt"
+          adb() {
+            local status
+            local command_timeout=20s
+            if [[ "$1" == install ]]; then
+              command_timeout=180s
+            fi
+            if timeout --foreground --signal=TERM --kill-after=5s "$command_timeout" "$adb_bin" "$@"; then
+              return 0
+            else
+              status=$?
+            fi
+            if [[ "$status" -eq 124 || "$status" -eq 137 ]]; then
+              printf 'ADB command timed out after %s:' "$command_timeout" | tee -a "$adb_timeout_report" >&2
+              printf ' %q' adb "$@" | tee -a "$adb_timeout_report" >&2
+              printf '\n' | tee -a "$adb_timeout_report" >&2
+            fi
+            return "$status"
+          }
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
           nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_26 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator-api-26.log" 2>&1 &
           emulator_pid=$!
-          for attempt in $(seq 1 60); do
+          printf 'Waiting up to 120 seconds for API 26 emulator ADB connection.\n'
+          connection_deadline=$((SECONDS + 120))
+          while (( SECONDS < connection_deadline )); do
             if ! kill -0 "$emulator_pid" 2>/dev/null; then
               cat "$RUNNER_TEMP/emulator-api-26.log"
               exit 1
@@ -253,14 +362,17 @@ jobs:
             if adb get-state 2>/dev/null | grep -qx device; then
               break
             fi
-            if [[ "$attempt" -eq 60 ]]; then
-              cat "$RUNNER_TEMP/emulator-api-26.log"
-              exit 1
-            fi
             sleep 2
           done
+          if ! adb get-state 2>/dev/null | grep -qx device; then
+            cat "$RUNNER_TEMP/emulator-api-26.log"
+            printf 'API 26 emulator ADB connection did not become ready within 120 seconds.\n' >&2
+            exit 1
+          fi
+          printf 'API 26 emulator connected; waiting for Android boot completion.\n'
           boot_completed=""
-          for attempt in $(seq 1 60); do
+          boot_deadline=$((SECONDS + 300))
+          while (( SECONDS < boot_deadline )); do
             boot_completed="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
             if [[ "$boot_completed" == "1" ]]; then
               break
@@ -272,6 +384,7 @@ jobs:
             cat "$RUNNER_TEMP/emulator-api-26.log"
             exit 1
           fi
+          printf 'API 26 Android boot completed; checking SDK and runtime profile.\n'
           api_level="$(adb shell getprop ro.build.version.sdk | tr -d "\r")"
           printf 'Booted emulator API level: %s\n' "$api_level"
           if [[ "$api_level" != "26" ]]; then
@@ -295,7 +408,8 @@ jobs:
             fi
             adb shell stop zygote
             zygote_state=""
-            for attempt in $(seq 1 30); do
+            zygote_stop_deadline=$((SECONDS + 60))
+            while (( SECONDS < zygote_stop_deadline )); do
               zygote_state="$(adb shell getprop init.svc.zygote | tr -d '\r')"
               if [[ "$zygote_state" == "stopped" ]]; then
                 break
@@ -310,7 +424,8 @@ jobs:
             adb shell start zygote
             heap_growth_limit=""
             zygote_state=""
-            for attempt in $(seq 1 60); do
+            zygote_start_deadline=$((SECONDS + 90))
+            while (( SECONDS < zygote_start_deadline )); do
               heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
               zygote_state="$(adb shell getprop init.svc.zygote | tr -d '\r')"
               if [[ "$heap_growth_limit" == "48m" && "$zygote_state" == "running" ]]; then
@@ -323,7 +438,8 @@ jobs:
               exit 1
             fi
             package_manager_path=""
-            for attempt in $(seq 1 60); do
+            package_manager_deadline=$((SECONDS + 90))
+            while (( SECONDS < package_manager_deadline )); do
               package_manager_path="$(adb shell pm path android 2>/dev/null | tr -d '\r' || true)"
               if [[ "$package_manager_path" == package:* ]]; then
                 break
@@ -386,7 +502,7 @@ jobs:
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
           printf '%s\n' "$launch_output" | tee "$RUNNER_TEMP/min-api-launch.txt"
           grep -q '^Status: ok$' "$RUNNER_TEMP/min-api-launch.txt"
-          adb logcat -b all -v threadtime > "$RUNNER_TEMP/min-api-logcat-threadtime.txt" 2>&1 &
+          "$adb_bin" logcat -b all -v threadtime > "$RUNNER_TEMP/min-api-logcat-threadtime.txt" 2>&1 &
           logcat_pid=$!
           trap 'kill "$logcat_pid" 2>/dev/null || true' EXIT
           tab_deadline=$((SECONDS + 60))
@@ -453,16 +569,16 @@ jobs:
             fi
             if [[ "$catalog_retried" != true ]] && grep -q 'text="Try again"' "$RUNNER_TEMP/min-api-window.xml"; then
               try_again_tap="$(python3 - "$RUNNER_TEMP/min-api-window.xml" <<'PY'
-import re
-import sys
+          import re
+          import sys
 
-xml = open(sys.argv[1], encoding="utf-8").read()
-match = re.search(r'text="Try again"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
-if not match:
-    raise SystemExit("The catalog error state exposed Try again without usable bounds.")
-x1, y1, x2, y2 = map(int, match.groups())
-print((x1 + x2) // 2, (y1 + y2) // 2)
-PY
+          xml = open(sys.argv[1], encoding="utf-8").read()
+          match = re.search(r'text="Try again"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
+          if not match:
+              raise SystemExit("The catalog error state exposed Try again without usable bounds.")
+          x1, y1, x2, y2 = map(int, match.groups())
+          print((x1 + x2) // 2, (y1 + y2) // 2)
+          PY
               )"
               read -r try_again_x try_again_y <<< "$try_again_tap"
               printf 'Catalog error state detected; tapping Try again once at %s,%s.\n' "$try_again_x" "$try_again_y"
@@ -520,6 +636,7 @@ PY
             ${{ runner.temp }}/min-api-hierarchy.xml
             ${{ runner.temp }}/min-api-runtime.txt
             ${{ runner.temp }}/min-api-avd-config.txt
+            ${{ runner.temp }}/min-api-adb-timeout.txt
             ${{ runner.temp }}/min-api-meminfo.txt
             ${{ runner.temp }}/min-api-meminfo-before-library.txt
             ${{ runner.temp }}/min-api-before-library.png
