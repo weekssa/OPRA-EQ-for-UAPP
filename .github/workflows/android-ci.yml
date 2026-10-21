@@ -126,6 +126,7 @@ jobs:
           test -f "$avd_home/opra_ci_api_35.ini"
 
       - name: Start emulator
+        id: start_emulator
         shell: bash
         run: |
           set -euo pipefail
@@ -160,7 +161,42 @@ jobs:
             cat "$RUNNER_TEMP/emulator.log"
             exit 1
           fi
+          adb shell wm dismiss-keyguard
+          adb shell input keyevent KEYCODE_WAKEUP
           adb shell input keyevent 82
+
+      - name: Wait for API 35 emulator window readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          home_component="$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tr -d '\r' | tail -n 1)"
+          home_package="${home_component%%/*}"
+          if [[ -z "$home_package" ]]; then
+            printf 'Unable to resolve the emulator Home activity.\n' >&2
+            adb shell dumpsys window >&2 || true
+            exit 1
+          fi
+
+          ready=0
+          for attempt in $(seq 1 30); do
+            window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+            if grep -F "mCurrentFocus=Window{" <<< "$window_state" | grep -Fq "$home_package" && \
+              grep -Fq 'isKeyguardShowing=false' <<< "$window_state" && \
+              grep -Fq 'mDreamingLockscreen=false' <<< "$window_state"; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "$ready" != "1" ]]; then
+            printf 'API 35 emulator did not reach an unlocked, focused Home window.\n' >&2
+            printf 'Resolved Home component: %s\n' "$home_component" >&2
+            adb shell dumpsys window >&2 || true
+            adb shell dumpsys activity activities >&2 || true
+            exit 1
+          fi
+          printf 'API 35 emulator ready with focused Home package: %s\n' "$home_package"
 
       - name: Enable software keyboard with emulated keyboard
         shell: bash
@@ -182,6 +218,15 @@ jobs:
         id: connected_ui_tests
         run: gradle :app:connectedDebugAndroidTest --stacktrace
 
+      - name: Capture emulator state after UI tests
+        if: ${{ always() && steps.start_emulator.outcome == 'success' }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/ui-test-diagnostics"
+          adb logcat -d -v threadtime > "$RUNNER_TEMP/ui-test-diagnostics/logcat.txt" 2>&1 || true
+          adb shell dumpsys window > "$RUNNER_TEMP/ui-test-diagnostics/window.txt" 2>&1 || true
+          adb shell dumpsys activity activities > "$RUNNER_TEMP/ui-test-diagnostics/activities.txt" 2>&1 || true
+
       - name: Upload emulator diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -189,6 +234,7 @@ jobs:
           name: android-emulator-ui-test-reports
           path: |
             ${{ runner.temp }}/emulator.log
+            ${{ runner.temp }}/ui-test-diagnostics/
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: ignore
