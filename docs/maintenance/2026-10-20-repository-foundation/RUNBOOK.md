@@ -59,7 +59,7 @@ The original foundation Definition of Done (P0-P10) is satisfied: preserved appl
 ### Separate follow-up work, not original foundation DoD
 
 - #101-#103: closed after their separate acceptance criteria; do not reopen from historical prompts.
-- #104 P2: authorized physical-device provenance was collected; PR #116's validator and exact-head CI pass on `d936caedc4d113a0403c997803affd2645a5891a`; owner review and merge approval remain pending.
+- #104 P2: authorized physical-device provenance was collected; PR #116's validator and API 26 CI pass on its validated provenance candidate. Later status-only corrections passed local documentation validation; live PR head/checks are tracked in [issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99). Owner review and merge approval remain pending.
 - #105 P3: external backup availability and retention/restore cadence.
 - #106 P3: reconcile obsolete external Codex/ChatGPT instructions and historical project references.
 - #107 P2: recommend disposition of unmerged historical branches; do not delete or merge automatically.
@@ -94,4 +94,4 @@ PR #108 merged normally into `main` at `54fe191f327cfe6c6bd929b412462705f6839ae0
 
 ## PR #116 exact-head validation update (2026-10-21)
 
-PR #116 remains OPEN/DRAFT at exact head `d936caedc4d113a0403c997803affd2645a5891a`, based on `54fe191f327cfe6c6bd929b412462705f6839ae0`. Android CI run [39669355697](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39669355697) attempt 1 failed because the API 26 smoke did not observe the network-backed catalog within 300 seconds. The single owner-authorized retry, attempt 2 on the same head, passed `min-api-smoke`, build, and API 35 emulator UI. Analyze Kotlin and dependency submission passed; generic CodeQL was skipped by workflow conditions. GitHub reports CLEAN/MERGEABLE. This is GO for owner review only; PR merge still requires fresh approval for this exact head. No application behavior or physical-device testing was changed or performed.
+At validated provenance head `d936caedc4d113a0403c997803affd2645a5891a`, Android CI run [39669355697](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39669355697) attempt 1 failed because the API 26 smoke did not observe the network-backed catalog within 300 seconds. The single owner-authorized retry, attempt 2 on the same head, passed `min-api-smoke`, build, and API 35 emulator UI. Analyze Kotlin and dependency submission passed; generic CodeQL was skipped by workflow conditions. A subsequent documentation-only correction records the current state in this runbook and STATUS.md; its exact current PR head and check snapshot are tracked in [issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99). This evidence supports owner review; merge requires fresh approval of the current exact PR head. No application behavior or physical-device testing was changed or performed.
