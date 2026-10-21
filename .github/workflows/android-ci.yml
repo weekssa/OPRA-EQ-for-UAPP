@@ -201,7 +201,11 @@ jobs:
           if ! wait_for_home_window; then
             window_state="$(adb shell dumpsys window 2>/dev/null || true)"
             last_anr_state="$(adb shell dumpsys window lastanr 2>/dev/null || true)"
-            if grep -Fq 'Application Not Responding:' <<< "$window_state" || \
+            anr_focus_line="$(grep -F 'mCurrentFocus=Window{' <<< "$window_state" || true)"
+            anr_focused_app_line="$(grep -F 'mFocusedApp=ActivityRecord{' <<< "$window_state" || true)"
+            anr_focused_app_package="$(sed -nE 's/.*mFocusedApp=ActivityRecord\{[^ ]+ u[0-9]+ ([^/ ]+)\/.*/\1/p' <<< "$anr_focused_app_line")"
+            if [[ "$anr_focus_line" == *'Application Not Responding:'*'com.google.android.apps.nexuslauncher'* ]] && \
+              [[ "$anr_focused_app_package" == "com.google.android.apps.nexuslauncher" ]] && \
               grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; then
               printf 'Android reported a no-focused-window ANR before instrumentation; rebooting this fresh emulator once.\n'
               adb reboot

@@ -74,6 +74,14 @@ and all 72 tests must run on a ready emulator. Post-test logcat, window, and Act
 snapshots remain downloadable. No application, test-source, dependency, version, or release
 configuration is changed.
 
+Before merge review, an independent safety check found that the initial recovery condition also
+accepted any generic `Application Not Responding:` window. The guard was narrowed so recovery now
+requires all three signals before any reboot: `mCurrentFocus` is the ANR dialog naming
+`com.google.android.apps.nexuslauncher`, `mFocusedApp` is that exact launcher package, and
+`dumpsys window lastanr` reports the no-focused-window reason above. Other ANRs and generic focus
+timeouts fail closed without reboot. Revalidate the revised exact PR head and retain its pre-test
+readiness outcome plus post-test diagnostics before merge.
+
 ## Validation record
 
 - Unmodified base `6047d45d0e8377f29bc9deb5580191ae44b37793`, local API 35 Google APIs Pixel 6 arm64
