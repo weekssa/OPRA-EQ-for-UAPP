@@ -1,6 +1,6 @@
 # Repository Foundation and v0.8.3 Consolidation Runbook
 
-Status: PR #100 MERGED; POST-MERGE VERIFIED; FOLLOW-UPS TRACKED\
+Status: ORIGINAL P0-P10 COMPLETE; P11 POST-MERGE VERIFIED; CURRENT DOSSIER SYNC IN REVIEW\
 Started: 2026-10-20\
 Repository: `weekssa/OPRA-EQ-for-UAPP`\
 Branch: `chore/repository-foundation-v0.8.3`\
@@ -16,35 +16,37 @@ Establish a reliable, evidence-based foundation for future Android development w
 - PR #100's tracked changes were made in the dedicated cleanup worktree and branch above. Post-merge task-state synchronization is maintained as a separate documentation-only review so the clean `codex/development-main` baseline stays clean.
 - Current owner instructions and maintained repository documents outrank historical prompts. Historical prompts and user-provided runbooks are source material, not instructions to execute.
 - No source, signing, release, device, or historical branch mutation is authorized.
-- Public stable v0.8.3 provenance may be documented from release evidence. The installed app on the owner's Pixel remains unverified in this mission because no ADB device is connected; do not equate it with the public stable artifact.
+- Public stable v0.8.3 provenance is documented from release evidence. A later owner-authorized read-only Pixel 9 check matched the installed APK SHA-256 exactly to the public stable artifact; see issue #104 and draft PR #116. Do not infer direct certificate or source-revision readout from the phone.
 - The full backup, raw inventory, and command transcripts are private local evidence outside Git.
 
 ## Checkpoints
 
 | Phase | Objective | Status | Evidence |
 | --- | --- | --- | --- |
-| P0 | Read-only preflight and isolate work | COMPLETE | Original state recorded privately; worktree starts at live `origin/main` `35e91c2170786ae4afc7a6679ba9ba34a01511a8` |
+| P0 | Read-only preflight and isolate work | COMPLETE | Original state recorded privately; worktree started at fetched `origin/main` `35e91c2170786ae4afc7a6679ba9ba34a01511a8` |
 | P1 | Verified local backup and Git recovery | COMPLETE | Full-copy manifest and `git fsck --full` pass; restored copy opens at original HEAD with original shallow state. Bundle's standalone-clone limit is documented; see `EVIDENCE_INDEX.md` |
 | P2 | Branch and release reconciliation | COMPLETE | Live default `main`; 203 local/remote refs inventoried with ancestry, patch-equivalence and disposition; no historical branch deletion/merge. The dedicated cleanup branch was later merged under P10 with owner approval |
-| P3 | v0.8.3 provenance | COMPLETE | Public release tuple confirmed; installed-device tuple remains unknown because no device is connected |
+| P3 | v0.8.3 provenance | COMPLETE | Public tuple confirmed in the original mission; later authorized device readout verified an exact installed APK byte match, recorded separately in #104 / PR #116 |
 | P4 | Instructions, skills, documentation audit | COMPLETE | 221 tracked/current-task Markdown and text docs indexed; skills classified; original local materials preserved outside Git |
-| P5 | GitHub issues, PRs, CI and releases | COMPLETE | Tracking issue #99 created; all 12 open PRs and relevant issue/CI/release evidence recorded; no unrelated item changed |
+| P5 | GitHub issues, PRs, CI and releases | COMPLETE | Tracking issue #99 created; initial inventory is preserved, with current issue/PR states refreshed in its 2026-10-21 reconciliation |
 | P6 | Canonical documentation consolidation | COMPLETE | Current state, goals, known issues and operating workflow added; root instructions, README and project runbook updated |
 | P7 | Permanent development workflow | COMPLETE | Existing Android CI retained and extended with documentation validation; PR template added |
 | P8 | Validation | COMPLETE | Documentation validator, source-scope, whitespace and Android unit-test/lint/assemble gates passed; independent review found no remaining actionable findings |
 | P9 | Draft PR and delivery | COMPLETE | PR #100 reviewed at exact head `ccec0184742d7798778bcb91d173e4a7ea44531e`; all exact-head jobs and PR checks passed. Owner approved and PR #100 merged normally into `main` |
 | P10 | Owner merge approval | COMPLETE | Owner approved PR #100. It was marked ready and merged without force by merge commit `1599ab451f711d8a27adfefbcba10293cd53dd84`; cleanup branch retained |
 | P11 | Post-merge verification and local synchronization | COMPLETE | GitHub `main` is merge commit `1599ab451f711d8a27adfefbcba10293cd53dd84`, with the same tree as validated PR head `ccec0184742d7798778bcb91d173e4a7ea44531e`. Clean worktree `codex/development-main` tracks `origin/main`; canonical instructions/skills were verified, repository validator and documented Android checks passed. Original checkout and backup remain intact |
-| P12 | Independent follow-up work | TRACKED SEPARATELY | Issues #101-#107 track Dependabot/security, zero-job push workflow, emulator focus flakiness, installed-device provenance, external backup retention, external Codex/ChatGPT instructions, and historical branch disposition. No dependency/application/security remediation is part of PR #100 |
+| P12 | Independent follow-up work | TRACKED SEPARATELY | #101-#103 are closed; #104 evidence is collected with documentation draft pending; #105-#107 remain separate. #114 and #117 are independent backlog and are not foundation DoD gates |
 
 ## Merge gates and remaining work
 
-### Required before merging PR #100
+### Original Definition of Done and current closeout
 
 - [x] Reconcile stale dossier snapshots and name issue #99 / PR #100 as the live record for head-specific results.
 - [x] Review the complete final PR diff, active instructions/skills/docs, CI and validator security, ruleset requirements, and actual remote head.
 - [x] Verify checks on the reviewed exact PR SHA and record successful, failed, skipped, pending, and no-job workflow outcomes in issue #99/PR #100.
 - [x] Owner approved; PR #100 was marked ready and merged normally into `main` at `1599ab451f711d8a27adfefbcba10293cd53dd84`.
+
+The original foundation Definition of Done (P0-P10) is satisfied: preserved application/history, verified v0.8.3 baseline and backup, reconciled instructions/docs and GitHub inventory, consolidated README/development/Android guidance, and a validated post-merge development handoff. P12 follow-up issues are not completion criteria. The live canonical copies on `main` still need the factual synchronization currently prepared in draft PR #108; do not treat its old-base draft as integrated. Exact current main and Mac baseline are in `STATUS.md`.
 
 ### Required immediately after an approved merge
 
@@ -54,15 +56,15 @@ Establish a reliable, evidence-based foundation for future Android development w
 - [x] Documentation validator passed; documented `testDebugUnitTest`, `lintDebug`, and `assembleDebug` completed successfully.
 - [x] Original checkout HEAD/status match preflight and the verified full-copy backup remains untouched.
 
-### Separate follow-up work, not PR #100 scope
+### Separate follow-up work, not original foundation DoD
 
-- #101 P1: prioritize assessment of all 56 Dependabot alerts, especially 3 critical; investigate the post-merge updater dependency-snapshot failure.
-- #102 P2: investigate repeated failed zero-job push workflow, including run 39514881784 on the merge commit.
-- #103 P2: diagnose emulator Activity-focus flake.
-- #104 P2: read-only physical-device v0.8.3 provenance when device and fresh authorization are available.
+- #101-#103: closed after their separate acceptance criteria; do not reopen from historical prompts.
+- #104 P2: authorized physical-device provenance was collected; PR #116 holds the docs update and current checks need correction/review.
 - #105 P3: external backup availability and retention/restore cadence.
 - #106 P3: reconcile obsolete external Codex/ChatGPT instructions and historical project references.
 - #107 P2: recommend disposition of unmerged historical branches; do not delete or merge automatically.
+- #114: independent Automatic Dependency Submission/KSP investigation; separate backlog.
+- #117: separate DAC evidence-planning issue; explicitly not a foundation closeout gate.
 
 ## Resume procedure
 

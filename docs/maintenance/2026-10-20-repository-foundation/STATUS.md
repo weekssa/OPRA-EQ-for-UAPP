@@ -1,10 +1,20 @@
 # Repository Foundation Status
 
-Last updated: 2026-10-20
-Current phase: P12 independent follow-ups tracked separately
-Overall: PR #100 MERGED; POST-MERGE VERIFIED; FOLLOW-UPS OPEN
+Last updated: 2026-10-21
+Current phase: P0-P10 original foundation complete; P11 complete; dossier synchronization pending review
+Overall: ORIGINAL FOUNDATION DoD SATISFIED; CURRENT MAIN DOSSIER CORRECTION PENDING
 
-## Verified starting state
+## Current reconciliation (2026-10-21)
+
+- Canonical evidence remains this dated folder: `docs/maintenance/2026-10-20-repository-foundation/`. The P10-pending/P11-not-started text still visible on current `main` is a stale 2026-10-20 checkpoint, not a template or a new active gate. Draft PR #108 contains the post-merge correction but is based on `1599ab451f711d8a27adfefbcba10293cd53dd84` and GitHub currently reports it conflicting (`mergeable=false`, `mergeable_state=dirty`). Do not merge or rebase without owner authorization.
+- Current GitHub `main`: `779ef3bb56702c94b49a5769c1ad6f160ba2246e`.
+- Mac development worktree `/Users/stephenweeks/Documents/Codex/OPRA-EQ-development`: branch `codex/development-main`, HEAD `6047d45d0e8377f29bc9deb5580191ae44b37793`, tracking `origin/main`, 19 commits behind at refresh. Two pre-existing untracked files remain untouched. The original checkout remains separately preserved at `dc34db33258159a7f73e92df0c792908c92166c8` with its original user-owned state.
+- Original P0-P10 Definition of Done is satisfied. PR #100 merged with owner approval; P11 post-merge verification and initial Mac handoff completed. Follow-up backlog is not part of the original foundation DoD.
+- Issues #101, #102, and #103 are CLOSED. #104's authorized read-only Pixel 9 provenance check found package `com.weekssa.opraeqforuapp`, version `0.8.3` / code `14`, and on-device APK SHA-256 exactly matching public v0.8.3; confidence is high for artifact byte identity. The signer/source association follows the exact public release artifact record; neither was independently read from the installed app. Draft PR #116 is open; its validator check failed because `PROJECT_STATE.md` must preserve an installed-device evidence-boundary statement, its emulator job failed while preparing a corrupt/incomplete SDK image, and its CodeQL/API 26 checks passed. No APK was extracted and no device was modified.
+- #105 external backup availability is still a separate protection improvement; the verified full-copy local recovery backup satisfies original P1. No suitable external volume is currently available. #106 and #107 remain separate follow-ups. #114 and #117 are independent backlog; #117 must not become a foundation acceptance gate.
+- Draft PR #111 is the #101 documentation closeout, separate from this mission. Draft PR #116 carries the later #104 state and exact-reviewed-head approval rule. Neither is merged.
+
+## Verified starting state (historical 2026-10-20 preflight; unchanged where stated)
 
 - Original checkout: exact local path is recorded in private audit files.
 - Original branch/HEAD: `codex/ja11-protocol-evidence` / `dc34db33258159a7f73e92df0c792908c92166c8`; 17 commits behind its fetched remote-tracking ref, with extensive pre-existing untracked and ignored files.
@@ -17,7 +27,7 @@ Overall: PR #100 MERGED; POST-MERGE VERIFIED; FOLLOW-UPS OPEN
 - No suitable external backup drive was found; the only mounted volume observed was an Android Studio application volume.
 - Android helper reported no connected ADB devices. No device command changed state.
 
-## Current findings
+## Original audit findings (historical 2026-10-20 snapshot; superseded where the 2026-10-21 reconciliation above differs)
 
 - GitHub default branch is `main`; PR #100 merged by merge commit `1599ab451f711d8a27adfefbcba10293cd53dd84`. Its tree equals validated PR head `ccec0184742d7798778bcb91d173e4a7ea44531e`.
 - Public release/tag `v0.8.3` is immutable stable; annotated tag object `1a584839b699ce2f0ff447582719fbeb19915392` peels to release source `899755507f812c940f3ab9381a856c80c6030885`.
@@ -49,15 +59,15 @@ PR #100 is merged and no pre-merge gate remains. See issue #99 and the post-merg
 - `python3 tools/validate-repository-foundation.py` passed. The documented Android command `./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug` completed successfully in 55 seconds.
 - Original checkout remains on `codex/ja11-protocol-evidence` at `dc34db33258159a7f73e92df0c792908c92166c8`, with preflight status unchanged. The verified backup and private manifest remain untouched. No historical branch or original file was deleted.
 
-## Separate follow-ups, not PR #100 scope
+## Separate follow-ups, not original foundation DoD
 
-- [#101](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/101) P1: assess all 56 Dependabot alerts, prioritizing the 3 critical; investigate the latest Dependabot updater dependency-snapshot failure before proposing upgrades.
-- [#102](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/102) P2: investigate repeated zero-job push failures, most recently run 39514881784 on the merge commit.
-- [#103](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/103) P2: diagnose emulator Activity-focus test flakiness without masking assertions.
-- [#104](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/104) P2: verify installed v0.8.3 device provenance only when the device is available and read-only access is freshly authorized.
+- #101-#103 are closed; historical issue prompts and descriptions are not active instructions to repeat completed work.
+- [#104](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/104) P2: read-only physical-device provenance verified; documentation draft PR #116 remains under review and must satisfy current validator/CI.
 - [#105](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/105) P3: determine safe external backup availability and retention/restore-check cadence.
 - [#106](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/106) P3: reconcile obsolete external Codex/ChatGPT instructions while preserving unique history.
 - [#107](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/107) P2: recommend disposition of unmerged historical branches; do not delete or merge automatically.
+- #114: separate Automatic Dependency Submission/KSP investigation.
+- #117: separate DAC evidence-planning issue; not part of this foundation.
 
 ## Exact-head CI snapshot and live source
 
