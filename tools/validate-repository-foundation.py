@@ -95,8 +95,9 @@ def main() -> None:
             errors.append("Gradle versionCode does not match the current Project State")
         if not re.search(rf'versionName\s*=\s*"{re.escape(version)}"', build_file):
             errors.append("Gradle versionName does not match the current Project State")
-    if "UNKNOWN / NOT VERIFIED" not in state:
-        errors.append("PROJECT_STATE.md must state the installed-device evidence boundary")
+        installed_state = state.partition("## Installed device state")[2].partition("\n## ")[0]
+        if "UNKNOWN / NOT VERIFIED" not in installed_state and apk_sha not in installed_state:
+            errors.append("PROJECT_STATE.md must state the installed-device evidence boundary")
     if re.search(r"current EW300 milestone targets `?versionName 0\.7\.0", agents):
         errors.append("AGENTS.md still names v0.7.0 as the current milestone")
 
