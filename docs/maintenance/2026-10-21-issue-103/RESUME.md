@@ -61,11 +61,16 @@ intent resolver selected a transient setup activity. On the local API 35 AVD,
 The current correction checks `dumpsys window lastanr` during the readiness wait for the specific
 Home-launcher failure `Input dispatching timed out (Application does not have a focused window)`.
 If that event occurred before instrumentation, CI reboots the fresh emulator once, waits for boot,
-and requires a responsive, unlocked Home activity with no new matching ANR record. If recovery does
-not establish that precondition, the job fails with window, last-ANR, ActivityManager, and emulator
-logs. No test is retried or skipped, and all 72 tests must run on a ready emulator. Post-test logcat,
-window, and ActivityManager snapshots remain downloadable. No application, test-source, dependency,
-version, or release configuration is changed.
+and requires a responsive, unlocked Home activity with no new matching ANR record. A second
+readiness recovery attempt showed another Home no-focused-window ANR during that same startup
+sequence. The workflow had sent legacy `KEYCODE_MENU` (`82`) after both initial boot and recovery,
+before confirming Home focus. Its timing coincides with the repeated ANR, so the current candidate
+removes that input; wake and keyguard dismissal remain. This is an infrastructure hypothesis to
+validate with exact-hosted runs, not a proven cause. If recovery does not establish readiness, the
+job fails with window, last-ANR, ActivityManager, and emulator logs. No test is retried or skipped,
+and all 72 tests must run on a ready emulator. Post-test logcat, window, and ActivityManager
+snapshots remain downloadable. No application, test-source, dependency, version, or release
+configuration is changed.
 
 ## Validation record
 
@@ -97,14 +102,19 @@ version, or release configuration is changed.
   `39559156367`: API 35 readiness failed closed before starting the 72 tests because the package
   resolver selected SDK Setup instead of the actual HOME role holder. No UI result is claimed from
   that attempt; build, API 26, and CodeQL were still pending when this record was updated.
+- HOME-role candidate `b1ad3e831facc5ae00e1d6d74d534a470a5c86b9`, Android CI run
+  `39559603074`: API 35 readiness detected the Home no-focused-window ANR, rebooted once, then
+  detected the same ANR pattern after the second boot and failed closed before instrumentation.
+  Artifact log timestamps place the repeated ANR at 07:09:42 after recovery, with `mCurrentFocus`
+  showing a SystemUI ANR dialog and `mFocusedApp` the Nexus Launcher. The workflow still sent
+  legacy `KEYCODE_MENU` after each boot; the next candidate removes it as a bounded infra change.
 - Automatic Dependency Submission run `39555003303` succeeded on SHA
   `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`. Separate historical KSP 2.3.12 failure remains tracked
   in issue #114; no dependency change is in this PR.
-- The current last-ANR-aware, HOME-role-based correction and this failure analysis are on a new
-  candidate head. Run the full normal Android workflow and CodeQL on that exact head, repeat API 35
-  at least twice, and inspect whether the preflight performs recovery or refuses to start
-  instrumentation on the ANR state. Failure results must remain visible; earlier passing runs do
-  not erase these reproductions.
+- The current last-ANR-aware, HOME-role-based correction removes the pre-focus `KEYCODE_MENU` input.
+  Run the full normal Android workflow and CodeQL on that exact head, repeat API 35 at least twice,
+  and inspect whether startup reaches a responsive Home window without an ANR. Failure results must
+  remain visible; earlier passing runs do not erase these reproductions.
 
 ## Resume checklist
 

@@ -163,7 +163,6 @@ jobs:
           fi
           adb shell wm dismiss-keyguard
           adb shell input keyevent KEYCODE_WAKEUP
-          adb shell input keyevent 82
 
       - name: Wait for API 35 emulator window readiness
         shell: bash
@@ -228,7 +227,6 @@ jobs:
               fi
               adb shell wm dismiss-keyguard
               adb shell input keyevent KEYCODE_WAKEUP
-              adb shell input keyevent 82
               if ! wait_for_home_window; then
                 printf 'API 35 emulator did not reach a responsive, unlocked, focused Home activity after readiness recovery.\n' >&2
                 print_window_diagnostics
