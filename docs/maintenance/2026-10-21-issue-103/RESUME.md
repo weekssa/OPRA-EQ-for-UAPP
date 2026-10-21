@@ -110,6 +110,12 @@ configuration is changed.
   Artifact log timestamps place the repeated ANR at 07:09:42 after recovery, with `mCurrentFocus`
   showing a SystemUI ANR dialog and `mFocusedApp` the Nexus Launcher. The workflow still sent
   legacy `KEYCODE_MENU` after each boot; that input is now removed, and the Home check is task-based.
+- Task-based candidate `119fe0373aadd720a503a1a8b9835ee5c5cf8c82`, Android CI run
+  `39560874718`: the API 35 gate failed closed without any ANR. Its diagnostics showed the Nexus
+  Launcher `mCurrentFocus` and `mFocusedApp` matched and `topDisplayFocusedRootTask` was `type=home`.
+  A shell `sed` expression intended to parse the window package did not match Android's `Window{...}`
+  format, causing a false negative; the current version matches the window line against the
+  independently parsed `mFocusedApp` package directly. Instrumentation did not run on this attempt.
 - Automatic Dependency Submission run `39555003303` succeeded on SHA
   `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`. Separate historical KSP 2.3.12 failure remains tracked
   in issue #114; no dependency change is in this PR.

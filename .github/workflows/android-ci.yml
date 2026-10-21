@@ -179,10 +179,9 @@ jobs:
               if grep -Fq 'Reason: Input dispatching timed out (Application does not have a focused window).' <<< "$last_anr_state"; then
                 return 1
               fi
-              focused_window_package="$(sed -nE 's/.*mCurrentFocus=Window\{[^ ]+ ([^/ ]+)\/.*/\1/p' <<< "$focus_line")"
               focused_app_package="$(sed -nE 's/.*mFocusedApp=ActivityRecord\{[^ ]+ u[0-9]+ ([^/ ]+)\/.*/\1/p' <<< "$focused_app_line")"
-              if [[ -n "$focused_window_package" ]] && \
-                [[ "$focused_window_package" == "$focused_app_package" ]] && \
+              if [[ -n "$focused_app_package" ]] && \
+                [[ "$focus_line" == *"$focused_app_package/"* ]] && \
                 grep -Fq 'type=home' <<< "$focused_root_line" && \
                 grep -Fq 'isKeyguardShowing=false' <<< "$window_state" && \
                 grep -Fq 'mDreamingLockscreen=false' <<< "$window_state"; then
