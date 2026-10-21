@@ -116,18 +116,30 @@ configuration is changed.
   A shell `sed` expression intended to parse the window package did not match Android's `Window{...}`
   format, causing a false negative; the current version matches the window line against the
   independently parsed `mFocusedApp` package directly. Instrumentation did not run on this attempt.
+- Current code candidate `0bd92f2b399e4f861721234f36dc0634191e8126`, Android CI run
+  `39561383373`: build, unit tests, lint, debug/release assembly, R8, API 26 smoke, CodeQL
+  `39561383193`, and Automatic Dependency Submission `39561381826` passed. Hosted API 35 jobs
+  `119093375926` and `119097722467` both completed all 72 tests with 0 skips and 0 failures. The
+  readiness gate passed without reboot on both runs. Artifact `12328498136` confirms a Home task,
+  matching Nexus Launcher current focus and focused ActivityRecord, unlocked keyguard, and
+  `<no ANR has occurred since boot>`. This is the first same-head pair after removing pre-focus
+  `KEYCODE_MENU`; it supports the startup-input hypothesis but is too small to prove a long-term
+  flake-rate reduction.
 - Automatic Dependency Submission run `39555003303` succeeded on SHA
   `9f1bdecb3e8fee29843b1ad9d9d68c6e6e95e9b7`. Separate historical KSP 2.3.12 failure remains tracked
   in issue #114; no dependency change is in this PR.
 - The current last-ANR-aware, Home-task-based correction removes the pre-focus `KEYCODE_MENU` input.
-  Run the full normal Android workflow and CodeQL on that exact head, repeat API 35 at least twice,
-  and inspect whether startup reaches a responsive Home window without an ANR. Failure results must
-  remain visible; earlier passing runs do not erase these reproductions.
+  These changes are validated on `0bd92f2b399e4f861721234f36dc0634191e8126`; this progress-record
+  update creates a documentation-only head. Re-run the normal Android workflow and CodeQL on that
+  exact head, then repeat API 35 at least once more. Inspect whether startup reaches a responsive
+  Home window without an ANR. Failure results must remain visible; earlier passing runs do not
+  erase the reproduced failures.
 
 ## Resume checklist
 
-1. Run the full normal Android CI workflow and CodeQL on the last-ANR-aware workflow head; repeat
-   API 35 at least twice and inspect readiness logs, test reports, and emulator snapshots.
-2. Update issue #103 and PR #115 with exact SHAs, run/job IDs, pass/fail/skip counts, and uncertainty.
+1. Run the full normal Android CI workflow and CodeQL on the documentation-updated exact PR head;
+   repeat API 35 and inspect readiness logs, test reports, and emulator snapshots.
+2. Update issue #103 and PR #115 with the final exact SHA, run/job IDs, pass/fail/skip counts, and
+   uncertainty.
    Preserve application and release configuration, and leave PR #115 as draft.
 3. Confirm draft PRs #108 and #111 remain untouched, and stop before merge for owner approval.
