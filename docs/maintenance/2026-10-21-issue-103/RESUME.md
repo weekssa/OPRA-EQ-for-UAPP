@@ -157,3 +157,36 @@ readiness outcome plus post-test diagnostics before merge.
    PR #115; then make no more changes to this branch.
    Preserve application and release configuration, and leave PR #115 as draft.
 3. Confirm draft PRs #108 and #111 remain untouched, and stop before merge for owner approval.
+
+## 2026-10-21 owner-approved merge continuation
+
+The owner approved merging PR #115 subject to explicit safety verification. The live PR head at
+the start of that review was `1f059371f45e8827e662b5b040e8269b809255d1`, but independent review
+found the recovery branch also rebooted on any generic ANR window. That did not satisfy the owner's
+requirement that recovery be limited to the matching pre-instrumentation launcher ANR. The guard was
+narrowed in commit `633ebd4f8090179af4c0ddd4497ff1b353bc1717`, and a second independent review
+confirmed the one reboot now requires the current focused window to name the Nexus Launcher ANR,
+the focused ActivityRecord package to equal `com.google.android.apps.nexuslauncher`, and the exact
+no-focused-window `lastanr` reason. Other ANRs/focus timeouts fail closed with diagnostics; no test
+retry/skip or pass-on-failure path was added.
+
+On exact code head `633ebd4f8090179af4c0ddd4497ff1b353bc1717`, Android CI run
+`39616021869` attempt 3 passed all three jobs: `build` (`119283095847`), `emulator-ui-test`
+(`119288092493`), and `min-api-smoke` (`119283095411`). The API 35 run completed all 72 tests with
+0 skipped and 0 failed. Both API 35 runs on this exact code head, jobs `119277160677` and
+`119288092493`, passed Home readiness without using the recovery reboot. CodeQL run `39616022059`
+and Automatic Dependency Submission run `39616013535` passed on the same head. The API 26 smoke
+first failed in run `39616021869` attempt 1: the emulator framework's system process died and
+Zygote restarted; Android apps logged `DeadSystemException`, and catalog readiness did not recover
+after its single built-in retry. Artifact `12353716400` preserves that failure. No OPRA process
+crash was observed. An unchanged rerun of only the failed API 26 job passed in attempt 2 as job
+`119283429555`; the populated catalog appeared, and the smoke completed successfully. Preserve the
+first failure as infrastructure evidence; its underlying system restart trigger is unknown.
+
+The isolated branch and original development checkout remained clean aside from this branch's
+intended tracked files; `main` remained at the PR base `6047d45d0e8377f29bc9deb5580191ae44b37793`.
+This record update is documentation-only and requires final exact-PR-head validation before merge.
+After updating this record, do not edit branch files again; put any final run IDs/status in the PR
+body and issue #103. The PR must remain a draft until the final exact head passes and the owner
+approval is exercised by a normal merge. If any required check fails again, leave issue #103 open
+and investigate without weakening the workflow.
