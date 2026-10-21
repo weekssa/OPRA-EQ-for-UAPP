@@ -50,3 +50,12 @@ Decision: Merge the existing foundation dossier PR only after confirming its exa
 Evidence: Owner approval for PR head `2b96a19f6af30baeb3abd8317441d6d4cc0918a4`; exact-head CI run `39658203613` passed build/unit/lint, API 35 emulator UI, and API 26 smoke; Analyze Kotlin and dependency submission passed; generic CodeQL was skipped by workflow conditions. GitHub reported clean/mergeable. PR #108 merged normally at `54fe191f327cfe6c6bd929b412462705f6839ae0`.
 Confidence: High for approved-head identity, checks, merge method, and resulting main commit.
 Approval required: This merge was specifically owner-approved. PR #116 and #111 remain unmerged; any future merge requires separate owner approval. Approval applies only to the exact reviewed head; a later head change requires fresh approval before merge.
+
+
+## D-007 — Integrate approved provenance verification and finish existing documentation closeout
+
+Date: 2026-10-21\
+Decision: Merge PR #116 only at the exact owner-approved head after verifying unchanged scope, clean mergeability, and exact-head checks. Keep the dependency-alert documentation correction in the existing PR #111 and require fresh validation and owner approval for its eventual merge. Preserve historical dated checkpoints, the Mac development folder, untracked paths, original checkout, backup, and v0.8.3 release.\
+Evidence: PR #116 exact head `511dcedf39b315b21ec98fc095a9dcd6b485140b`; Android CI `39678237999` passed build, API 26 smoke, and API 35 emulator UI; Analyze Kotlin `39678238038` and dependency submission `39678263807` passed; GitHub reported mergeable/clean; normal merge commit `f82eceda5b8341c9b2b0884fcfb06422260ddfb5`. PR #111's current correction documents the verified 56 fixed, zero open, zero dismissed alert inventory; its existing branch is being integrated with current main.\
+Confidence: High for exact PR #116 head, validation, merge method, and resulting `main`; high for GitHub's recorded dependency-alert state carried by PR #111.\
+Approval required: PR #116 merge was specifically owner-approved. PR #111 merge and issue #99 closure remain unapproved and are not performed.

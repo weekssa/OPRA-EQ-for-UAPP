@@ -1,6 +1,6 @@
 # Repository Foundation and v0.8.3 Consolidation Runbook
 
-Status: ORIGINAL P0-P10 COMPLETE; P11 POST-MERGE VERIFIED; CURRENT DOSSIER SYNC IN REVIEW\
+Status: ORIGINAL P0-P10 COMPLETE; P11 POST-MERGE VERIFIED; #116 MERGED; #111 DOCUMENTATION CLOSEOUT IN REVIEW\
 Started: 2026-10-20\
 Repository: `weekssa/OPRA-EQ-for-UAPP`\
 Branch: `chore/repository-foundation-v0.8.3`\
@@ -46,7 +46,7 @@ Establish a reliable, evidence-based foundation for future Android development w
 - [x] Verify checks on the reviewed exact PR SHA and record successful, failed, skipped, pending, and no-job workflow outcomes in issue #99/PR #100.
 - [x] Owner approved; PR #100 was marked ready and merged normally into `main` at `1599ab451f711d8a27adfefbcba10293cd53dd84`.
 
-The original foundation Definition of Done (P0-P10) is satisfied: preserved application/history, verified v0.8.3 baseline and backup, reconciled instructions/docs and GitHub inventory, consolidated README/development/Android guidance, and a validated post-merge development handoff. P12 follow-up issues are not completion criteria. PR #108 merged the factual foundation synchronization into `main` at `54fe191f327cfe6c6bd929b412462705f6839ae0`. The remaining installed-device correction is in draft PR #116 and the dependency-alert correction is in draft PR #111; neither has merged. Exact current main and Mac baseline are in `STATUS.md`.
+The original foundation Definition of Done (P0-P10) is satisfied: preserved application/history, verified v0.8.3 baseline and backup, reconciled instructions/docs and GitHub inventory, consolidated README/development/Android guidance, and a validated post-merge development handoff. P12 follow-up issues are not completion criteria. PR #108 merged the factual foundation synchronization at `54fe191f327cfe6c6bd929b412462705f6839ae0`; PR #116 merged its reviewed installed-device provenance correction and exact-head approval rule at `f82eceda5b8341c9b2b0884fcfb06422260ddfb5`. Only the existing dependency-alert closeout PR #111 remains under review. Exact current main and Mac baseline preservation status are in `STATUS.md`.
 
 ### Required immediately after an approved merge
 
@@ -59,7 +59,7 @@ The original foundation Definition of Done (P0-P10) is satisfied: preserved appl
 ### Separate follow-up work, not original foundation DoD
 
 - #101-#103: closed after their separate acceptance criteria; do not reopen from historical prompts.
-- #104 P2: authorized physical-device provenance was collected; PR #116's validator and API 26 CI pass on its validated provenance candidate. Later status-only corrections passed local documentation validation; live PR head/checks are tracked in [issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99). Owner review and merge approval remain pending.
+- #104 P2: authorized physical-device provenance was collected; PR #116 merged at `f82eceda5b8341c9b2b0884fcfb06422260ddfb5` after exact-head checks passed. No Pixel test was repeated.
 - #105 P3: external backup availability and retention/restore cadence.
 - #106 P3: reconcile obsolete external Codex/ChatGPT instructions and historical project references.
 - #107 P2: recommend disposition of unmerged historical branches; do not delete or merge automatically.
@@ -95,3 +95,9 @@ PR #108 merged normally into `main` at `54fe191f327cfe6c6bd929b412462705f6839ae0
 ## PR #116 exact-head validation update (2026-10-21)
 
 At validated provenance head `d936caedc4d113a0403c997803affd2645a5891a`, Android CI run [39669355697](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39669355697) attempt 1 failed because the API 26 smoke did not observe the network-backed catalog within 300 seconds. The single owner-authorized retry, attempt 2 on the same head, passed `min-api-smoke`, build, and API 35 emulator UI. Analyze Kotlin and dependency submission passed; generic CodeQL was skipped by workflow conditions. A subsequent documentation-only correction records the current state in this runbook and STATUS.md; its exact current PR head and check snapshot are tracked in [issue #99](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/99). This evidence supports owner review; merge requires fresh approval of the current exact PR head. No application behavior or physical-device testing was changed or performed.
+
+## PR #116 approved merge and PR #111 continuation (2026-10-21)
+
+Owner approved PR #116 only at exact head `511dcedf39b315b21ec98fc095a9dcd6b485140b`, conditional on unchanged scope, mergeability, and required checks. The diff remained limited to provenance documentation, foundation/runbook/status/evidence records, and the documentation validator. Android CI run [39678237999](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39678237999) passed `build`, `emulator-ui-test`, and `min-api-smoke`; Analyze Kotlin run [39678238038](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39678238038) and dependency submission [39678263807](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39678263807) passed; generic CodeQL was skipped by workflow conditions. The active `Protect main` ruleset has no required check contexts. GitHub reported mergeable/clean. The PR was marked ready and merged normally, without changing its head, as `f82eceda5b8341c9b2b0884fcfb06422260ddfb5`. `PROJECT_STATE.md` records the Pixel 9 installed APK's exact SHA-256 match to public v0.8.3, and `OPERATING_RUNBOOK.md` records that changed PR heads require fresh owner approval before merge.
+
+PR #111 is the only remaining documentation integration. Its current unique correction records all 56 original dependency alerts fixed, zero open or dismissed, after successful default-branch submission, and corrects `PROJECT_STATE.md` and the detailed dependency assessment. Its earlier branch predates PR #108 and #116. The existing branch was merged with current main without rebase; a conflict in the historical `CHATGPT_PROJECT_RUNBOOK.md` was resolved by preserving both dated #110 dependency history and #104 provenance evidence. Review, exact-head validation, and owner merge approval remain outstanding. Issue #99 is the live tracker. The Mac development folder and its three previously recorded untracked paths remain preserved and unsynchronized.

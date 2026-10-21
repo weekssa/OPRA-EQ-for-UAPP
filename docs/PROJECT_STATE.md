@@ -1,6 +1,6 @@
 # Current Project State
 
-Last verified: 2026-10-20. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
+Last verified: 2026-10-21. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
 ## Public release and source identity
 
@@ -13,7 +13,7 @@ Last verified: 2026-10-20. This is a concise state summary. The dated release an
 - Exact stable APK SHA-256: `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`
 - Pinned signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
 - Full source/build/APK/checksum/signer/public asset evidence: [`release-engineering/v0.8.3-stable/ARTIFACTS.md`](release-engineering/v0.8.3-stable/ARTIFACTS.md)
-- Latest `origin/main` verified for dependency assessment #101: `9ca5beb6f20a5dec0b6a9c466719e0299252cb44`, merge commit for PR #109. The dependency remediation does not change `app/src`, `app/build.gradle.kts`, the main manifest, or the public release baseline. Production version metadata remains `0.8.3` / code `14`.
+- Latest `origin/main` verified after PR #110: `41aba8a08ce18f7df2342e4cce3b09b00858e6ef`. The dependency remediation does not change `app/src`, `app/build.gradle.kts`, the main manifest, or the public release baseline. Production version metadata remains `0.8.3` / code `14`.
 
 The exact APK/source tuple above proves the public release identity. It does **not** prove which artifact is currently installed on an owner's phone.
 
@@ -28,7 +28,7 @@ This is **HIGH confidence** that the installed bytes are the exact public stable
 - Open draft PR #96 reports `FINAL_EQ_MISMATCH` on JA11 Off-to-User 1 selection after Save; restoration of the original state is not verified. Mutation remains on hold. No replay is authorized by this status summary.
 - Open draft PR #93 investigates JA11 post-Flash state acquisition; root cause and physical reproduction remain unresolved. Its owner phone authorization was revoked in that handoff.
 - Current-main Dependabot run `39514901376` failed because its Gradle security-update job requested dependencies absent from the dependency snapshot. This is an automation/snapshot mismatch; investigate separately. Do not treat this as a failed Android CI build or as proof that the app is vulnerable or clear.
-- Issue #101: after PR #109 merged, GitHub shows 49 of the original 56 Maven alerts fixed and seven still open (2 critical, 1 high, 4 moderate). PR #110 proposes a narrow fix for actual vulnerable selections in the app's separate `androidLintTool` and UTP result-listener configurations. Local tests, lint, debug/release assembly and R8 mapping checks pass. Exact-head Android CI passed all four jobs on candidate `ac799df6a471eefd7d806fe6da768995d8f65999` (72/72 API 35 emulator tests and API 26 release smoke included). GitHub accepted the candidate dependency snapshot but stated that non-default-branch submissions do not update repository dependency results. The seven default-branch alerts remain open pending owner-approved merge and fresh default-branch submission. See [`DEPENDENCY_SECURITY_ASSESSMENT.md`](security/DEPENDENCY_SECURITY_ASSESSMENT.md). The published v0.8.3 remains unchanged.
+- Issue #101: PR #110 merged normally as `41aba8a08ce18f7df2342e4cce3b09b00858e6ef`. Default-branch Dependency Submission run `39538830388` succeeded and refreshed the graph; GitHub now reports all 56 original alerts fixed, with 0 open and 0 dismissed (0 critical, high, moderate, or low). Alerts #35, #50, #51, #1, #8, #17, and #18 are fixed. The submitted graph and official Gradle extraction show patched selections in both `androidLintTool` and `unified-test-platform-android-test-plugin-result-listener-gradle`. Exact-head Android CI passed on `f94d90050b75dc33dd577bc3c1f09f0b084f29ff` before merge. Issue #101 is closed after verification. Issue #102 remains open for the separate zero-job standard Android CI run. See [`DEPENDENCY_SECURITY_ASSESSMENT.md`](security/DEPENDENCY_SECURITY_ASSESSMENT.md). The published v0.8.3 remains unchanged.
 - Historical EW300, v0.7 and Favorite pull requests remain open for evidence/history; do not close them as part of routine maintenance.
 
 See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) and [`PUBLIC_RELEASE_CHECKLIST.md`](PUBLIC_RELEASE_CHECKLIST.md) for current trackers and detailed release state.
@@ -36,9 +36,9 @@ See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) and [`PUBLIC_RELEASE_CHECKLIST.md`](PUB
 ## Current validation snapshot
 
 - v0.8.3 exact-main Android CI run `38648012952` passed all four jobs on release source `899755507f812c940f3ab9381a856c80c6030885`.
-- On merged main `9ca5beb6f20a5dec0b6a9c466719e0299252cb44`, Dependency Submission run `39527844565` and Automatic Dependency Submission run `39527843547` succeeded, but the refreshed alert set remains seven open because it records the separate vulnerable Lint/UTP tool configurations.
-- Standard Android CI run `39527843364` produced zero jobs; issue #102 tracks the unresolved workflow dispatch anomaly. Do not interpret this as failed Android build work or as the result of exact-head validation.
-- Local continuation candidate checks passed: 799/799 JVM unit tests on retry; `:app:lintDebug`; `:app:assembleDebug`; `:app:assembleRelease` with R8 minification; and `bash tools/verify-r8-mapping.sh`. Exact-head CI run `39533178884` passed build/unit/lint/debug+release/R8, CodeQL, API 35 emulator tests (72/72), and API 26 release smoke on `ac799df6a471eefd7d806fe6da768995d8f65999`. One prior code-equivalent run had hosted emulator window-focus failures; the final-head run passed. Dependency Submission run `39533178861` succeeded but explicitly did not update default-branch dependency results. Alert counts remain 2 critical, 1 high, 4 moderate, 0 low until approved integration and default-branch refresh.
+- On merged main `41aba8a08ce18f7df2342e4cce3b09b00858e6ef`, default-branch Dependency Submission run `39538830388` and Automatic Dependency Submission run `39538861347` succeeded. The graph contains patched selections in both affected AGP tooling configurations, and all 56 alerts are fixed (0 open, 0 dismissed).
+- Exact-head Android CI run `39534623261` passed on PR head `f94d90050b75dc33dd577bc3c1f09f0b084f29ff`, including build/unit/lint/debug and release assembly with R8 checks, CodeQL, API 35 emulator UI tests (72/72), and API 26 release smoke. Standard Android CI run `39538829244` on merged main produced zero jobs; issue #102 tracks the separate workflow failure. Do not interpret it as failed Android build work or as replacing the passing exact-head validation.
+- Local continuation candidate checks passed: 799/799 JVM unit tests on retry; `:app:lintDebug`; `:app:assembleDebug`; `:app:assembleRelease` with R8 minification; and `bash tools/verify-r8-mapping.sh`. Exact-head CI run `39533178884` passed build/unit/lint/debug+release/R8, CodeQL, API 35 emulator tests (72/72), and API 26 release smoke on `ac799df6a471eefd7d806fe6da768995d8f65999`. One prior code-equivalent run had hosted emulator window-focus failures; the final-head run passed. Dependency Submission run `39533178861` succeeded but explicitly did not update default-branch dependency results; the post-merge submission and alert results are recorded above.
 - No device validation was run in this audit.
 - New source/PR SHAs require their own applicable checks. Historical checks do not transfer to a later candidate.
 
