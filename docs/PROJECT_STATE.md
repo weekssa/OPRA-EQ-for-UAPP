@@ -13,7 +13,7 @@ Last verified: 2026-10-20. This is a concise state summary. The dated release an
 - Exact stable APK SHA-256: `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`
 - Pinned signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
 - Full source/build/APK/checksum/signer/public asset evidence: [`release-engineering/v0.8.3-stable/ARTIFACTS.md`](release-engineering/v0.8.3-stable/ARTIFACTS.md)
-- Latest `origin/main` verified for dependency assessment #101: `1599ab451f711d8a27adfefbcba10293cd53dd84`, merge commit for PR #100. The current-main diff from the v0.8.3 tag contains no changes under `app/src`, `app/build.gradle.kts`, or the main manifest. Production version metadata remains `0.8.3` / code `14`. The dependency remediation is isolated on a separate draft branch and does not modify the public release baseline.
+- Latest `origin/main` verified for dependency assessment #101: `9ca5beb6f20a5dec0b6a9c466719e0299252cb44`, merge commit for PR #109. The dependency remediation does not change `app/src`, `app/build.gradle.kts`, the main manifest, or the public release baseline. Production version metadata remains `0.8.3` / code `14`.
 
 The exact APK/source tuple above proves the public release identity. It does **not** prove which artifact is currently installed on an owner's phone.
 
@@ -26,7 +26,7 @@ The v0.8.3 release records say the owner's Pixel retained the separate debug-sig
 - Open draft PR #96 reports `FINAL_EQ_MISMATCH` on JA11 Off-to-User 1 selection after Save; restoration of the original state is not verified. Mutation remains on hold. No replay is authorized by this status summary.
 - Open draft PR #93 investigates JA11 post-Flash state acquisition; root cause and physical reproduction remain unresolved. Its owner phone authorization was revoked in that handoff.
 - Current-main Dependabot run `39514901376` failed because its Gradle security-update job requested dependencies absent from the dependency snapshot. This is an automation/snapshot mismatch; investigate separately. Do not treat this as a failed Android CI build or as proof that the app is vulnerable or clear.
-- Issue #101 assessment recorded all 56 open Maven alerts (3 critical, 22 high, 28 moderate, 3 low) from the 2026-10-20 snapshot. Resolved Gradle graphs show these alerts affect build/test tooling; none of the flagged components is selected in `releaseRuntimeClasspath`. Draft PR [#109](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/109) proposes fixed versions and passed local debug unit tests, lint, and debug assembly. CodeQL and dependency submission passed at PR head `72a46e4dc1be4a94f65fa07476e83ef1208c6e0d`; Android CI was not available on the draft branch, and default-branch GitHub alert refresh remains pending; see [`DEPENDENCY_SECURITY_ASSESSMENT.md`](security/DEPENDENCY_SECURITY_ASSESSMENT.md) and [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+- Issue #101: after PR #109 merged, GitHub shows 49 of the original 56 Maven alerts fixed and seven still open (2 critical, 1 high, 4 moderate). Root `buildEnvironment` selects patched versions, but the dependency-submission report and `dependencyInsight` identify vulnerable selections in the app's separate `androidLintTool` and UTP result-listener configurations. A narrowly scoped continuation candidate pins those two configurations to patched HttpClient, Commons Lang, and Bouncy Castle versions. Local tests, lint, debug/release assembly and R8 mapping checks pass; exact-head CI/emulator tests and GitHub submission refresh are pending. See [`DEPENDENCY_SECURITY_ASSESSMENT.md`](security/DEPENDENCY_SECURITY_ASSESSMENT.md). The published v0.8.3 remains unchanged.
 - Historical EW300, v0.7 and Favorite pull requests remain open for evidence/history; do not close them as part of routine maintenance.
 
 See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) and [`PUBLIC_RELEASE_CHECKLIST.md`](PUBLIC_RELEASE_CHECKLIST.md) for current trackers and detailed release state.
@@ -34,8 +34,9 @@ See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) and [`PUBLIC_RELEASE_CHECKLIST.md`](PUB
 ## Current validation snapshot
 
 - v0.8.3 exact-main Android CI run `38648012952` passed all four jobs on release source `899755507f812c940f3ab9381a856c80c6030885`.
-- On the verified `origin/main` commit `1599ab451f711d8a27adfefbcba10293cd53dd84`, CodeQL run `39514883158`, Dependency Submission run `39514883421`, and Automatic Dependency Submission run `39514881775` succeeded.
-- Current-main Dependabot run `39514901376` failed with the dependency snapshot error described above; the other checks listed above succeeded. These are source/security automation checks, not the Android unit/lint/assembly checks reported for the #101 candidate.
+- On merged main `9ca5beb6f20a5dec0b6a9c466719e0299252cb44`, Dependency Submission run `39527844565` and Automatic Dependency Submission run `39527843547` succeeded, but the refreshed alert set remains seven open because it records the separate vulnerable Lint/UTP tool configurations.
+- Standard Android CI run `39527843364` produced zero jobs; issue #102 tracks the unresolved workflow dispatch anomaly. Do not interpret this as failed Android build work or as the result of exact-head validation.
+- Local continuation candidate checks passed: 799/799 JVM unit tests on retry; `:app:lintDebug`; `:app:assembleDebug`; `:app:assembleRelease` with R8 minification; and `bash tools/verify-r8-mapping.sh`. Exact-head CI and hosted emulator coverage are not yet available for the continuation branch.
 - No device validation was run in this audit.
 - New source/PR SHAs require their own applicable checks. Historical checks do not transfer to a later candidate.
 

@@ -21,6 +21,21 @@ plugins {
 
 subprojects {
     configurations.configureEach {
+        if (
+            name == "androidLintTool" ||
+            name == "unified-test-platform-android-test-plugin-result-listener-gradle"
+        ) {
+            // These AGP-generated tool configurations resolve SDK tooling independently of the
+            // root buildscript classpath. Keep their transitive selections on the patched releases.
+            resolutionStrategy.force(
+                "org.apache.httpcomponents:httpclient:4.5.14",
+                "org.apache.httpcomponents:httpmime:4.5.14",
+                "org.apache.commons:commons-lang3:3.18.0",
+                "org.bouncycastle:bcprov-jdk18on:1.85",
+                "org.bouncycastle:bcpkix-jdk18on:1.85",
+                "org.bouncycastle:bcutil-jdk18on:1.85",
+            )
+        }
         if (name.startsWith("unified-test-platform-")) {
             // Keep the AGP-created UTP configuration on one patched Netty release family.
             resolutionStrategy.force(
