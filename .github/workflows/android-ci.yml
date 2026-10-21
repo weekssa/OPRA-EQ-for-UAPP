@@ -177,24 +177,61 @@ jobs:
             exit 1
           fi
 
-          ready=0
-          for attempt in $(seq 1 30); do
-            window_state="$(adb shell dumpsys window 2>/dev/null || true)"
-            if grep -F "mCurrentFocus=Window{" <<< "$window_state" | grep -Fq "$home_package" && \
-              grep -Fq 'isKeyguardShowing=false' <<< "$window_state" && \
-              grep -Fq 'mDreamingLockscreen=false' <<< "$window_state"; then
-              ready=1
-              break
-            fi
-            sleep 1
-          done
+          wait_for_home_window() {
+            for attempt in $(seq 1 30); do
+              window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+              focus_line="$(grep -F 'mCurrentFocus=Window{' <<< "$window_state" || true)"
+              if [[ "$focus_line" == *"$home_package/"* ]] && \
+                [[ "$focus_line" != *'Application Not Responding:'* ]] && \
+                grep -Fq 'isKeyguardShowing=false' <<< "$window_state" && \
+                grep -Fq 'mDreamingLockscreen=false' <<< "$window_state"; then
+                return 0
+              fi
+              sleep 1
+            done
+            return 1
+          }
 
-          if [[ "$ready" != "1" ]]; then
-            printf 'API 35 emulator did not reach an unlocked, focused Home window.\n' >&2
+          print_window_diagnostics() {
             printf 'Resolved Home component: %s\n' "$home_component" >&2
             adb shell dumpsys window >&2 || true
+            adb shell dumpsys window lastanr >&2 || true
             adb shell dumpsys activity activities >&2 || true
-            exit 1
+          }
+
+          if ! wait_for_home_window; then
+            window_state="$(adb shell dumpsys window 2>/dev/null || true)"
+            if grep -Fq "Application Not Responding: $home_package" <<< "$window_state"; then
+              printf 'Home is showing an Android ANR window before instrumentation; rebooting this fresh emulator once.\n'
+              adb reboot
+              adb wait-for-device
+              boot_completed=""
+              for attempt in $(seq 1 48); do
+                boot_completed="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+                if [[ "$boot_completed" == "1" ]]; then
+                  break
+                fi
+                sleep 5
+              done
+              if [[ "$boot_completed" != "1" ]]; then
+                printf 'API 35 emulator did not finish rebooting after the Home ANR.\n' >&2
+                cat "$RUNNER_TEMP/emulator.log" >&2 || true
+                print_window_diagnostics
+                exit 1
+              fi
+              adb shell wm dismiss-keyguard
+              adb shell input keyevent KEYCODE_WAKEUP
+              adb shell input keyevent 82
+              if ! wait_for_home_window; then
+                printf 'API 35 emulator did not reach a responsive, unlocked, focused Home activity after readiness recovery.\n' >&2
+                print_window_diagnostics
+                exit 1
+              fi
+            else
+              printf 'API 35 emulator did not reach an unlocked, focused Home activity.\n' >&2
+              print_window_diagnostics
+              exit 1
+            fi
           fi
           printf 'API 35 emulator ready with focused Home package: %s\n' "$home_package"
 
