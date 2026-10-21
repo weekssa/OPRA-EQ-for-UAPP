@@ -41,3 +41,12 @@ Decision: Treat original P0-P10 and post-merge P11 as complete, based on the own
 Evidence: issue #99's original phase checklist and live merge record; PR #100 merge `1599ab451f711d8a27adfefbcba10293cd53dd84`; P11 evidence in the foundation dossier and Mac baseline worktree; issue #104 and PR #116 evidence; official `docs/release-engineering/v0.8.3-stable/ARTIFACTS.md`.\
 Confidence: High for original P0-P10/P11 completion and exact installed APK byte match.\
 Approval required: No for this factual reconciliation. Owner approval remains required before merging any PR. Approval applies only to the exact reviewed head; a later head change requires fresh approval before merge.
+
+
+## D-006 — Integrate corrected foundation dossier through approved PR #108
+
+Date: 2026-10-21\
+Decision: Merge the existing foundation dossier PR only after confirming its exact approved head, unchanged diff, passing applicable checks, and GitHub mergeability. Use the repository's normal merge-commit method.
+Evidence: Owner approval for PR head `2b96a19f6af30baeb3abd8317441d6d4cc0918a4`; exact-head CI run `39658203613` passed build/unit/lint, API 35 emulator UI, and API 26 smoke; Analyze Kotlin and dependency submission passed; generic CodeQL was skipped by workflow conditions. GitHub reported clean/mergeable. PR #108 merged normally at `54fe191f327cfe6c6bd929b412462705f6839ae0`.
+Confidence: High for approved-head identity, checks, merge method, and resulting main commit.
+Approval required: This merge was specifically owner-approved. PR #116 and #111 remain unmerged; any future merge requires separate owner approval. Approval applies only to the exact reviewed head; a later head change requires fresh approval before merge.

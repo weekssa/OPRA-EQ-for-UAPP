@@ -77,7 +77,7 @@ A verified full local repository copy and supplementary all-available-refs Git b
 The cleanup branch was retained after the authorized PR #100 merge. No historical branch, original file, or backup was deleted. Do not reset, clean, force-push, delete historical branches, or merge other work automatically.
 
 
-## Current integration progress (2026-10-21)
+## Pre-merge integration progress (2026-10-21; superseded by post-merge record below)
 
 PR #108's existing branch now includes a normal merge commit from verified `origin/main` `779ef3bb56702c94b49a5769c1ad6f160ba2246e`, producing head `d1c664d121e6bf374155934953853075a4f4e153`. The sole content conflict was resolved by retaining the current-main `docs/PROJECT_STATE.md`; all other newer main files were merged intact. No rebase, force-push, branch replacement, or merge into main occurred. The repository foundation validator and whitespace check passed on the merge candidate. GitHub exact-head checks are pending; do not merge until checks and owner approval are complete.
 
@@ -86,3 +86,8 @@ PR #116's verified Pixel record remains unchanged. Its validator is being correc
 PR #111 contains unique accurate dependency-alert closeout facts absent from current main (56 fixed, zero open or dismissed, issue #101 closed) and corrects `PROJECT_STATE.md`. It remains an existing draft and is recommended for retention as a separate issue #101 record; merge or closure remains owner-controlled.
 
 The primary Mac development folder remains at `6047d45d0e8377f29bc9deb5580191ae44b37793`, 19 commits behind current `origin/main`, with three pre-existing untracked paths preserved. Synchronize only after the authorized documentation merges, using a saved-state checkpoint and a clean separate worktree or a carefully reviewed fast-forward; do not reset or clean this checkout.
+
+
+## Post-merge record (2026-10-21)
+
+PR #108 merged normally into `main` at `54fe191f327cfe6c6bd929b412462705f6839ae0` from approved exact head `2b96a19f6af30baeb3abd8317441d6d4cc0918a4`. Its branch merge commit `d1c664d121e6bf374155934953853075a4f4e153` included current main without rebase or force-push. Exact-head Android CI run `39658203613`, Analyze Kotlin, and dependency submission passed; generic CodeQL was skipped by workflow conditions. The corrected foundation RUNBOOK, STATUS, DECISION_LOG, and EVIDENCE_INDEX were verified on actual main. PR #116 and #111 remain open/draft and unmerged. PR #116 was synchronized with current main on its existing branch so its exact current head can be validated against current documentation; no PR merge is authorized by this record.
