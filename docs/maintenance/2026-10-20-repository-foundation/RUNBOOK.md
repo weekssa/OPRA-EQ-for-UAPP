@@ -59,7 +59,7 @@ The original foundation Definition of Done (P0-P10) is satisfied: preserved appl
 ### Separate follow-up work, not original foundation DoD
 
 - #101-#103: closed after their separate acceptance criteria; do not reopen from historical prompts.
-- #104 P2: authorized physical-device provenance was collected; PR #116 holds the docs update and current checks need correction/review.
+- #104 P2: authorized physical-device provenance was collected; PR #116's validator and exact-head CI pass on `d936caedc4d113a0403c997803affd2645a5891a`; owner review and merge approval remain pending.
 - #105 P3: external backup availability and retention/restore cadence.
 - #106 P3: reconcile obsolete external Codex/ChatGPT instructions and historical project references.
 - #107 P2: recommend disposition of unmerged historical branches; do not delete or merge automatically.
@@ -91,3 +91,7 @@ At the pre-merge refresh, the primary Mac development folder was at `6047d45d0e8
 ## Post-merge record (2026-10-21)
 
 PR #108 merged normally into `main` at `54fe191f327cfe6c6bd929b412462705f6839ae0` from approved exact head `2b96a19f6af30baeb3abd8317441d6d4cc0918a4`. Its branch merge commit `d1c664d121e6bf374155934953853075a4f4e153` included current main without rebase or force-push. Exact-head Android CI run `39658203613`, Analyze Kotlin, and dependency submission passed; generic CodeQL was skipped by workflow conditions. The corrected foundation RUNBOOK, STATUS, DECISION_LOG, and EVIDENCE_INDEX were verified on actual main. PR #116 and #111 remain open/draft and unmerged. PR #116 was synchronized with current main on its existing branch so its exact current head can be validated against current documentation; no PR merge is authorized by this record.
+
+## PR #116 exact-head validation update (2026-10-21)
+
+PR #116 remains OPEN/DRAFT at exact head `d936caedc4d113a0403c997803affd2645a5891a`, based on `54fe191f327cfe6c6bd929b412462705f6839ae0`. Android CI run [39669355697](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/39669355697) attempt 1 failed because the API 26 smoke did not observe the network-backed catalog within 300 seconds. The single owner-authorized retry, attempt 2 on the same head, passed `min-api-smoke`, build, and API 35 emulator UI. Analyze Kotlin and dependency submission passed; generic CodeQL was skipped by workflow conditions. GitHub reports CLEAN/MERGEABLE. This is GO for owner review only; PR merge still requires fresh approval for this exact head. No application behavior or physical-device testing was changed or performed.
