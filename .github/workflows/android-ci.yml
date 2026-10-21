@@ -245,13 +245,17 @@ jobs:
           adb_timeout_report="$RUNNER_TEMP/min-api-adb-timeout.txt"
           adb() {
             local status
-            if timeout --foreground --signal=TERM --kill-after=5s 20s "$adb_bin" "$@"; then
+            local command_timeout=20s
+            if [[ "$1" == install ]]; then
+              command_timeout=180s
+            fi
+            if timeout --foreground --signal=TERM --kill-after=5s "$command_timeout" "$adb_bin" "$@"; then
               return 0
             else
               status=$?
             fi
             if [[ "$status" -eq 124 || "$status" -eq 137 ]]; then
-              printf 'ADB command timed out after 20 seconds:' | tee -a "$adb_timeout_report" >&2
+              printf 'ADB command timed out after %s:' "$command_timeout" | tee -a "$adb_timeout_report" >&2
               printf ' %q' adb "$@" | tee -a "$adb_timeout_report" >&2
               printf '\n' | tee -a "$adb_timeout_report" >&2
             fi
