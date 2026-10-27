@@ -51,11 +51,11 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": "42ef43a82d81120838c668b1739c9dd0a9f7f0aa6633e5429f3daacfedd46029",
-      "last_attempt_at": "2026-10-20T17:29:33Z",
+      "cursor": "f32323b56795497736d5aab1d698f6ca111d8b7b861082858c6dcc8616801729",
+      "last_attempt_at": "2026-10-27T18:13:51Z",
       "last_content_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "last_error": null,
-      "last_successful_scan_at": "2026-10-20T17:29:33Z",
+      "last_successful_scan_at": "2026-10-27T18:13:51Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "3",
@@ -159,11 +159,11 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": "888a058b505347334a0972c32d870939f98e82b783b3943c3ee0b85c38a51a4b",
-      "last_attempt_at": "2026-10-20T17:29:35Z",
-      "last_content_fingerprint": "888a058b505347334a0972c32d870939f98e82b783b3943c3ee0b85c38a51a4b",
+      "cursor": "6cde27842092840a3f5a87d557fd5789820513dc483fe85c709108ddfb77b52e",
+      "last_attempt_at": "2026-10-27T18:13:53Z",
+      "last_content_fingerprint": "6cde27842092840a3f5a87d557fd5789820513dc483fe85c709108ddfb77b52e",
       "last_error": null,
-      "last_successful_scan_at": "2026-10-20T17:29:35Z",
+      "last_successful_scan_at": "2026-10-27T18:13:53Z",
       "last_terms_review_at": "2026-09-06T23:18:42Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -182,5 +182,5 @@
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-10-27T16:44:55Z"
+  "updated_at": "2026-10-27T18:13:53Z"
 }
