@@ -1,6 +1,57 @@
 {
-  "candidate_count": 0,
-  "candidates": [],
+  "candidate_count": 2,
+  "candidates": [
+    {
+      "candidate_id": "github-general-119d9468bc3ded9ef795bd0c",
+      "content_sha": "bd76ed3166b82eff0d95aaad695a01f99cf575ba",
+      "creator": null,
+      "creator_is_explicit": false,
+      "license_review_required": false,
+      "path": "src/store/eqStore.ts",
+      "platform": "github_code",
+      "publication_eligible": false,
+      "qualification_required": [
+        "source_provenance",
+        "explicit_general_eq_intent_and_category",
+        "structured_parametric_eq_parse",
+        "canonical_dedupe"
+      ],
+      "redistribution": "structured-data-only",
+      "repository": "Psysonic/psysonic",
+      "scope_hint": "general",
+      "source_account": "Psysonic",
+      "source_id": "github-community",
+      "source_kind": "community_repository",
+      "source_record_id": "Psysonic/psysonic:src/store/eqStore.ts:bd76ed3166b82eff0d95aaad695a01f99cf575ba",
+      "status": "new_candidate",
+      "url": "https://github.com/Psysonic/psysonic/blob/a75e30c2916fd3ac085ee846223a9af5ddcd0b37/src/store/eqStore.ts"
+    },
+    {
+      "candidate_id": "github-general-7494d50f1ec7fd027fa7d942",
+      "content_sha": "74c113a0bfb64759dc41f040a10449c267d109b0",
+      "creator": null,
+      "creator_is_explicit": false,
+      "license_review_required": false,
+      "path": "data/www/eq.html",
+      "platform": "github_code",
+      "publication_eligible": false,
+      "qualification_required": [
+        "source_provenance",
+        "explicit_general_eq_intent_and_category",
+        "structured_parametric_eq_parse",
+        "canonical_dedupe"
+      ],
+      "redistribution": "structured-data-only",
+      "repository": "rbouteiller/airplay-esp32",
+      "scope_hint": "general",
+      "source_account": "rbouteiller",
+      "source_id": "github-community",
+      "source_kind": "community_repository",
+      "source_record_id": "rbouteiller/airplay-esp32:data/www/eq.html:74c113a0bfb64759dc41f040a10449c267d109b0",
+      "status": "new_candidate",
+      "url": "https://github.com/rbouteiller/airplay-esp32/blob/811d5f8af750096683dcec7c95d1cbc08c2f7601/data/www/eq.html"
+    }
+  ],
   "schema_version": 1,
   "scope_hint": "general",
   "source_id": "github-community"
