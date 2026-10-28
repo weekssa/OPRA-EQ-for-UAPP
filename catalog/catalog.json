@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-28T18:18:12Z",
+  "generated_at": "2026-10-28T18:28:39Z",
   "headphone_aliases": [
     {
       "aliases": [
@@ -1050450,6 +1050450,124 @@
         "name": null
       },
       "tuning_label": "Bikefitadvice community tuning"
+    },
+    {
+      "canonical_profile_id": "community-a63008339e182c98c764bb59",
+      "creator": "t$$",
+      "headphone": {
+        "manufacturer": "Sennheiser",
+        "model": "HD 650",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "84cad698e99884aaf4a8f6dc1a3cb8c60b90a115ec363fa43e0643f4bbf86aab",
+          "filters": [
+            {
+              "frequency_hz": 20.0,
+              "gain_db": 4.9,
+              "q": 1.9044,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 30.0,
+              "gain_db": 1.0,
+              "q": 2.5356,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 115.0,
+              "gain_db": -0.5,
+              "q": 1.5452,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 156.0,
+              "gain_db": -2.9,
+              "q": 0.5,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 589.0,
+              "gain_db": -0.8,
+              "q": 1.9397,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1087.0,
+              "gain_db": 0.8,
+              "q": 4.2644,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2941.0,
+              "gain_db": -1.9,
+              "q": 2.1137,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 4509.0,
+              "gain_db": 3.3,
+              "q": 4.5678,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 5825.0,
+              "gain_db": -2.1,
+              "q": 5.6627,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 7078.0,
+              "gain_db": -6.2,
+              "q": 0.9614,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -5.1,
+          "revision_id": "rev-84cad698e99884aaf4a8f6dc",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": "t$$",
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "audio-science-review",
+              "source_kind": "community",
+              "source_product_id": "HD 650",
+              "source_record_id": "post-2707703",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://www.audiosciencereview.com/forum/index.php?threads/sony-inzone-h6-air-sony-mdr-g600.71343/#post-2707703"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": null,
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "unknown",
+        "name": null
+      },
+      "tuning_label": "Sony INZONE H6 Air (Sony MDR-G600)"
     },
     {
       "canonical_profile_id": "community-a6f12c51856482ee4bc21fbc",
