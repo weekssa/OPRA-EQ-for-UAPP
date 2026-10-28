@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-28T16:48:51Z",
+  "generated_at": "2026-10-28T18:18:12Z",
   "headphone_aliases": [
     {
       "aliases": [
@@ -1257,10 +1257,27 @@
               "source_vendor_id": "Simgot Audio",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/crinacle/711%20in-ear/Simgot%20Audio%20EW200/Simgot%20Audio%20EW200%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "EW200",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Simgot Audio EW200 ParametricEQ.txt:cb997d2c113fca50ea609c85187489fc8147356f",
+              "source_vendor_id": "Simgot Audio",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Simgot Audio EW200 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 9b5ca996795be74221aacae96abddee964cc0170c480c7388d8b66f5995a5bf7"
+          "source_version_label": "cb997d2c113fca50ea609c85187489fc8147356f",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -1729,10 +1746,27 @@
               "source_vendor_id": "Apple",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/Super%20Review/earbud/Apple%20EarPods/Apple%20EarPods%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "EarPods",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Apple EarPods ParametricEQ.txt:9b9137b34391b04ecfa4552e8a4da3c1c805b539",
+              "source_vendor_id": "Apple",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Apple EarPods ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 795c3f38526926180508210a314ce2b1afc6fb5109aca88e7236601df32e22bd"
+          "source_version_label": "9b9137b34391b04ecfa4552e8a4da3c1c805b539",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -16243,10 +16277,27 @@
               "source_vendor_id": "7Hz",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/7Hz%20Salnotes%20Zero/7Hz%20Salnotes%20Zero%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Salnotes Zero",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/7Hz Salnotes Zero ParametricEQ.txt:45fafd8ad1400ce77960adff4f373d6642954224",
+              "source_vendor_id": "7Hz",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/7Hz Salnotes Zero ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 d5f430ec793954765fdacb173cebe3fb46895f0640cb98dcd00913b7e652c191"
+          "source_version_label": "45fafd8ad1400ce77960adff4f373d6642954224",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -41969,6 +42020,22 @@
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/HIFIMAN%20Edition%20XS/HIFIMAN%20Edition%20XS%20ParametricEQ.txt"
             },
             {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Edition XS",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/HIFIMAN Edition XS ParametricEQ.txt:de6afb42f76127937bf155454c6a790a08c803ae",
+              "source_vendor_id": "HIFIMAN",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/HIFIMAN Edition XS ParametricEQ.txt"
+            },
+            {
               "creator": "AutoEQ",
               "discovered_at_epoch_seconds": null,
               "is_primary": false,
@@ -41986,7 +42053,8 @@
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 291fc5a47a90b51f8c6d9af720bb4762a7d321fe39b1dd9b92760b3a5e75be1d"
+          "source_version_label": "de6afb42f76127937bf155454c6a790a08c803ae",
+          "verification_status": "verified"
         },
         {
           "acoustic_fingerprint": "e46443b02620f3d34209b505a87bdc21c98d6745a659c489b22736cf92ed887e",
@@ -243762,10 +243830,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sennheiser%20HD%20650/Sennheiser%20HD%20650%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "HD 650",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 650 ParametricEQ.txt:a4587fc26ef207c5140f6217ce4ae50d8df00503",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 650 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 c5bb0c16eccfedba82326eb68480f27f7e28ed92bb5534d2bb5d0a1d6c28ad67"
+          "source_version_label": "a4587fc26ef207c5140f6217ce4ae50d8df00503",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -302897,10 +302982,27 @@
               "source_vendor_id": "Sony",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sony%20MDR-7506/Sony%20MDR-7506%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "MDR-7506",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony MDR-7506 ParametricEQ.txt:66603270b02d3488daf3eb47217f803595d3a6b7",
+              "source_vendor_id": "Sony",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony MDR-7506 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 8b5299e6356d8d8c5ff364f25783aab20834d21d26f961777c396b2cfa94631a"
+          "source_version_label": "66603270b02d3488daf3eb47217f803595d3a6b7",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -312691,10 +312793,27 @@
               "source_vendor_id": "Shure",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Shure%20SE535/Shure%20SE535%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "SE535",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Shure SE535 ParametricEQ.txt:9a624df2b439341b3696b0d3047b555cd00becf8",
+              "source_vendor_id": "Shure",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Shure SE535 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 131c40e0eed8a4b040b639f685443f55ab5ac95bec9c8b6540e9ac8355c95e12"
+          "source_version_label": "9a624df2b439341b3696b0d3047b555cd00becf8",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -330037,10 +330156,27 @@
               "source_vendor_id": "Etymotic",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Etymotic%20ER4XR/Etymotic%20ER4XR%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "ER4XR",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Etymotic ER4XR ParametricEQ.txt:9649ea96cc82fe74d61cbb819549f09adb00301b",
+              "source_vendor_id": "Etymotic",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Etymotic ER4XR ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 e1c8ca3c8b81e3c24be9543990a977afef3de1a186379bc669bd4e8c2c4594ff"
+          "source_version_label": "9649ea96cc82fe74d61cbb819549f09adb00301b",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -359537,10 +359673,27 @@
               "source_vendor_id": "AKG",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/AKG%20K371/AKG%20K371%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "K371",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/AKG K371 ParametricEQ.txt:7a452e2c856a7704d9ac8688d5036e76012be213",
+              "source_vendor_id": "AKG",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/AKG K371 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 76a99a4ac1e9e79152917c932e18acec2b7c15d24e9e927dde7488acb9367191"
+          "source_version_label": "7a452e2c856a7704d9ac8688d5036e76012be213",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -376411,10 +376564,27 @@
               "source_vendor_id": "Bose",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Bose%20QuietComfort%2045/Bose%20QuietComfort%2045%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "QuietComfort 45",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Bose QuietComfort 45 ParametricEQ.txt:924672339b3993d82231757def01daf0185a30c0",
+              "source_vendor_id": "Bose",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Bose QuietComfort 45 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 7b4eabdb515695e184e9185dc9d2f73d598bc63846a294e9ab044ef4c9e21ed2"
+          "source_version_label": "924672339b3993d82231757def01daf0185a30c0",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -379007,10 +379177,27 @@
               "source_vendor_id": "Sony",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sony%20WH-1000XM4/Sony%20WH-1000XM4%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "WH-1000XM4",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WH-1000XM4 ParametricEQ.txt:83a40384b0ff9803b34a52be8d66f22d79d3d0a6",
+              "source_vendor_id": "Sony",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WH-1000XM4 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 aa2e47cd5a114a8ec7368394d87122e5a2ce970c670ff9ce6ce90440841ed186"
+          "source_version_label": "83a40384b0ff9803b34a52be8d66f22d79d3d0a6",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -389863,10 +390050,27 @@
               "source_vendor_id": "Audio-Technica",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Audio-Technica%20ATH-M50x/Audio-Technica%20ATH-M50x%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "ATH-M50x",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Audio-Technica ATH-M50x ParametricEQ.txt:24007745f59b214b261c96842a36944d27ed3905",
+              "source_vendor_id": "Audio-Technica",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Audio-Technica ATH-M50x ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 722719aded857efa6a106821b445694fb4ebcc5626be6275cfb40264ec9dd21c"
+          "source_version_label": "24007745f59b214b261c96842a36944d27ed3905",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -396117,10 +396321,27 @@
               "source_vendor_id": "Apple",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Apple%20AirPods%20Max/Apple%20AirPods%20Max%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "AirPods Max",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Apple AirPods Max ParametricEQ.txt:be9ecef334ad79da6532943f427638e2b3a4f8c7",
+              "source_vendor_id": "Apple",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Apple AirPods Max ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 4705aa1ce22c5ad6f19af2101fd5771a9cd13bfd57b1cc4770da7ff8f570a24a"
+          "source_version_label": "be9ecef334ad79da6532943f427638e2b3a4f8c7",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -411929,10 +412150,27 @@
               "source_vendor_id": "Moondrop",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Moondrop%20Chu/Moondrop%20Chu%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Chu",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Chu ParametricEQ.txt:65502b049658fea017d8f534df9efe81d8fe8123",
+              "source_vendor_id": "Moondrop",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Chu ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 eafd147e54dbd8674aae2bdb1720fa04b6a19b78a6715bb0ec10fe80127c33b6"
+          "source_version_label": "65502b049658fea017d8f534df9efe81d8fe8123",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -461607,10 +461845,27 @@
               "source_vendor_id": "Koss",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Koss%20Porta%20Pro/Koss%20Porta%20Pro%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Porta Pro",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Koss Porta Pro ParametricEQ.txt:484ad4162d5b80e2d55bc06d710de3c76020aeaf",
+              "source_vendor_id": "Koss",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Koss Porta Pro ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 2d011d4a2a626c55214ab022a9f9cc3546e2aa5310849dcd7e59856c2f7f3ef2"
+          "source_version_label": "484ad4162d5b80e2d55bc06d710de3c76020aeaf",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -470592,10 +470847,27 @@
               "source_vendor_id": "Shure",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Shure%20SE215/Shure%20SE215%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "SE215",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Shure SE215 ParametricEQ.txt:7896582bc61b5a6bbeaeda15c7876d9b7e4fcea4",
+              "source_vendor_id": "Shure",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Shure SE215 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 859f9a8703e630ce2541994a65caae5ee47a656d0cfbebbe446d8fcf452ca201"
+          "source_version_label": "7896582bc61b5a6bbeaeda15c7876d9b7e4fcea4",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -492540,10 +492812,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Sennheiser%20IE%20200/Sennheiser%20IE%20200%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "IE 200",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser IE 200 ParametricEQ.txt:3c476eaf9c2149e301e31896d23538fd6d6be5c0",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser IE 200 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 e99b4dbaa5cdb3579be4537b2153560461bfedc3dc250be11274d7baa5a38fab"
+          "source_version_label": "3c476eaf9c2149e301e31896d23538fd6d6be5c0",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -555350,10 +555639,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Sennheiser%20IE%20900/Sennheiser%20IE%20900%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "IE 900",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser IE 900 ParametricEQ.txt:6ad7eecae95074865d6383ee559a8eac11a64c36",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser IE 900 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 4b13732fb68dcabf8152e6bbcdad50e948ec06022589dab44d1bac7af0deb84b"
+          "source_version_label": "6ad7eecae95074865d6383ee559a8eac11a64c36",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -567032,10 +567338,27 @@
               "source_vendor_id": "TANGZU",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/crinacle/711%20in-ear/TANGZU%20Wan%27er%20S.G/TANGZU%20Wan%27er%20S.G%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Wan'er S.G",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/TANGZU Wan'er S.G ParametricEQ.txt:0ad52565426bcc68ee9291a2928e6422494a66df",
+              "source_vendor_id": "TANGZU",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/TANGZU Wan'er S.G ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 1dc63539e25da5e40443430353f6a4a93a67b3ce6f594caea9b5a624f8b642bc"
+          "source_version_label": "0ad52565426bcc68ee9291a2928e6422494a66df",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -583434,10 +583757,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sennheiser%20HD%206XX/Sennheiser%20HD%206XX%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "HD 6XX",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 6XX ParametricEQ.txt:a4587fc26ef207c5140f6217ce4ae50d8df00503",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 6XX ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 c5bb0c16eccfedba82326eb68480f27f7e28ed92bb5534d2bb5d0a1d6c28ad67"
+          "source_version_label": "a4587fc26ef207c5140f6217ce4ae50d8df00503",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -589924,10 +590264,27 @@
               "source_vendor_id": "HIFIMAN",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/crinacle/GRAS%2043AG-7%20over-ear/HIFIMAN%20Sundara/HIFIMAN%20Sundara%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Sundara",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/HIFIMAN Sundara ParametricEQ.txt:0e055ca5699b8488e8a8ad1c3d79d5eaf428032a",
+              "source_vendor_id": "HIFIMAN",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/HIFIMAN Sundara ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 f896b1ac9270e15773c28c215eed1a92e098282e26aad42dd47a80693afa0567"
+          "source_version_label": "0e055ca5699b8488e8a8ad1c3d79d5eaf428032a",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -595824,10 +596181,27 @@
               "source_vendor_id": "Moondrop",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/crinacle/711%20in-ear/Moondrop%20Chu%202/Moondrop%20Chu%202%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Chu 2",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Chu 2 ParametricEQ.txt:335560f33ae8fea53b6a684f20c47428d636b594",
+              "source_vendor_id": "Moondrop",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Chu 2 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 37f763ceb8ecbe2b50b3d88283b54d853c2a4832ab86fb9f77b00a9ff1ee16e6"
+          "source_version_label": "335560f33ae8fea53b6a684f20c47428d636b594",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -607152,10 +607526,27 @@
               "source_vendor_id": "AKG",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/AKG%20K702/AKG%20K702%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "K702",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/AKG K702 ParametricEQ.txt:e072ad7d1e25b8f1aec8f31992c25bbf549e1f71",
+              "source_vendor_id": "AKG",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/AKG K702 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 a211d338fb13c6157a3aaa18bec4e3b52a3300a38e63fc19a863848f00b1feb9"
+          "source_version_label": "e072ad7d1e25b8f1aec8f31992c25bbf549e1f71",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -631932,10 +632323,27 @@
               "source_vendor_id": "Truthear",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Truthear%20Hexa/Truthear%20Hexa%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Hexa",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Truthear Hexa ParametricEQ.txt:ee9bd4344161cf97b0d27c6701d4d6fc2222d397",
+              "source_vendor_id": "Truthear",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Truthear Hexa ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 309c0906945dae70b1d3f5f065acb77f2a916427d5883650b15ea0810868c8aa"
+          "source_version_label": "ee9bd4344161cf97b0d27c6701d4d6fc2222d397",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -635708,10 +636116,27 @@
               "source_vendor_id": "Apple",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/crinacle/711%20in-ear/Apple%20AirPods%20Pro/Apple%20AirPods%20Pro%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "AirPods Pro",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Apple AirPods Pro ParametricEQ.txt:b324752dcf738eba1e317a1b21ca8be065a43ac9",
+              "source_vendor_id": "Apple",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Apple AirPods Pro ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 8f0ba6e8e509f76ce979d3f7cda5af2f86b32d5023823189c44541a3ce5ee7a9"
+          "source_version_label": "b324752dcf738eba1e317a1b21ca8be065a43ac9",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -671344,10 +671769,27 @@
               "source_vendor_id": "Philips",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Philips%20SHP9500/Philips%20SHP9500%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "SHP9500",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Philips SHP9500 ParametricEQ.txt:28623fc91f7e36c0558cf7e215c0f8d604aad3df",
+              "source_vendor_id": "Philips",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Philips SHP9500 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 ca8a55a07b6dc0893a9643f087ed240bde0e54dae370140391fe32f59df7aaa1"
+          "source_version_label": "28623fc91f7e36c0558cf7e215c0f8d604aad3df",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -682200,10 +682642,27 @@
               "source_vendor_id": "Moondrop",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Moondrop%20Starfield/Moondrop%20Starfield%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Starfield",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Starfield ParametricEQ.txt:9647d33b9e3b84fc70b27d4c549ca3658aa5ecfc",
+              "source_vendor_id": "Moondrop",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Starfield ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 e753d90757377dabcc54e0fb9224e61449a54060b76ea4b1ee8fd6d3a31512fd"
+          "source_version_label": "9647d33b9e3b84fc70b27d4c549ca3658aa5ecfc",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -696124,10 +696583,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sennheiser%20HD%20800%20S/Sennheiser%20HD%20800%20S%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "HD 800 S",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 800 S ParametricEQ.txt:b3cd5baf608d4c765e48551976173569d4250b85",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 800 S ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 cd66132568a826b705bf4d245c0494e78259c6d252fdf40e693cb49f463a913d"
+          "source_version_label": "b3cd5baf608d4c765e48551976173569d4250b85",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -710638,10 +711114,27 @@
               "source_vendor_id": "Samsung",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Samsung%20Galaxy%20Buds2%20Pro/Samsung%20Galaxy%20Buds2%20Pro%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Galaxy Buds2 Pro",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Samsung Galaxy Buds2 Pro ParametricEQ.txt:a82af9d7550062cc80375bc2d619ff55d2425fdb",
+              "source_vendor_id": "Samsung",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Samsung Galaxy Buds2 Pro ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 436cb035ffe4e0d2d82f8d7fa2faba2c726ab5e96f1347ebb7f41b0e09ad109f"
+          "source_version_label": "a82af9d7550062cc80375bc2d619ff55d2425fdb",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -722320,10 +722813,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sennheiser%20HD%20560S/Sennheiser%20HD%20560S%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "HD 560S",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 560S ParametricEQ.txt:6eb69240569284594413ee25613d287a0038fe7b",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 560S ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 f0b62d819f459133b21173378b0b5ad27a21ee913e04f10ba68c269cdfc7d230"
+          "source_version_label": "6eb69240569284594413ee25613d287a0038fe7b",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -754770,10 +755280,27 @@
               "source_vendor_id": "Sony",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Sony%20WF-1000XM4/Sony%20WF-1000XM4%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "WF-1000XM4",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WF-1000XM4 ParametricEQ.txt:160e0077d1226d5c55750a2e0c05e69f49fdc22e",
+              "source_vendor_id": "Sony",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WF-1000XM4 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 410d79b046a6e68947c1b30f905b54af309cd1140e532367c44f27c9e957b1ab"
+          "source_version_label": "160e0077d1226d5c55750a2e0c05e69f49fdc22e",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -767160,10 +767687,27 @@
               "source_vendor_id": "KZ",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/KZ%20ZSN%20Pro%20X/KZ%20ZSN%20Pro%20X%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "ZSN Pro X",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/KZ ZSN Pro X ParametricEQ.txt:8a061a2214a96164f163f73b00513939a69fdc8b",
+              "source_vendor_id": "KZ",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/KZ ZSN Pro X ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 6a6d466598a13857d81638c9ee3897a9c7b81e4cc25706d59869764d30ebb5c7"
+          "source_version_label": "8a061a2214a96164f163f73b00513939a69fdc8b",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -769638,10 +770182,27 @@
               "source_vendor_id": "Sony",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sony%20WH-1000XM5/Sony%20WH-1000XM5%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "WH-1000XM5",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WH-1000XM5 ParametricEQ.txt:c34685f474f5a4d8e55a1a4d07005f1a7d5f2fce",
+              "source_vendor_id": "Sony",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WH-1000XM5 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 ab6bc078a3259f188867e084106b3b4194a5fbfd8e8df1d309ab6d8b0f297453"
+          "source_version_label": "c34685f474f5a4d8e55a1a4d07005f1a7d5f2fce",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -835853,10 +836414,27 @@
               "source_vendor_id": "Etymotic",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Etymotic%20ER2XR/Etymotic%20ER2XR%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "ER2XR",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Etymotic ER2XR ParametricEQ.txt:0d0c66b5783e6c563f90f4d0cc1fc9747a544927",
+              "source_vendor_id": "Etymotic",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Etymotic ER2XR ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 17df41f271903dcdd7473e79811cd96ba719632b5d89eccaed16d4808f076792"
+          "source_version_label": "0d0c66b5783e6c563f90f4d0cc1fc9747a544927",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -842815,10 +843393,27 @@
               "source_vendor_id": "AKG",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/AKG%20K240%20Studio/AKG%20K240%20Studio%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "K240 Studio",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/AKG K240 Studio ParametricEQ.txt:9d77462c93d9456d002515c5c41bf5662282b3f8",
+              "source_vendor_id": "AKG",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/AKG K240 Studio ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 05dc93742e8979c24b9bc4fd39d963e52e31f9c997ce58281986ff1e769caa0a"
+          "source_version_label": "9d77462c93d9456d002515c5c41bf5662282b3f8",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -850603,10 +851198,27 @@
               "source_vendor_id": "Moondrop",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Moondrop%20Blessing%202/Moondrop%20Blessing%202%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "Blessing 2",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Blessing 2 ParametricEQ.txt:9decb512090b47c00d434ae5f67ee21bc109b211",
+              "source_vendor_id": "Moondrop",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Blessing 2 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 4a671264eb2ccb4dee43659b1371fa600a0b4bb53227085610173d2690885639"
+          "source_version_label": "9decb512090b47c00d434ae5f67ee21bc109b211",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -905962,10 +906574,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Sennheiser%20IE%20600/Sennheiser%20IE%20600%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "IE 600",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser IE 600 ParametricEQ.txt:1a9da2db43050ce345c04084ea8990ceafa54eb5",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser IE 600 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 66381bf6fd162bc3d2ae5aa7780ed4890b0474e36df7b6b9d4ccaf225d930b02"
+          "source_version_label": "1a9da2db43050ce345c04084ea8990ceafa54eb5",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -936187,10 +936816,27 @@
               "source_vendor_id": "Sennheiser",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/over-ear/Sennheiser%20HD%20600/Sennheiser%20HD%20600%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "HD 600",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 600 ParametricEQ.txt:2e7e893de1e2ddb09dba5f35638e0f7a1e01eda6",
+              "source_vendor_id": "Sennheiser",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 600 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 a1929b782f46c9f4e481b920e495fd574349994f598660b086388148a3813b00"
+          "source_version_label": "2e7e893de1e2ddb09dba5f35638e0f7a1e01eda6",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -947414,10 +948060,27 @@
               "source_vendor_id": "Sony",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Sony%20WF-1000XM5/Sony%20WF-1000XM5%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "WF-1000XM5",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WF-1000XM5 ParametricEQ.txt:81d9ceef7b26696efb3539d573b78da053df5bef",
+              "source_vendor_id": "Sony",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WF-1000XM5 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 d7d5864ad74d98a74fa26842bbc7fbe68e9aed3afe5503be446c395c98ab2ea2"
+          "source_version_label": "81d9ceef7b26696efb3539d573b78da053df5bef",
+          "verification_status": "verified"
         }
       ],
       "target": {
@@ -1030048,10 +1030711,27 @@
               "source_vendor_id": "Tin HiFi",
               "updated_at_epoch_seconds": null,
               "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/oratory1990/in-ear/Tin%20HiFi%20T2/Tin%20HiFi%20T2%20ParametricEQ.txt"
+            },
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "T2",
+              "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Tin HiFi T2 ParametricEQ.txt:abf8c6d31514ad545587f73b617c0b9de4eb8ff5",
+              "source_vendor_id": "Tin HiFi",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Tin HiFi T2 ParametricEQ.txt"
             }
           ],
           "source_updated_at_epoch_seconds": null,
-          "source_version_label": "AutoEq content sha256 26879134977dfa43c941d2e28b75fd1c4bf7c99fffb1ee5ea9788ec08f623335"
+          "source_version_label": "abf8c6d31514ad545587f73b617c0b9de4eb8ff5",
+          "verification_status": "verified"
         }
       ],
       "target": {
