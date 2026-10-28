@@ -1120,12 +1120,12 @@
       "url": "https://github.com/Wei1234c/DRC/blob/ded8cd0d2cfa2feadd94fb98e5acd1739b006a7e/notebooks/results/JamBox ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-af755962b2caa7618b5ef0ef",
-      "content_sha": "4212b7e422663a6b9ce303f9106145cd99e494a4",
+      "candidate_id": "github-b2e8bcd6efb436ed28d2ff39",
+      "content_sha": "81f36a89dd956b9f6e92f9d397962356c987e54d",
       "creator": null,
       "creator_is_explicit": false,
       "license_review_required": false,
-      "path": "results/kr0mka/in-ear/GK G1/GK G1 ParametricEQ.txt",
+      "path": "Timmy Target/KZ_AST_L/KZ_AST_L ParametricEQ.txt",
       "platform": "github_code",
       "publication_eligible": false,
       "qualification_required": [
@@ -1136,14 +1136,14 @@
       ],
       "raw_url": null,
       "redistribution": "structured-data-only",
-      "repository": "jaakkopasanen/AutoEq",
-      "source_account": "jaakkopasanen",
+      "repository": "harpo/autoeq",
+      "source_account": "harpo",
       "source_id": "github-community",
       "source_kind": "community_repository",
-      "source_record_id": "jaakkopasanen/AutoEq:results/kr0mka/in-ear/GK G1/GK G1 ParametricEQ.txt:4212b7e422663a6b9ce303f9106145cd99e494a4",
+      "source_record_id": "harpo/autoeq:Timmy Target/KZ_AST_L/KZ_AST_L ParametricEQ.txt:81f36a89dd956b9f6e92f9d397962356c987e54d",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/jaakkopasanen/AutoEq/blob/7ae0f56d53074872b028649617a22bbb4232feb7/results/kr0mka/in-ear/GK G1/GK G1 ParametricEQ.txt"
+      "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/Timmy Target/KZ_AST_L/KZ_AST_L ParametricEQ.txt"
     },
     {
       "candidate_id": "github-b35335a13e8b107984168836",
