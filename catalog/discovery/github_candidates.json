@@ -2,7 +2,7 @@
   "candidate_count": 50,
   "candidates": [
     {
-      "candidate_id": "github-3b420f0bd7dacbc8ad6324ba",
+      "candidate_id": "github-a2a60fae37b3e3b090970a41",
       "content_sha": "45fafd8ad1400ce77960adff4f373d6642954224",
       "creator": null,
       "creator_is_explicit": false,
@@ -25,10 +25,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/7Hz Salnotes Zero ParametricEQ.txt:45fafd8ad1400ce77960adff4f373d6642954224",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/7Hz Salnotes Zero ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/7Hz Salnotes Zero ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-2fa9adca3cf07a5c23b5932c",
+      "candidate_id": "github-acd867b481d3484d06731edf",
       "content_sha": "9d77462c93d9456d002515c5c41bf5662282b3f8",
       "creator": null,
       "creator_is_explicit": false,
@@ -51,10 +51,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/AKG K240 Studio ParametricEQ.txt:9d77462c93d9456d002515c5c41bf5662282b3f8",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/AKG K240 Studio ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/AKG K240 Studio ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-d5a84276cd21856877accbbb",
+      "candidate_id": "github-e62c66aff45814c455e3f763",
       "content_sha": "7a452e2c856a7704d9ac8688d5036e76012be213",
       "creator": null,
       "creator_is_explicit": false,
@@ -77,10 +77,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/AKG K371 ParametricEQ.txt:7a452e2c856a7704d9ac8688d5036e76012be213",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/AKG K371 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/AKG K371 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-61aa2ecacaa92322798fc669",
+      "candidate_id": "github-ef8637413ec64de5da1c5e43",
       "content_sha": "e072ad7d1e25b8f1aec8f31992c25bbf549e1f71",
       "creator": null,
       "creator_is_explicit": false,
@@ -103,10 +103,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/AKG K702 ParametricEQ.txt:e072ad7d1e25b8f1aec8f31992c25bbf549e1f71",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/AKG K702 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/AKG K702 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-1e615002ea8858facb62c6b8",
+      "candidate_id": "github-7599f5a8b2b85572d702bf7d",
       "content_sha": "be9ecef334ad79da6532943f427638e2b3a4f8c7",
       "creator": null,
       "creator_is_explicit": false,
@@ -129,10 +129,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Apple AirPods Max ParametricEQ.txt:be9ecef334ad79da6532943f427638e2b3a4f8c7",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Apple AirPods Max ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Apple AirPods Max ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-661001d4260d409e1e269f28",
+      "candidate_id": "github-c17daeb47893dcb72398a249",
       "content_sha": "b324752dcf738eba1e317a1b21ca8be065a43ac9",
       "creator": null,
       "creator_is_explicit": false,
@@ -155,10 +155,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Apple AirPods Pro ParametricEQ.txt:b324752dcf738eba1e317a1b21ca8be065a43ac9",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Apple AirPods Pro ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Apple AirPods Pro ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-a847b4a91ecbe524f6763742",
+      "candidate_id": "github-7acb21cfd6dbec1f3773c939",
       "content_sha": "9b9137b34391b04ecfa4552e8a4da3c1c805b539",
       "creator": null,
       "creator_is_explicit": false,
@@ -181,10 +181,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Apple EarPods ParametricEQ.txt:9b9137b34391b04ecfa4552e8a4da3c1c805b539",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Apple EarPods ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Apple EarPods ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-e43cea2b259c518d5e6f578d",
+      "candidate_id": "github-24f864bae44ab696f3c45c4e",
       "content_sha": "24007745f59b214b261c96842a36944d27ed3905",
       "creator": null,
       "creator_is_explicit": false,
@@ -207,10 +207,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Audio-Technica ATH-M50x ParametricEQ.txt:24007745f59b214b261c96842a36944d27ed3905",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Audio-Technica ATH-M50x ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Audio-Technica ATH-M50x ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-b5dd2ce9b65a47b5f56c42eb",
+      "candidate_id": "github-95555dd6712273e064be54c2",
       "content_sha": "924672339b3993d82231757def01daf0185a30c0",
       "creator": null,
       "creator_is_explicit": false,
@@ -233,10 +233,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Bose QuietComfort 45 ParametricEQ.txt:924672339b3993d82231757def01daf0185a30c0",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Bose QuietComfort 45 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Bose QuietComfort 45 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-ae7d26ceb7fad29658f8791b",
+      "candidate_id": "github-61f83b46aa3243fd378f0fc6",
       "content_sha": "0d0c66b5783e6c563f90f4d0cc1fc9747a544927",
       "creator": null,
       "creator_is_explicit": false,
@@ -259,10 +259,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Etymotic ER2XR ParametricEQ.txt:0d0c66b5783e6c563f90f4d0cc1fc9747a544927",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Etymotic ER2XR ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Etymotic ER2XR ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-b55ee8c592b2b67c56db1901",
+      "candidate_id": "github-14bd803329e60a2b7408016a",
       "content_sha": "9649ea96cc82fe74d61cbb819549f09adb00301b",
       "creator": null,
       "creator_is_explicit": false,
@@ -285,10 +285,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Etymotic ER4XR ParametricEQ.txt:9649ea96cc82fe74d61cbb819549f09adb00301b",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Etymotic ER4XR ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Etymotic ER4XR ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-77a80de85e896fd30c7a4be7",
+      "candidate_id": "github-348c0443ff783c0c652e6b63",
       "content_sha": "b7aca938774ecf4cc637110b806b45cf3b9fc174",
       "creator": null,
       "creator_is_explicit": false,
@@ -311,10 +311,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Focal Clear ParametricEQ.txt:b7aca938774ecf4cc637110b806b45cf3b9fc174",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Focal Clear ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Focal Clear ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-62c499f848cea97511e3df5c",
+      "candidate_id": "github-bab0b6d50f12e1a05456db0e",
       "content_sha": "de6afb42f76127937bf155454c6a790a08c803ae",
       "creator": null,
       "creator_is_explicit": false,
@@ -337,10 +337,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/HIFIMAN Edition XS ParametricEQ.txt:de6afb42f76127937bf155454c6a790a08c803ae",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/HIFIMAN Edition XS ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/HIFIMAN Edition XS ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-cada028e05ab8dcedc3b22c8",
+      "candidate_id": "github-750218b94d85a0312ac33f46",
       "content_sha": "0e055ca5699b8488e8a8ad1c3d79d5eaf428032a",
       "creator": null,
       "creator_is_explicit": false,
@@ -363,10 +363,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/HIFIMAN Sundara ParametricEQ.txt:0e055ca5699b8488e8a8ad1c3d79d5eaf428032a",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/HIFIMAN Sundara ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/HIFIMAN Sundara ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-1f5198760046762d3d683813",
+      "candidate_id": "github-be81d72c3a4e995972d7cc13",
       "content_sha": "8a061a2214a96164f163f73b00513939a69fdc8b",
       "creator": null,
       "creator_is_explicit": false,
@@ -389,10 +389,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/KZ ZSN Pro X ParametricEQ.txt:8a061a2214a96164f163f73b00513939a69fdc8b",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/KZ ZSN Pro X ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/KZ ZSN Pro X ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-503308dfe73db54aea2112a8",
+      "candidate_id": "github-38cc8ca9e6c111c617b82e9b",
       "content_sha": "484ad4162d5b80e2d55bc06d710de3c76020aeaf",
       "creator": null,
       "creator_is_explicit": false,
@@ -415,10 +415,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Koss Porta Pro ParametricEQ.txt:484ad4162d5b80e2d55bc06d710de3c76020aeaf",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Koss Porta Pro ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Koss Porta Pro ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-f46bce1354d0711c4cf4bd30",
+      "candidate_id": "github-74582effe0d97ca0080ddc71",
       "content_sha": "41d354d69adcf8c8bb2077ffdb39fffb87d362bb",
       "creator": null,
       "creator_is_explicit": false,
@@ -441,10 +441,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Aria ParametricEQ.txt:41d354d69adcf8c8bb2077ffdb39fffb87d362bb",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Aria ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Moondrop Aria ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-7d861b292d01d06da4f8be9d",
+      "candidate_id": "github-58ed598f1c4b72c7cd89ae80",
       "content_sha": "9decb512090b47c00d434ae5f67ee21bc109b211",
       "creator": null,
       "creator_is_explicit": false,
@@ -467,10 +467,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Blessing 2 ParametricEQ.txt:9decb512090b47c00d434ae5f67ee21bc109b211",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Blessing 2 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Moondrop Blessing 2 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-0d4332603b33408d413d638f",
+      "candidate_id": "github-d04e9710e20455190ccc1655",
       "content_sha": "335560f33ae8fea53b6a684f20c47428d636b594",
       "creator": null,
       "creator_is_explicit": false,
@@ -493,10 +493,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Chu 2 ParametricEQ.txt:335560f33ae8fea53b6a684f20c47428d636b594",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Chu 2 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Moondrop Chu 2 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-2dd4784099ba8269349fe718",
+      "candidate_id": "github-2474e894a0f067e5bebe392f",
       "content_sha": "65502b049658fea017d8f534df9efe81d8fe8123",
       "creator": null,
       "creator_is_explicit": false,
@@ -519,10 +519,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Chu ParametricEQ.txt:65502b049658fea017d8f534df9efe81d8fe8123",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Chu ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Moondrop Chu ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-64017c302ffea43cbdfc2f5a",
+      "candidate_id": "github-32edd9d80612edd89043d361",
       "content_sha": "9647d33b9e3b84fc70b27d4c549ca3658aa5ecfc",
       "creator": null,
       "creator_is_explicit": false,
@@ -545,10 +545,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Moondrop Starfield ParametricEQ.txt:9647d33b9e3b84fc70b27d4c549ca3658aa5ecfc",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Moondrop Starfield ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Moondrop Starfield ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-dea7b5cf7f7b5464cb246046",
+      "candidate_id": "github-bf1e381c25a6ee56b3e8b42c",
       "content_sha": "28623fc91f7e36c0558cf7e215c0f8d604aad3df",
       "creator": null,
       "creator_is_explicit": false,
@@ -571,10 +571,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Philips SHP9500 ParametricEQ.txt:28623fc91f7e36c0558cf7e215c0f8d604aad3df",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Philips SHP9500 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Philips SHP9500 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-d48bea4d60f8d01869a8383f",
+      "candidate_id": "github-7fef7b447c9d2c8076ad5916",
       "content_sha": "a82af9d7550062cc80375bc2d619ff55d2425fdb",
       "creator": null,
       "creator_is_explicit": false,
@@ -597,10 +597,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Samsung Galaxy Buds2 Pro ParametricEQ.txt:a82af9d7550062cc80375bc2d619ff55d2425fdb",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Samsung Galaxy Buds2 Pro ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Samsung Galaxy Buds2 Pro ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-5c35ce23bf47c51827363553",
+      "candidate_id": "github-64852103520f3f742a0a4b9c",
       "content_sha": "6eb69240569284594413ee25613d287a0038fe7b",
       "creator": null,
       "creator_is_explicit": false,
@@ -623,10 +623,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 560S ParametricEQ.txt:6eb69240569284594413ee25613d287a0038fe7b",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 560S ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser HD 560S ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-52ae6f9197bc5a777c08b100",
+      "candidate_id": "github-da2c207b32b70bad53597ca6",
       "content_sha": "2e7e893de1e2ddb09dba5f35638e0f7a1e01eda6",
       "creator": null,
       "creator_is_explicit": false,
@@ -649,10 +649,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 600 ParametricEQ.txt:2e7e893de1e2ddb09dba5f35638e0f7a1e01eda6",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 600 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser HD 600 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-d9cbe54a56ba7cb2d4850e78",
+      "candidate_id": "github-f82a54b36b44a70c98881eac",
       "content_sha": "a4587fc26ef207c5140f6217ce4ae50d8df00503",
       "creator": null,
       "creator_is_explicit": false,
@@ -675,10 +675,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 650 ParametricEQ.txt:a4587fc26ef207c5140f6217ce4ae50d8df00503",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 650 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser HD 650 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-2f6a01025a2f61d55038495b",
+      "candidate_id": "github-7205beee8cdc8160d50803da",
       "content_sha": "a4587fc26ef207c5140f6217ce4ae50d8df00503",
       "creator": null,
       "creator_is_explicit": false,
@@ -701,10 +701,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 6XX ParametricEQ.txt:a4587fc26ef207c5140f6217ce4ae50d8df00503",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 6XX ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser HD 6XX ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-c5ddddb3c6d7302233b85f6b",
+      "candidate_id": "github-2d81b475991af57132cb6ecc",
       "content_sha": "b3cd5baf608d4c765e48551976173569d4250b85",
       "creator": null,
       "creator_is_explicit": false,
@@ -727,10 +727,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser HD 800 S ParametricEQ.txt:b3cd5baf608d4c765e48551976173569d4250b85",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser HD 800 S ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser HD 800 S ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-aed9a0befb3e2f0bb187779b",
+      "candidate_id": "github-77c7ee188a7b05caa5446297",
       "content_sha": "3c476eaf9c2149e301e31896d23538fd6d6be5c0",
       "creator": null,
       "creator_is_explicit": false,
@@ -753,10 +753,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser IE 200 ParametricEQ.txt:3c476eaf9c2149e301e31896d23538fd6d6be5c0",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser IE 200 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser IE 200 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-52733d0e911d7cabdc8a62f1",
+      "candidate_id": "github-5c064f7fe5ef6eeeec895124",
       "content_sha": "1a9da2db43050ce345c04084ea8990ceafa54eb5",
       "creator": null,
       "creator_is_explicit": false,
@@ -779,10 +779,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser IE 600 ParametricEQ.txt:1a9da2db43050ce345c04084ea8990ceafa54eb5",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser IE 600 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser IE 600 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-0a87018832effa8811b49a47",
+      "candidate_id": "github-87e5bb5f974a45f17f61d24f",
       "content_sha": "6ad7eecae95074865d6383ee559a8eac11a64c36",
       "creator": null,
       "creator_is_explicit": false,
@@ -805,10 +805,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sennheiser IE 900 ParametricEQ.txt:6ad7eecae95074865d6383ee559a8eac11a64c36",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sennheiser IE 900 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sennheiser IE 900 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-a8e7b136bda96af6a61aa55b",
+      "candidate_id": "github-75a957cac228dc202e626e5c",
       "content_sha": "7896582bc61b5a6bbeaeda15c7876d9b7e4fcea4",
       "creator": null,
       "creator_is_explicit": false,
@@ -831,10 +831,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Shure SE215 ParametricEQ.txt:7896582bc61b5a6bbeaeda15c7876d9b7e4fcea4",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Shure SE215 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Shure SE215 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-2bbee76a730fb56e7894fce1",
+      "candidate_id": "github-e93428386b767aefac2f424d",
       "content_sha": "9a624df2b439341b3696b0d3047b555cd00becf8",
       "creator": null,
       "creator_is_explicit": false,
@@ -857,10 +857,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Shure SE535 ParametricEQ.txt:9a624df2b439341b3696b0d3047b555cd00becf8",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Shure SE535 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Shure SE535 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-21c1f43e512992f63b8b6bd6",
+      "candidate_id": "github-09346f06b70c3f97341a54ab",
       "content_sha": "cb997d2c113fca50ea609c85187489fc8147356f",
       "creator": null,
       "creator_is_explicit": false,
@@ -883,10 +883,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Simgot Audio EW200 ParametricEQ.txt:cb997d2c113fca50ea609c85187489fc8147356f",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Simgot Audio EW200 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Simgot Audio EW200 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-41d5fa73874640caf5b362f2",
+      "candidate_id": "github-6f4fb07e27c6a6311e43066e",
       "content_sha": "66603270b02d3488daf3eb47217f803595d3a6b7",
       "creator": null,
       "creator_is_explicit": false,
@@ -909,10 +909,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony MDR-7506 ParametricEQ.txt:66603270b02d3488daf3eb47217f803595d3a6b7",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony MDR-7506 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sony MDR-7506 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-5019329a6a37738f3e7bd6a4",
+      "candidate_id": "github-19a15589a7a7cc0aa4001de6",
       "content_sha": "160e0077d1226d5c55750a2e0c05e69f49fdc22e",
       "creator": null,
       "creator_is_explicit": false,
@@ -935,10 +935,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WF-1000XM4 ParametricEQ.txt:160e0077d1226d5c55750a2e0c05e69f49fdc22e",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WF-1000XM4 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sony WF-1000XM4 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-d5065e282f5223376cba7dbc",
+      "candidate_id": "github-824bac9907129593ced89b31",
       "content_sha": "81d9ceef7b26696efb3539d573b78da053df5bef",
       "creator": null,
       "creator_is_explicit": false,
@@ -961,10 +961,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WF-1000XM5 ParametricEQ.txt:81d9ceef7b26696efb3539d573b78da053df5bef",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WF-1000XM5 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sony WF-1000XM5 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-292eb61b4e60f45c7b1e538e",
+      "candidate_id": "github-b1c06e1b9cd1f4d0863b0bcd",
       "content_sha": "83a40384b0ff9803b34a52be8d66f22d79d3d0a6",
       "creator": null,
       "creator_is_explicit": false,
@@ -987,10 +987,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WH-1000XM4 ParametricEQ.txt:83a40384b0ff9803b34a52be8d66f22d79d3d0a6",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WH-1000XM4 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sony WH-1000XM4 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-ebb0a322188c03d3ee0ab9aa",
+      "candidate_id": "github-59f8adb31d1f9acf00dcb587",
       "content_sha": "c34685f474f5a4d8e55a1a4d07005f1a7d5f2fce",
       "creator": null,
       "creator_is_explicit": false,
@@ -1013,10 +1013,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Sony WH-1000XM5 ParametricEQ.txt:c34685f474f5a4d8e55a1a4d07005f1a7d5f2fce",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Sony WH-1000XM5 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Sony WH-1000XM5 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-4c0af786991bb74c94c5468d",
+      "candidate_id": "github-2839a8da6fd788f6409d0560",
       "content_sha": "0ad52565426bcc68ee9291a2928e6422494a66df",
       "creator": null,
       "creator_is_explicit": false,
@@ -1039,10 +1039,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/TANGZU Wan'er S.G ParametricEQ.txt:0ad52565426bcc68ee9291a2928e6422494a66df",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/TANGZU Wan'er S.G ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/TANGZU Wan'er S.G ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-72aecfdb0098ce18f848feff",
+      "candidate_id": "github-ef28b53862d30b3ae56c13b6",
       "content_sha": "abf8c6d31514ad545587f73b617c0b9de4eb8ff5",
       "creator": null,
       "creator_is_explicit": false,
@@ -1065,10 +1065,10 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Tin HiFi T2 ParametricEQ.txt:abf8c6d31514ad545587f73b617c0b9de4eb8ff5",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Tin HiFi T2 ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Tin HiFi T2 ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-5a670f3d03f828800e4b1f72",
+      "candidate_id": "github-6d1ace238bc8861d52e5688a",
       "content_sha": "ee9bd4344161cf97b0d27c6701d4d6fc2222d397",
       "creator": null,
       "creator_is_explicit": false,
@@ -1091,7 +1091,7 @@
       "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Truthear Hexa ParametricEQ.txt:ee9bd4344161cf97b0d27c6701d4d6fc2222d397",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Truthear Hexa ParametricEQ.txt"
+      "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Truthear Hexa ParametricEQ.txt"
     },
     {
       "candidate_id": "github-5ed06fb523c9b10aa6327302",
