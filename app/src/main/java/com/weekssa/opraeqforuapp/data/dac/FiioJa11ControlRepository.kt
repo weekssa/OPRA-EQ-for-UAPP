@@ -319,8 +319,17 @@ class FiioJa11ControlRepository(
             counts = counts,
             lastVerifiedSnapshot = finalSnapshot,
             eqReadback = eqReadback,
+            detail = if (eqReadback == FiioJa11DefaultsEqReadback.CHANGED) {
+                "User 1 EQ readback changed across the defaults reconnect."
+            } else {
+                null
+            },
         )
-        return FiioJa11DefaultsResult.Verified(finalSnapshot, report)
+        return if (eqReadback == FiioJa11DefaultsEqReadback.CHANGED) {
+            FiioJa11DefaultsResult.Failed(report)
+        } else {
+            FiioJa11DefaultsResult.Verified(finalSnapshot, report)
+        }
     }
 
     private suspend fun awaitReplacement(generation: Long, detach: Long, serial: String?): Boolean =

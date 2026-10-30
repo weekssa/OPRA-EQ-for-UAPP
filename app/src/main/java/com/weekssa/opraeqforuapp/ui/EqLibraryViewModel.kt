@@ -519,7 +519,7 @@ class EqLibraryViewModel(
                 is FiioJa11DefaultsResult.Failed -> {
                     val report = result.report
                     android.util.Log.e("Ja11Defaults", "candidate=${BuildConfig.CANDIDATE_SOURCE_SHA} operationId=${report.operationId} stage=${report.stage} volumeWrites=${report.counts.volumeWrites} programWrites=${report.counts.programWrites} micWrites=${report.counts.micWrites} detail=${report.detail}")
-                    mutableFiioJa11DeviceState.value.defaultsFailure(
+                    mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.defaultsFailure(
                         "Defaults were not verified (${report.stage}). Do not retry until the JA11 state has been read and reviewed.", report,
                         lastVerifiedSnapshot = report.lastVerifiedSnapshot ?: mutableFiioJa11DeviceState.value.snapshot,
                     )

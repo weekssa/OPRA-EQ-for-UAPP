@@ -52,3 +52,11 @@ Native OpenCodex v1 spawn accepted worker 01a18f2d-2fde-75c3-8579-40ef8d129b23 (
 ## Immutable source formatting
 
 The original uploaded source contains three deliberate Markdown hard-break lines (two terminal spaces). Full git diff --check reports those exact three lines in the verbatim PLAN appendix. They are preserved under the approved byte-exact source requirement, not removed or labeled a clean diff. The immutable PLAN digest and exact suffix comparison validate those source bytes; all other changed files still require the ordinary whitespace check. No runtime validation is relaxed.
+
+## Safety implementation slice complete
+
+DeepSeek reproduced both pre-fix failures (changed-bank unexpected Verified; ViewModel busy state never cleared), corrected the two defects, and passed 103 focused tests with zero failures/errors/skips. Primary inspected the diff and real ViewModel regression; parent focused command succeeded on current cached outputs. Full coherent-candidate verification remains pending after further implementation. Source paths are the two production files and corresponding repository/ViewModel tests only.
+
+## Reference build
+
+Pinned configuration tool and intercepted source comparator PASS, no hardware accessed. Five individual filter packets and native Save sequence reproduced from original C. See REFERENCE_EVIDENCE.md for codec discrepancy, staging comparison and remaining program-specific gaps.

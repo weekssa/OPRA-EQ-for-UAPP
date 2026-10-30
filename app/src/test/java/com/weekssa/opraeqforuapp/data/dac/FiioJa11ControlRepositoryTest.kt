@@ -31,7 +31,7 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
-    fun defaultsReportsChangedAndUnavailableUserOneReadbacks() = runBlocking {
+    fun defaultsReturnsFailureWhenUserOneReadbackChanges() = runBlocking {
         val before = userOneSnapshot(generation = 7L, gainDb = 0.0)
         val changed = userOneSnapshot(generation = 9L, gainDb = 1.0)
         val changedSource = FakeSource().apply { eqSnapshots = mutableListOf(before, changed) }
@@ -39,9 +39,15 @@ class FiioJa11ControlRepositoryTest {
         val changedReviewed = (changedRepository.readSnapshot() as FiioJa11ControlReadResult.Success).snapshot
         val changedResult = changedRepository.setDefaults(
             FiioJa11DefaultsRequest(changedReviewed, 59, changedReviewed.eqProgram, FiioJa11DeviceControls.OUTPUT_VOLUME),
-        ) as FiioJa11DefaultsResult.Verified
+        ) as FiioJa11DefaultsResult.Failed
         assertThat(changedResult.report.eqReadback).isEqualTo(FiioJa11DefaultsEqReadback.CHANGED)
+        assertThat(changedResult.report.stage).isEqualTo(FiioJa11DefaultsStage.COMPLETE)
+        assertThat(changedResult.report.lastVerifiedSnapshot?.sessionGeneration).isEqualTo(9L)
+        assertThat(changedResult.report.detail).contains("EQ readback changed")
+    }
 
+    @Test
+    fun defaultsRemainsVerifiedWhenUserOneReadbackIsUnavailable() = runBlocking {
         val unavailableSource = FakeSource().apply { eqSnapshots = mutableListOf(null, null) }
         val unavailableRepository = FiioJa11ControlRepository(unavailableSource)
         val unavailableReviewed = (unavailableRepository.readSnapshot() as FiioJa11ControlReadResult.Success).snapshot
