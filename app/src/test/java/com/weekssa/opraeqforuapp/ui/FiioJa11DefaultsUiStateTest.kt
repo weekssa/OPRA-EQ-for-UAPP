@@ -59,6 +59,7 @@ class FiioJa11DefaultsUiStateTest {
             assertThat(failed.isCurrentSession).isFalse()
             assertThat(failed.snapshot).isEqualTo(baseline)
             assertThat(failed.error).contains("Defaults were not verified")
+            assertThat(failed.error).doesNotContain("REVIEW_CURRENTNESS")
             assertThat(failed.defaultsReport?.stage).isNotNull()
         } finally {
             store.clear()

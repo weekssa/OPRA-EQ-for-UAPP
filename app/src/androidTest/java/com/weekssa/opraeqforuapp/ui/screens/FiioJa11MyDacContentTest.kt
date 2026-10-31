@@ -16,6 +16,11 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsEqReadback
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsMechanism
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsOperationReport
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsWriteCounts
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStage
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
@@ -114,7 +119,7 @@ class FiioJa11MyDacContentTest {
     }
 
     @Test
-    fun setAsDefaultRequiresConfirmationAndCapturesReviewedPair() {
+    fun userOneSetAsDefaultShowsNativePreservationConfirmationAndCapturesReviewedPair() {
         var request: FiioJa11DefaultsRequest? = null
         setContentForTrace(editorApplyTrace(), onDefaults = { request = it })
         composeRule.onNodeWithText("DEVICE").performClick()
@@ -122,14 +127,66 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText("+1").performClick()
         composeRule.onNodeWithText("Set as Default").performClick()
         composeRule.onNodeWithText("Confirm and Set Default").assertIsDisplayed()
-        composeRule.onNodeWithText("on, then restore it to off", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("No EQ-band data is written", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("preserve and verify the existing User 1 EQ and microphone setting", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("disconnect briefly during Save", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText("No EQ-band data is written", substring = true).assertCountEquals(0)
         composeRule.runOnIdle { assertEquals(null, request) }
         composeRule.onNodeWithText("Confirm and Set Default").performClick()
         composeRule.runOnIdle {
             assertEquals(21, request?.requestedVolume)
             assertEquals(FiioJa11Protocol.EqProgram.USER_1, request?.requestedProgram)
         }
+    }
+
+    @Test
+    fun nonUserOneSetAsDefaultShowsReviewedMicTransitionsAndTwoReconnects() {
+        var request: FiioJa11DefaultsRequest? = null
+        setContentForTrace(
+            editorApplyTrace(),
+            deviceEqProgram = FiioJa11Protocol.EqProgram.CLASSIC,
+            onDefaults = { request = it },
+        )
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("EQ program").performClick()
+        composeRule.onNodeWithText("Set as Default").performClick()
+
+        composeRule.onNodeWithText("Reviewed microphone setting: Off", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("switch it to On, then back to Off", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("two USB audio reconnects", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("EQ Library will not write the User 1 EQ", substring = true).assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(null, request) }
+        composeRule.onNodeWithText("Confirm and Set Default").performClick()
+        composeRule.runOnIdle {
+            assertEquals(FiioJa11Protocol.EqProgram.CLASSIC, request?.requestedProgram)
+        }
+    }
+
+    @Test
+    fun changedDefaultsReadbackRendersAsFailureInsteadOfSuccess() {
+        setContentForTrace(
+            editorApplyTrace(),
+            defaultsReport = FiioJa11DefaultsOperationReport(
+                operationId = "defaults-failed",
+                stage = FiioJa11DefaultsStage.NATIVE_FINAL_VERIFY,
+                originalMicEnabled = false,
+                requestedVolume = 20,
+                requestedProgram = FiioJa11Protocol.EqProgram.USER_1,
+                counts = FiioJa11DefaultsWriteCounts(
+                    eqBandWrites = FiioJa11Protocol.BAND_COUNT,
+                    eqGainWrites = 1,
+                    eqApplyWrites = 1,
+                    eqSaveWrites = 1,
+                ),
+                lastVerifiedSnapshot = deviceSnapshot(),
+                mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+                eqReadback = FiioJa11DefaultsEqReadback.CHANGED,
+            ),
+        )
+        composeRule.onNodeWithText("DEVICE").performClick()
+
+        composeRule.onNodeWithText("Defaults were not verified", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Final User 1 EQ readback did not match", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText("Defaults verified", substring = true).assertCountEquals(0)
     }
 
     @Test
@@ -156,6 +213,23 @@ class FiioJa11MyDacContentTest {
     }
 
     @Test
+    fun restoringDefaultsDialogStateDoesNotIssueAWrite() {
+        val restorationTester = StateRestorationTester(composeRule)
+        var defaultCalls = 0
+        setContentForTrace(
+            editorApplyTrace(),
+            restorationTester = restorationTester,
+            onDefaults = { defaultCalls += 1 },
+        )
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Device volume").performClick()
+        composeRule.onNodeWithText("Set as Default").performClick()
+        restorationTester.emulateSavedInstanceStateRestore()
+
+        composeRule.runOnIdle { assertEquals(0, defaultCalls) }
+    }
+
+    @Test
     fun eqProgramSelectionStaysLocalUntilApply() {
         val appliedPrograms = mutableListOf<FiioJa11Protocol.EqProgram>()
         setContentForTrace(editorApplyTrace(), onProgram = { appliedPrograms += it })
@@ -178,6 +252,8 @@ class FiioJa11MyDacContentTest {
         onVolume: (Int) -> Unit = {},
         onProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
         onDefaults: (FiioJa11DefaultsRequest) -> Unit = {},
+        deviceEqProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
+        defaultsReport: FiioJa11DefaultsOperationReport? = null,
     ) {
         val bundle = requireNotNull(
             HardwareEqSnapshotFactory.fiioJa11(
@@ -199,17 +275,9 @@ class FiioJa11MyDacContentTest {
                 ),
                 editorState = MyDacEditorUiState(),
                 deviceState = FiioJa11DeviceUiState(
-                    snapshot = FiioJa11DeviceSnapshot(
-                        sessionGeneration = 1L,
-                        usbProductId = FiioJa11Protocol.PRODUCT_ID_UAC_2,
-                        firmwareVersion = "1.0",
-                        sampleRateLabel = "96 kHz",
-                        outputVolume = 20,
-                        headsetControlEnabled = false,
-                        eqProgram = FiioJa11Protocol.EqProgram.USER_1,
-                        uacMode = FiioJa11Protocol.UacMode.UAC_2,
-                    ),
+                    snapshot = deviceSnapshot(eqProgram = deviceEqProgram),
                     isCurrentSession = true,
+                    defaultsReport = defaultsReport,
                 ),
                 onConnect = {},
                 onReadDeviceControls = {},
@@ -239,6 +307,19 @@ class FiioJa11MyDacContentTest {
             restorationTester.setContent { content() }
         }
     }
+
+    private fun deviceSnapshot(
+        eqProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
+    ) = FiioJa11DeviceSnapshot(
+        sessionGeneration = 1L,
+        usbProductId = FiioJa11Protocol.PRODUCT_ID_UAC_2,
+        firmwareVersion = "1.0",
+        sampleRateLabel = "96 kHz",
+        outputVolume = 20,
+        headsetControlEnabled = false,
+        eqProgram = eqProgram,
+        uacMode = FiioJa11Protocol.UacMode.UAC_2,
+    )
 
     private fun editorApplyTrace(
         outcome: String = "Success",

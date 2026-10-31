@@ -30,8 +30,8 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.8.3"
+        versionCode = 15
+        versionName = "0.9.0-beta.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
