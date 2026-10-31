@@ -67,23 +67,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
-            echo "Release tags must use exact SemVer form vMAJOR.MINOR.PATCH" >&2
-            exit 1
-          }
-          tag_version="${RELEASE_TAG#v}"
           version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
           version_code="$(sed -n 's/^[[:space:]]*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts | head -n 1)"
           test -n "$version_name" && test -n "$version_code"
           [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
-          test "$tag_version" = "$version_name" || {
-            echo "Requested tag $RELEASE_TAG does not match app versionName $version_name" >&2
-            exit 1
-          }
-          test -f "docs/releases/${RELEASE_TAG}.md" || {
-            echo "Missing curated release notes: docs/releases/${RELEASE_TAG}.md" >&2
-            exit 1
-          }
+          release_channel=stable
+          prerelease=false
+          if [[ "$RELEASE_TAG" == "v0.9.0-beta.1" ]]; then
+            python3 tools/v090_release.py validate-candidate --tag "$RELEASE_TAG" --project-root .
+            release_channel=beta
+            prerelease=true
+          else
+            [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+              echo "Release tags must use exact SemVer form vMAJOR.MINOR.PATCH" >&2
+              exit 1
+            }
+            tag_version="${RELEASE_TAG#v}"
+            test "$tag_version" = "$version_name" || {
+              echo "Requested tag $RELEASE_TAG does not match app versionName $version_name" >&2
+              exit 1
+            }
+            test -f "docs/releases/${RELEASE_TAG}.md" || {
+              echo "Missing curated release notes: docs/releases/${RELEASE_TAG}.md" >&2
+              exit 1
+            }
+          fi
           test -f "release-signing-cert.sha256" || {
             echo "Missing public release-signing certificate fingerprint file" >&2
             exit 1
@@ -91,6 +99,8 @@ jobs:
           {
             echo "version_name=$version_name"
             echo "version_code=$version_code"
+            echo "release_channel=$release_channel"
+            echo "prerelease=$prerelease"
           } >> "$GITHUB_OUTPUT"
 
       - name: Run release gate and build unsigned APK
@@ -125,6 +135,8 @@ jobs:
       - name: Align, sign, and verify APK
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_CHANNEL: ${{ steps.release.outputs.release_channel }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
           VERSION_NAME: ${{ steps.release.outputs.version_name }}
           VERSION_CODE: ${{ steps.release.outputs.version_code }}
           OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
@@ -187,7 +199,9 @@ jobs:
             --arg versionCode "$version_code" \
             --arg signerSha256 "$actual_fingerprint" \
             --arg r8MappingSha256 "$mapping_sha256" \
-            '{sourceSha:$sourceSha, releaseTag:$releaseTag, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, versionCode:($versionCode|tonumber), signerSha256:$signerSha256, r8MinificationEnabled:true, r8MappingSha256:$r8MappingSha256}' \
+            --arg releaseChannel "$RELEASE_CHANNEL" \
+            --argjson prerelease "$PRERELEASE" \
+            '{sourceSha:$sourceSha, releaseTag:$releaseTag, releaseChannel:$releaseChannel, prerelease:$prerelease, makeLatest:false, publishOnSign:false, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, versionCode:($versionCode|tonumber), signerSha256:$signerSha256, r8MinificationEnabled:true, r8MappingSha256:$r8MappingSha256}' \
             > "$output_directory/candidate-manifest.json"
 
       - name: Upload signed candidate artifact
