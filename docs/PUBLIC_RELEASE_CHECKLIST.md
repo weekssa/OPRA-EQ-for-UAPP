@@ -11,9 +11,10 @@ Public stable/latest remains v0.8.3. Current development is package `com.weekssa
 - [x] Approved scope, complete source appendix, immutable seal, baseline and reversible preservation recorded.
 - [x] Pinned configuration source compiled and compared; all five filters separately researched and optional implementation deferred for insufficient evidence.
 - [x] Local coherent computer gates and independent final source/release review complete (823 JVM, 305 Python, 75 API35 instrumentation; minified API26/35/36 smoke/lifecycle/accessibility).
-- [ ] Hosted checks verified on the final documentation/PR head.
-- [ ] Exact PR head approved and merged normally; exact-main gates verified.
-- [ ] Main-only official signed artifact independently verified, with exact-signed clean/upgrade checks.
+- [x] Hosted checks verified on the final PR head `333bd5d6948383547d0ae6b7eb16f3e00b9c6162`: Android CI `41160439307`, exact-head `41161677854` (after one unchanged transient rerun), CodeQL `41160439312`, catalog `41160439310`, community `41160439313`; twelve check contexts green.
+- [x] Exact PR head approved and merged normally as merge commit `0e378a3266ba3e5bfd08ad8a69c9c0909386cd2c`; on that commit the Android CI build, API 35 emulator UI (75/75), minified-R8 and CodeQL jobs passed.
+- [ ] Hosted `min-api-smoke` on that merge commit failed twice for a diagnosed CI emulator fault (system_server death in attempt 1; a 20 s adbd timeout after `adb root` in attempt 2), not a product fault. The API 26 claim was re-verified locally on the identical tree (minified release APK, clean install, populated `Manufacturers` catalog). Hardening that scaffolding is a separate CI follow-up; see the execution report outlier list.
+- [x] Main-only official signed artifact independently verified: run `41167513158` produced `EQ-Library-v0.9.0-beta.1-beta-0e378a3.apk` (SHA-256 `845c42e77180aa0a5f36eae9cb95c9c765be294e17ae58829c1b12d102c09f79`, signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, versionName `0.9.0-beta.1`, code15); API 35 clean install and public v0.8.3 in-place upgrade both launched successfully.
 - [ ] One final owner-confirmed physical session, separate field persistence proof and exact original-state restoration complete.
 - [ ] Exact qualification/artifact record says READY FOR BETA with current evidence.
 - [ ] Separate publication approval received; qualified bytes promoted as immutable prerelease/nonlatest.
