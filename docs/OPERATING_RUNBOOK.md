@@ -19,6 +19,8 @@ This runbook is the short entry point for future work. Root [`AGENTS.md`](../AGE
 
 Read `AGENTS.md`, `docs/PROJECT_STATE.md`, this runbook, and the task-specific maintained docs named in `docs/CHATGPT_PROJECT_RUNBOOK.md`. Use the globally installed `android-skills:android-dev` baseline for Android/Kotlin/Gradle work and load narrow skills when their triggers match. Use repository-local `.agents/skills/` only when the skill is present in the selected checkout; local untracked task artifacts are not authoritative project skills.
 
+Also read the shared workflow at `/Users/stephenweeks/Documents/Codex/Codex-Usage-Policies/WORKFLOW.md`. It fixes model roles, the one-writer execution rule, the no-auto-switch rule, and the handoff contract for every task here; repository documents remain authoritative for project facts. A Sol planning thread ends at handoff, and execution continues in a fresh or deliberately switched `deepseek/deepseek-flash` thread.
+
 Current project-local Android CLI skills in the default branch include `android-cli`, `testing-setup`, `android-profiler`, `r8-analyzer`, `android-permissions-security`, `android-intent-security`, `adaptive`, and `edge-to-edge`. For Compose use `android-skills:compose`; add Android testing, debugging, UX, coroutine/flow, modularization, Gradle or source-search skills when relevant. Do not copy cached global skills into the repository.
 
 | Skill set | Status and use |
