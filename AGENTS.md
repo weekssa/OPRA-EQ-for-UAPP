@@ -41,6 +41,18 @@ If instructions conflict, apply this order:
 
 Update the maintained documents in the same workstream when a later decision supersedes older wording. Do not leave conflicting sources of truth.
 
+## Shared workflow binding
+
+The shared multi-model workflow at `/Users/stephenweeks/Documents/Codex/Codex-Usage-Policies/WORKFLOW.md` governs model roles, delegation, scheduling, and handoffs for every task in this project. Read it with this file at the start of substantive work. It is not copied or restated here: this file governs repository identity, product behavior, evidence, testing, devices, and release, and controls when the two disagree on a project fact.
+
+The workflow's hard-set rules apply here without modification:
+
+- Planning happens in a dedicated Sol thread and ends at handoff. Never begin an edit, test, build, or device operation from a Sol planning thread; execution runs in a fresh or deliberately switched `deepseek/deepseek-flash` thread.
+- Keep one writer for execution work. Every substantive subagent call names its model explicitly, and `resume_agent` is not used where the model matters.
+- Do not automatically retry, change model or provider, escalate reasoning effort, or enable dynamic substitution.
+- Owner approval gates in this file remain in force on top of the workflow: merge, publication, hardware mutation, signing changes, and any implementation beyond the current explicit request.
+- Results are reported as DEMONSTRATED, CONFIGURED, NOT EXERCISED, INSPECTION-ONLY, or UNSUPPORTED with their limits, even when the surrounding task seems obvious.
+
 ## Product architecture
 
 - Preserve the source-neutral canonical EQ pipeline across OPRA, AutoEQ, Oratory1990-derived/community, curated/general, imports, Personal EQs, captured DAC EQs, and future supported sources.
@@ -100,7 +112,7 @@ The current public release and verified source/artifact tuple are maintained in 
 
 ## Codex multi-agent orchestration
 
-The project-local `.codex/config.toml` defines reusable `repo_state`, `architecture`, `researcher`, `failure_analysis`, and `reviewer` specialist roles. Use them as bounded investigators and reviewers; they do not replace the primary agent.
+If the selected checkout contains a project-local `.codex/config.toml`, it defines reusable `repo_state`, `architecture`, `researcher`, `failure_analysis`, and `reviewer` specialist roles. Use them as bounded investigators and reviewers; they do not replace the primary agent. The default branch does not ship that file, so do not claim those roles or their thread capacity without reading it in the current checkout.
 
 - The primary agent is the orchestrator and final verifier. It owns scope, source-of-truth reading, synthesis, implementation decisions, all writes/integration, test selection, final validation, and the owner handoff.
 - For substantive feature, recovery, research, or release work, dispatch independent read-only investigations first when the active Codex runtime exposes multi-agent tools. Prefer parallel work for independent questions and keep dependent decisions in the primary thread.
@@ -153,5 +165,7 @@ Before ending substantive work:
 3. Update the current status document, evidence ledger, capability matrix, changelog, and runbook when their facts changed.
 4. Attach created PRs to the task.
 5. State what is complete, what remains, why it remains, and the next authorized action.
+
+Carry the shared workflow's slice-handoff fields (outcome, files, checks, blockers, evidence, next action) in agent and session handoffs, and keep them under 600 characters where the receiving phase only needs the delta. A handoff or transcript is evidence, not authority: the next session re-verifies it against these maintained documents and current remote state before acting.
 
 Do not rely on a conversation transcript as the only record of a decision, failure, test result, or release state. Durable context belongs in version-controlled repository documentation.
