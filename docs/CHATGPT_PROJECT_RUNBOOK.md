@@ -4,6 +4,14 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
+## Active v0.9.0-beta.1 execution boundary (2026-10-30)
+
+The owner-approved [canonical plan](releases/v0.9.0/PLAN.md) preserves the complete upload verbatim and binds every clause through the [requirements checklist](releases/v0.9.0/REQUIREMENTS.md). It fixes baseline `35f0c90a0e55e701d4343ed978a440d34aae13aa` and isolates development on `codex/v0.9.0-ja11-persistence`. The [execution report](releases/v0.9.0/EXECUTION_REPORT.md) records current tests/corrections/outliers and unresolved gates; public stable remains v0.8.3.
+
+User1-native defaults is a candidate transaction preserving exact fresh bank/global gain, with one Apply/Save and no mic writes. Other-program native persistence is unqualified; explicit mic round trip remains. Five filter investigations are completed and individually deferred with [source evidence](releases/v0.9.0/REFERENCE_EVIDENCE.md). No new hardware claim follows from compiled reference or simulated tests. Routine corrections must prevent an existing requirement/gate, use the smallest patch, and stay within three diagnosed cycles per failure. Unrelated discoveries are listed once for later review. Native/OpenCodex v1 uses one coordinated DeepSeek implementation writer and bounded read-only review; retired controller procedures below are historical and unused.
+
+The current authorized destination is computer verification plus independent review and an exact draft PR for merge approval. Main-only official signing follows approved merge; physical Pixel/JA11 testing occurs only after candidate freeze and off-device gates; publication requires separate approval. Do not initiate earlier pairing, reuse historical hardware mutations, or promote another artifact.
+
 ## 1. Mandatory reading
 
 Before substantive work, read this file and the current documents relevant to the task:

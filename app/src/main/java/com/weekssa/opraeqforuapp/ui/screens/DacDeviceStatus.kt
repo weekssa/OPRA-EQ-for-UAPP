@@ -37,6 +37,11 @@ import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsEqReadback
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage
+import com.weekssa.opraeqforuapp.ui.fiioJa11DefaultsConfirmationText
+import com.weekssa.opraeqforuapp.ui.fiioJa11DefaultsEqReadbackText
+import com.weekssa.opraeqforuapp.ui.fiioJa11DefaultsReportIsVerified
+import com.weekssa.opraeqforuapp.ui.fiioJa11DefaultsReportText
 import java.util.Locale
 
 @Composable
@@ -194,28 +199,29 @@ private fun FiioJa11DeviceStatus(
     }
 
     state.defaultsReport?.let { report ->
+        val verified = fiioJa11DefaultsReportIsVerified(report)
         Text(
-            text = if (report.stage == com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage.COMPLETE) {
-                "Defaults verified · ${report.requestedVolume} / ${report.requestedProgram.technicalLabel} · mic restored ${if (report.originalMicEnabled == true) "On" else "Off"} · app writes volume/program/mic ${report.counts.volumeWrites}/${report.counts.programWrites}/${report.counts.micWrites}\nNo EQ-band data was written."
-            } else {
-                "Defaults not verified · ${report.stage} · last verified ${report.lastVerifiedSnapshot?.outputVolume ?: "unknown"} / ${report.lastVerifiedSnapshot?.eqProgram?.technicalLabel ?: "unknown"} · mic state may be unknown"
-            },
+            text = fiioJa11DefaultsReportText(report),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (verified) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(top = 8.dp),
         )
-        if (report.stage == com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage.COMPLETE) {
-            val eqReadback = report.eqReadback
-            Text(
-                text = when (eqReadback) {
-                    FiioJa11DefaultsEqReadback.MATCHED -> "User 1 EQ readback matched before and after."
-                    FiioJa11DefaultsEqReadback.CHANGED -> "User 1 EQ readback changed across the defaults reconnect. Review it before use."
-                    FiioJa11DefaultsEqReadback.UNAVAILABLE -> "User 1 EQ data could not be compared for these programs."
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = if (eqReadback == FiioJa11DefaultsEqReadback.CHANGED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+        if (report.stage == FiioJa11DefaultsStage.COMPLETE ||
+            report.stage == FiioJa11DefaultsStage.FINAL_VERIFY ||
+            report.stage == FiioJa11DefaultsStage.NATIVE_FINAL_VERIFY
+        ) {
+            fiioJa11DefaultsEqReadbackText(report)?.let { text ->
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (report.eqReadback == FiioJa11DefaultsEqReadback.CHANGED) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         }
     }
 
@@ -428,12 +434,7 @@ private fun FiioJa11DeviceStatus(
             onDismissRequest = { defaultsReview = null },
             title = { Text("Set JA11 defaults?") },
             text = {
-                Text(
-                    "Save volume ${request.requestedVolume} and ${request.requestedProgram.technicalLabel} as the JA11 startup settings? " +
-                        "To verify persistence, EQ Library will briefly switch the headset / mic remote ${if (request.reviewedSnapshot.headsetControlEnabled) "off, then restore it to on" else "on, then restore it to off"}. " +
-                        "USB audio will disconnect during each reconnect. The original mic setting will be restored and checked. " +
-                        "No EQ-band data is written. User 1 EQ readback is compared only when both the reviewed and final programs support it; the app will not switch programs just to inspect the bank."
-                )
+                Text(fiioJa11DefaultsConfirmationText(request))
             },
             confirmButton = {
                 TextButton(

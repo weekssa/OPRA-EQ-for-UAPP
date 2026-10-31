@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "releaseTag": "v0.9.0-beta.1",
+  "qualificationStatus": "PENDING",
+  "readiness": "PENDING",
+  "planSeal": {
+    "planSha256": "a108a2182a28a82252c64956216d31b6dcba9c67bf522a51d6d86a073d6e729b",
+    "sealManifestSha256": "b258bc43c156f247cb13ef4372286aafe20e643b52980bd6a7bf4a035f912a6b",
+    "baselineCommit": "35f0c90a0e55e701d4343ed978a440d34aae13aa"
+  },
+  "candidate": {
+    "sourceSha": null,
+    "runId": null,
+    "artifactId": null,
+    "artifactArchiveSha256": null,
+    "apkSha256": null,
+    "signerSha256": null
+  },
+  "computerQualification": {
+    "status": "PENDING",
+    "evidenceRefs": []
+  },
+  "hardwareQualification": {
+    "status": "PENDING",
+    "evidenceRefs": []
+  },
+  "restoration": {
+    "status": "PENDING",
+    "evidenceRefs": []
+  }
+}

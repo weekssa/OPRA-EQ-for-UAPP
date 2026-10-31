@@ -22,6 +22,69 @@ CANONICAL_DOCS = (
 APP_ID = "com.weekssa.opraeqforuapp"
 
 
+def validate_release_metadata(
+    *,
+    state: str,
+    readme: str,
+    agents: str,
+    checklist: str,
+    build_file: str,
+    artifact_text: str | None,
+) -> list[str]:
+    errors: list[str] = []
+    version_match = re.search(r"Current public stable release: \*\*v([^*]+)\*\*, versionCode `([0-9]+)`", state)
+    candidate_match = re.search(r"Candidate build: \*\*v([^*]+)\*\*, versionCode `([0-9]+)`", state)
+    source_match = re.search(r"Release source: `([0-9a-f]{40})`", state)
+    apk_match = re.search(r"Exact stable APK SHA-256: `([0-9a-f]{64})`", state)
+    signer_match = re.search(r"Pinned signer SHA-256: `([0-9a-f]{64})`", state)
+    if not all((version_match, source_match, apk_match, signer_match)):
+        errors.append("PROJECT_STATE.md must define the current version/code, release source, APK hash and signer hash")
+    else:
+        version, version_code = version_match.groups()
+        source_sha = source_match.group(1)
+        apk_sha = apk_match.group(1)
+        signer_sha = signer_match.group(1)
+        for required, label in (
+            (f"v{version}", "README current release"),
+            (apk_sha, "README APK SHA-256"),
+            (source_sha, "release checklist source SHA"),
+            (apk_sha, "release checklist APK SHA-256"),
+            (signer_sha, "release checklist signer SHA-256"),
+        ):
+            target = readme if label.startswith("README") else checklist
+            if required not in target:
+                errors.append(f"canonical current release evidence is inconsistent: missing {label}")
+        if artifact_text is None:
+            errors.append(f"current release artifact record is missing: docs/release-engineering/v{version}-stable/ARTIFACTS.md")
+        else:
+            for value, label in ((source_sha, "release source"), (apk_sha, "APK SHA-256"), (signer_sha, "signer SHA-256")):
+                if value not in artifact_text:
+                    errors.append(f"current release artifact record does not contain the Project State {label}")
+        if not re.search(rf'applicationId\s*=\s*"{re.escape(APP_ID)}"', build_file):
+            errors.append("Gradle applicationId does not match the canonical package id")
+        if candidate_match is None:
+            if "Candidate build:" in state:
+                errors.append("Candidate build declaration in PROJECT_STATE.md is malformed")
+            build_version = version
+            build_version_code = version_code
+            context = "current Project State"
+        else:
+            build_version, build_version_code = candidate_match.groups()
+            context = "candidate build in Project State"
+            if int(build_version_code) <= int(version_code):
+                errors.append("candidate versionCode must advance the current public stable versionCode")
+        if not re.search(rf'versionCode\s*=\s*{build_version_code}\b', build_file):
+            errors.append(f"Gradle versionCode does not match the {context}")
+        if not re.search(rf'versionName\s*=\s*"{re.escape(build_version)}"', build_file):
+            errors.append(f"Gradle versionName does not match the {context}")
+        installed_state = state.partition("## Installed device state")[2].partition("\n## ")[0]
+        if "UNKNOWN / NOT VERIFIED" not in installed_state and apk_sha not in installed_state:
+            errors.append("PROJECT_STATE.md must state the installed-device evidence boundary")
+    if re.search(r"current EW300 milestone targets `?versionName 0\.7\.0", agents):
+        errors.append("AGENTS.md still names v0.7.0 as the current milestone")
+    return errors
+
+
 def main() -> None:
     errors: list[str] = []
     texts: dict[str, str] = {}
@@ -55,51 +118,21 @@ def main() -> None:
                 errors.append(f"{relative}: missing local link target: {match.group(1)}")
 
     state = texts.get("docs/PROJECT_STATE.md", "")
-    readme = texts.get("README.md", "")
-    agents = texts.get("AGENTS.md", "")
-    checklist = (ROOT / "docs/PUBLIC_RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
-    build_file = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
-
     version_match = re.search(r"Current public stable release: \*\*v([^*]+)\*\*, versionCode `([0-9]+)`", state)
-    source_match = re.search(r"Release source: `([0-9a-f]{40})`", state)
-    apk_match = re.search(r"Exact stable APK SHA-256: `([0-9a-f]{64})`", state)
-    signer_match = re.search(r"Pinned signer SHA-256: `([0-9a-f]{64})`", state)
-    if not all((version_match, source_match, apk_match, signer_match)):
-        errors.append("PROJECT_STATE.md must define the current version/code, release source, APK hash and signer hash")
-    else:
-        version, version_code = version_match.groups()
-        source_sha = source_match.group(1)
-        apk_sha = apk_match.group(1)
-        signer_sha = signer_match.group(1)
-        artifact_doc = ROOT / f"docs/release-engineering/v{version}-stable/ARTIFACTS.md"
-        for required, label in (
-            (f"v{version}", "README current release"),
-            (apk_sha, "README APK SHA-256"),
-            (source_sha, "release checklist source SHA"),
-            (apk_sha, "release checklist APK SHA-256"),
-            (signer_sha, "release checklist signer SHA-256"),
-        ):
-            target = readme if label.startswith("README") else checklist
-            if required not in target:
-                errors.append(f"canonical current release evidence is inconsistent: missing {label}")
-        if not artifact_doc.is_file():
-            errors.append(f"current release artifact record is missing: {artifact_doc.relative_to(ROOT)}")
-        else:
-            artifact_text = artifact_doc.read_text(encoding="utf-8")
-            for value, label in ((source_sha, "release source"), (apk_sha, "APK SHA-256"), (signer_sha, "signer SHA-256")):
-                if value not in artifact_text:
-                    errors.append(f"current release artifact record does not contain the Project State {label}")
-        if not re.search(rf'applicationId\s*=\s*"{re.escape(APP_ID)}"', build_file):
-            errors.append("Gradle applicationId does not match the canonical package id")
-        if not re.search(rf'versionCode\s*=\s*{version_code}\b', build_file):
-            errors.append("Gradle versionCode does not match the current Project State")
-        if not re.search(rf'versionName\s*=\s*"{re.escape(version)}"', build_file):
-            errors.append("Gradle versionName does not match the current Project State")
-        installed_state = state.partition("## Installed device state")[2].partition("\n## ")[0]
-        if "UNKNOWN / NOT VERIFIED" not in installed_state and apk_sha not in installed_state:
-            errors.append("PROJECT_STATE.md must state the installed-device evidence boundary")
-    if re.search(r"current EW300 milestone targets `?versionName 0\.7\.0", agents):
-        errors.append("AGENTS.md still names v0.7.0 as the current milestone")
+    artifact_text = None
+    if version_match is not None:
+        version = version_match.group(1)
+        artifact_path = ROOT / f"docs/release-engineering/v{version}-stable/ARTIFACTS.md"
+        if artifact_path.is_file():
+            artifact_text = artifact_path.read_text(encoding="utf-8")
+    errors.extend(validate_release_metadata(
+        state=state,
+        readme=texts.get("README.md", ""),
+        agents=texts.get("AGENTS.md", ""),
+        checklist=(ROOT / "docs/PUBLIC_RELEASE_CHECKLIST.md").read_text(encoding="utf-8"),
+        build_file=(ROOT / "app/build.gradle.kts").read_text(encoding="utf-8"),
+        artifact_text=artifact_text,
+    ))
 
     if errors:
         for error in errors:

@@ -6,6 +6,13 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### 0.9.0-beta.1 candidate
+
+- Add User1-native Set as Default using exact fresh unchanged five-band/global-gain staging, Apply, one Save and fresh final verification, without microphone writes. Physical persistence qualification is pending; other programs retain the explicit microphone round trip.
+- Publish defaults failures to the UI, reject changed-bank success, and reject stale/inexact native staging without automatic Save replay or fallback.
+- Complete separate FAST-LL, FAST-PC, Slow-LL, Slow-PC and NON-OS investigations. Each optional control remains disabled for insufficient independent JA11 evidence.
+- Preserve the complete approved specification/checklist/seal and exact-candidate release boundaries. No v0.9.0-beta.1 release is published yet.
+
 ## [0.8.3] - 2026-10-14
 
 ### FiiO JA11 defaults

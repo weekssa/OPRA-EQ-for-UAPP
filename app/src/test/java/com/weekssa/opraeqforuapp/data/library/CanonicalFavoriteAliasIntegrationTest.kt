@@ -362,14 +362,17 @@ class CanonicalFavoriteAliasIntegrationTest {
                 val selectedRevision = canonicalProfile.revisions.single {
                     it.revisionId == sample.revisionId
                 }
-                val sourceReference = selectedRevision.sourceReferences.single {
+                val sourceReferences = selectedRevision.sourceReferences.filter {
                     it.sourceId == sample.sourceId && it.sourceRecordId == sample.sourceRecordId
                 }
+                assertThat(sourceReferences).isNotEmpty()
 
                 assertThat(sample.scope).isEqualTo(canonicalProfile.scope.name.lowercase())
                 assertThat(sample.isLatestRevision).isEqualTo(selectedRevision.isLatest)
-                assertThat(sample.isPrimaryReference).isEqualTo(sourceReference.isPrimary)
-                assertThat(sample.sourceKind).isEqualTo(sourceReference.sourceKind.name.lowercase())
+                sourceReferences.forEach { sourceReference ->
+                    assertThat(sample.isPrimaryReference).isEqualTo(sourceReference.isPrimary)
+                    assertThat(sample.sourceKind).isEqualTo(sourceReference.sourceKind.name.lowercase())
+                }
 
                 when (canonicalProfile.scope) {
                     EqProfileScope.HEADPHONE -> {
@@ -382,7 +385,7 @@ class CanonicalFavoriteAliasIntegrationTest {
                         }
                         assertThat(displayedProfile.bandOrderProvenance)
                             .isEqualTo(canonicalDisplayedProjection.bandOrderProvenance)
-                        if (sample.sourceId == "opra" && sourceReference.isPrimary) {
+                        if (sample.sourceId == "opra" && sourceReferences.any { it.isPrimary }) {
                             assertThat(displayedProfile.bandOrderProvenance)
                                 .isEqualTo(EqBandOrderProvenance.OPRA_SOURCE_PRIORITY)
                         }
@@ -416,7 +419,8 @@ class CanonicalFavoriteAliasIntegrationTest {
                         assertThat(selection.selectedRevision.filters).containsExactlyElementsIn(selectedRevision.filters)
                         assertThat(selection.selectedRevision.sourceReferences)
                             .containsExactlyElementsIn(selectedRevision.sourceReferences)
-                        assertThat(selection.selectedRevision.sourceReferences).contains(sourceReference)
+                        assertThat(selection.selectedRevision.sourceReferences)
+                            .containsAtLeastElementsIn(sourceReferences)
 
                         val editableBandIndex = requireNotNull(displayedProfile.bands)
                             .indexOfFirst { it.gainDb != null }
@@ -452,7 +456,8 @@ class CanonicalFavoriteAliasIntegrationTest {
                         assertThat(selection.selectedRevision).isEqualTo(selectedRevision)
                         assertThat(selection.selectedRevision.sourceReferences)
                             .containsExactlyElementsIn(selectedRevision.sourceReferences)
-                        assertThat(selection.selectedRevision.sourceReferences).contains(sourceReference)
+                        assertThat(selection.selectedRevision.sourceReferences)
+                            .containsAtLeastElementsIn(sourceReferences)
                         assertThat(selection.compatibilityProductId).isNull()
                     }
                 }

@@ -2,6 +2,10 @@
 
 This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`. The runbook remains authoritative for product/UX rules. For current v0.5 output/device decisions also read `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md`, `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md`, and the applicable protocol/hands-on notes. For current v0.6 ownership/recovery semantics read `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md`; for My DAC behavior read the maintained v0.6 design/status/checklist documents.
 
+## v0.9.0 JA11 defaults integration
+
+The in-development native defaults transaction reuses `FiioJa11ControlRepository` and its shared session mutation gate. `SessionFiioJa11DeviceControlSource` delegates to the existing JA11 transport and qualified codec; no new controller, session owner, scheduler or canonical EQ transformation is introduced. Exact device-derived active User1 bands and global gain are restaged unchanged, with generation checks before Save. Only final read-only verification may recover the expected Save replacement session. Native and microphone-round-trip mechanisms have distinct report invariants; the UI must retain truthful evidence limits. Candidate physical qualification remains pending; see the [sealed plan](releases/v0.9.0/PLAN.md).
+
 ## Android baseline
 
 EQ Library is a single native Android application using Kotlin and Jetpack Compose.

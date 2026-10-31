@@ -1,6 +1,13 @@
 package com.weekssa.opraeqforuapp.ui
 
+import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11PendingRestartWrite
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsEqReadback
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsMechanism
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsOperationReport
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsWriteCounts
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
@@ -74,6 +81,130 @@ class FiioJa11DeviceUiStateTest {
         assertTrue(failed.pendingRestartWrite == null)
         assertFalse(failed.isCurrentSession)
     }
+
+    @Test
+    fun changedBankCannotRenderAsVerifiedEvenIfStageAccidentallySaysComplete() {
+        val report = defaultsReport(
+            stage = FiioJa11DefaultsStage.COMPLETE,
+            mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+            eqReadback = FiioJa11DefaultsEqReadback.CHANGED,
+        )
+
+        assertFalse(fiioJa11DefaultsReportIsVerified(report))
+        assertTrue(fiioJa11DefaultsReportText(report).startsWith("Defaults were not verified"))
+        assertFalse(fiioJa11DefaultsReportText(report).contains("Defaults verified"))
+
+        val finalVerifyReport = report.copy(stage = FiioJa11DefaultsStage.NATIVE_FINAL_VERIFY)
+        assertFalse(fiioJa11DefaultsReportIsVerified(finalVerifyReport))
+        assertFalse(fiioJa11DefaultsReportText(finalVerifyReport).contains("NATIVE_FINAL_VERIFY"))
+        assertFalse(fiioJa11DefaultsReportText(finalVerifyReport).contains("bands/gain"))
+    }
+
+    @Test
+    fun nativeDefaultsCopyDescribesUnchangedRestagingWithoutClaimingNoEqWrites() {
+        val report = defaultsReport(
+            stage = FiioJa11DefaultsStage.COMPLETE,
+            mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+            eqReadback = FiioJa11DefaultsEqReadback.MATCHED,
+            counts = FiioJa11DefaultsWriteCounts(
+                volumeWrites = 1,
+                eqBandWrites = FiioJa11Protocol.BAND_COUNT,
+                eqGainWrites = 1,
+                eqApplyWrites = 1,
+                eqSaveWrites = 1,
+            ),
+        )
+        val text = fiioJa11DefaultsReportText(report)
+
+        assertTrue(text.contains("existing EQ and microphone setting were preserved"))
+        assertFalse(text.contains("bands/gain"))
+        assertFalse(text.contains("No EQ-band data was written"))
+        assertThat(requireNotNull(fiioJa11DefaultsEqReadbackText(report)))
+            .isEqualTo("Final User 1 EQ readback matched.")
+    }
+
+    @Test
+    fun microphoneFallbackUnavailableCopyDoesNotClaimTheEqWasCompared() {
+        val report = defaultsReport(
+            stage = FiioJa11DefaultsStage.COMPLETE,
+            mechanism = FiioJa11DefaultsMechanism.MIC_RECONNECT,
+            eqReadback = FiioJa11DefaultsEqReadback.UNAVAILABLE,
+            counts = FiioJa11DefaultsWriteCounts(micWrites = 2),
+        )
+        val text = fiioJa11DefaultsReportText(report)
+
+        assertTrue(text.contains("existing User 1 EQ was not written, but was not compared"))
+        assertFalse(text.contains("matched on readback"))
+        assertFalse(text.contains("bands/gain"))
+    }
+
+    @Test
+    fun microphoneFallbackMatchedCopyClaimsAComparedUnchangedEq() {
+        val report = defaultsReport(
+            stage = FiioJa11DefaultsStage.COMPLETE,
+            mechanism = FiioJa11DefaultsMechanism.MIC_RECONNECT,
+            eqReadback = FiioJa11DefaultsEqReadback.MATCHED,
+            counts = FiioJa11DefaultsWriteCounts(micWrites = 2),
+        )
+
+        assertTrue(fiioJa11DefaultsReportText(report)
+            .contains("existing User 1 EQ was not changed and matched on readback"))
+    }
+
+    @Test
+    fun confirmationCopyIsMechanismAwareBeforeAnyWrite() {
+        val userOne = snapshot(7L)
+        val nativeText = fiioJa11DefaultsConfirmationText(
+            FiioJa11DefaultsRequest(
+                reviewedSnapshot = userOne,
+                requestedVolume = userOne.outputVolume,
+                requestedProgram = FiioJa11Protocol.EqProgram.USER_1,
+                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+            ),
+        )
+        assertTrue(nativeText.contains("preserve and verify the existing User 1 EQ and microphone setting"))
+        assertTrue(nativeText.contains("disconnect briefly"))
+        assertFalse(nativeText.contains("Apply"))
+        assertFalse(nativeText.contains("bands/gain"))
+
+        for (reviewedMic in listOf(false, true)) {
+            val reviewed = if (reviewedMic) "On" else "Off"
+            val switched = if (reviewedMic) "Off" else "On"
+            val classic = userOne.copy(
+                eqProgram = FiioJa11Protocol.EqProgram.CLASSIC,
+                headsetControlEnabled = reviewedMic,
+            )
+            val microphoneText = fiioJa11DefaultsConfirmationText(
+                FiioJa11DefaultsRequest(
+                    reviewedSnapshot = classic,
+                    requestedVolume = classic.outputVolume,
+                    requestedProgram = FiioJa11Protocol.EqProgram.CLASSIC,
+                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                ),
+            )
+            assertTrue(microphoneText.contains("EQ Library will not write the User 1 EQ"))
+            assertTrue(microphoneText.contains("Reviewed microphone setting: $reviewed"))
+            assertTrue(microphoneText.contains("switch it to $switched, then back to $reviewed"))
+            assertTrue(microphoneText.contains("two USB audio reconnects"))
+        }
+    }
+
+    private fun defaultsReport(
+        stage: FiioJa11DefaultsStage,
+        mechanism: FiioJa11DefaultsMechanism,
+        eqReadback: FiioJa11DefaultsEqReadback,
+        counts: FiioJa11DefaultsWriteCounts = FiioJa11DefaultsWriteCounts(),
+    ) = FiioJa11DefaultsOperationReport(
+        operationId = "defaults-test",
+        stage = stage,
+        originalMicEnabled = true,
+        requestedVolume = 30,
+        requestedProgram = FiioJa11Protocol.EqProgram.USER_1,
+        counts = counts,
+        lastVerifiedSnapshot = snapshot(8L),
+        mechanism = mechanism,
+        eqReadback = eqReadback,
+    )
 
     private fun snapshot(sessionGeneration: Long): FiioJa11DeviceSnapshot = FiioJa11DeviceSnapshot(
         sessionGeneration = sessionGeneration,

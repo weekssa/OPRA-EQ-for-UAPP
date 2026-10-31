@@ -2,13 +2,44 @@ name: Publish Qualified v0.8.0 Beta Prerelease
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact beta tag to promote.
+        required: true
+        default: v0.8.0-beta
+        type: string
+      candidate_run_id:
+        description: Signed candidate workflow run ID for v0.9.0-beta.1.
+        required: false
+        default: ""
+        type: string
+      candidate_source_sha:
+        description: Exact signed candidate source commit SHA.
+        required: false
+        default: ""
+        type: string
+      candidate_artifact_id:
+        description: Signed candidate Actions artifact ID for v0.9.0-beta.1.
+        required: false
+        default: ""
+        type: string
+      candidate_artifact_digest:
+        description: SHA-256 digest of the signed candidate Actions artifact ZIP.
+        required: false
+        default: ""
+        type: string
+      publication_approval:
+        description: Type PUBLISH_V0.9.0-BETA.1 to authorize beta publication.
+        required: false
+        default: ""
+        type: string
 
 permissions:
   actions: read
   contents: read
 
 concurrency:
-  group: exact-beta-prerelease-v0.8.0
+  group: exact-beta-prerelease-${{ inputs.tag }}
   cancel-in-progress: false
 
 jobs:
@@ -36,20 +67,45 @@ jobs:
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Read-only verification of the pinned signed beta artifact
+        id: verify
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_API_URL: ${{ github.api_url }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_REF: ${{ github.ref }}
-        run: >-
-          python3 tools/publish_beta_prerelease.py verify
-          --project-root .
-          --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+          RELEASE_TAG: ${{ inputs.tag }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_SOURCE_SHA: ${{ inputs.candidate_source_sha }}
+          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
+          CANDIDATE_ARTIFACT_DIGEST: ${{ inputs.candidate_artifact_digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$RELEASE_TAG" in
+            v0.8.0-beta)
+              python3 tools/publish_beta_prerelease.py verify \
+                --project-root . --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+              ;;
+            v0.9.0-beta.1)
+              test -n "$CANDIDATE_SOURCE_SHA" && test -n "$CANDIDATE_RUN_ID" && test -n "$CANDIDATE_ARTIFACT_ID" &&
+                test -n "$CANDIDATE_ARTIFACT_DIGEST"
+              python3 tools/publish_v090_beta_release.py verify \
+                --project-root . --build-tools "$ANDROID_HOME/build-tools/36.0.0" \
+                --candidate-source-sha "$CANDIDATE_SOURCE_SHA" \
+                --candidate-run-id "$CANDIDATE_RUN_ID" \
+                --candidate-artifact-id "$CANDIDATE_ARTIFACT_ID" \
+                --candidate-artifact-digest "$CANDIDATE_ARTIFACT_DIGEST"
+              ;;
+            *)
+              echo "Unsupported beta promotion tag: $RELEASE_TAG" >&2
+              exit 1
+              ;;
+          esac
 
   publish:
     needs: verify-candidate
-    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main' && inputs.tag == 'v0.8.0-beta'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -83,3 +139,52 @@ jobs:
           python3 tools/publish_beta_prerelease.py publish
           --project-root .
           --build-tools "$ANDROID_HOME/build-tools/36.0.0"
+
+  publish-v090-beta:
+    needs: verify-candidate
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main' && inputs.tag == 'v0.9.0-beta.1'
+    environment: beta-release-approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out the exact publisher source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Install pinned Android build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Publish the approved v0.9 beta prerelease without changing stable latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          PUBLICATION_APPROVAL: ${{ inputs.publication_approval }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_SOURCE_SHA: ${{ inputs.candidate_source_sha }}
+          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
+          CANDIDATE_ARTIFACT_DIGEST: ${{ inputs.candidate_artifact_digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PUBLICATION_APPROVAL" = "PUBLISH_V0.9.0-BETA.1"
+          python3 tools/publish_v090_beta_release.py publish \
+            --project-root . --build-tools "$ANDROID_HOME/build-tools/36.0.0" \
+            --candidate-source-sha "$CANDIDATE_SOURCE_SHA" \
+            --candidate-run-id "$CANDIDATE_RUN_ID" \
+            --candidate-artifact-id "$CANDIDATE_ARTIFACT_ID" \
+            --candidate-artifact-digest "$CANDIDATE_ARTIFACT_DIGEST"

@@ -146,6 +146,75 @@ class AndroidKt02h20HidSessionTest {
     }
 
     @Test
+    fun explicitPermissionDenialNeverPublishesAConnectedSession() = runBlocking {
+        val device = ja11Device("/dev/bus/usb/001/003", FiioJa11Protocol.PRODUCT_ID_UAC_2)
+        usbManagerShadow.addOrUpdateUsbDevice(device, false)
+        val session = newJa11Session("DENIED")
+
+        try {
+            session.connect()
+            awaitState(session) { it is Kt02h20ConnectionState.Connecting }
+            assertThat(session.permissionRequestCount).isEqualTo(1L)
+
+            context.sendBroadcast(
+                Intent("${context.packageName}.DENIED.USB_PERMISSION")
+                    .setPackage(context.packageName)
+                    .putExtra(UsbManager.EXTRA_DEVICE, device),
+            )
+            shadowOf(Looper.getMainLooper()).idle()
+            awaitState(session) { it is Kt02h20ConnectionState.PermissionRequired }
+
+            assertThat(session.sessionGeneration).isEqualTo(0L)
+            assertThat(session.isCurrentSession(0L, session.detachGeneration)).isFalse()
+            assertThat(session.supportedCandidateCount).isEqualTo(1)
+        } finally {
+            session.close()
+        }
+    }
+
+    @Test
+    fun stalePermissionGrantAfterDetachAndRapidReattachCannotOpenReplacement() = runBlocking {
+        val oldDevice = ja11Device("/dev/bus/usb/001/004", FiioJa11Protocol.PRODUCT_ID_UAC_2)
+        usbManagerShadow.addOrUpdateUsbDevice(oldDevice, false)
+        val session = newJa11Session("STALE_GRANT")
+
+        try {
+            session.connect()
+            awaitState(session) { it is Kt02h20ConnectionState.Connecting }
+            val oldDetachGeneration = session.detachGeneration
+            usbManagerShadow.removeUsbDevice(oldDevice)
+            context.sendBroadcast(
+                Intent(UsbManager.ACTION_USB_DEVICE_DETACHED)
+                    .putExtra(UsbManager.EXTRA_DEVICE, oldDevice),
+            )
+            shadowOf(Looper.getMainLooper()).idle()
+            awaitCondition { session.detachGeneration != oldDetachGeneration }
+
+            val replacement = ja11Device("/dev/bus/usb/001/005", FiioJa11Protocol.PRODUCT_ID_UAC_2)
+            usbManagerShadow.addOrUpdateUsbDevice(replacement, true)
+            context.sendBroadcast(
+                Intent(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+                    .putExtra(UsbManager.EXTRA_DEVICE, replacement),
+            )
+            shadowOf(Looper.getMainLooper()).idle()
+
+            // The old permission callback must not authorize the newly attached device.
+            context.sendBroadcast(
+                Intent("${context.packageName}.STALE_GRANT.USB_PERMISSION")
+                    .setPackage(context.packageName)
+                    .putExtra(UsbManager.EXTRA_DEVICE, oldDevice),
+            )
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertThat(session.sessionGeneration).isEqualTo(0L)
+            assertThat(session.state.value).isNotInstanceOf(Kt02h20ConnectionState.Connected::class.java)
+            assertThat(session.supportedCandidateCount).isEqualTo(1)
+        } finally {
+            session.close()
+        }
+    }
+
+    @Test
     fun failedOpenAndFailedInterfaceClaimNeverPublishConnectedSession() = runBlocking {
         val openFailureDevice = ja11Device("/dev/bus/usb/001/001", FiioJa11Protocol.PRODUCT_ID_UAC_2)
         usbManagerShadow.addOrUpdateUsbDevice(openFailureDevice, true)

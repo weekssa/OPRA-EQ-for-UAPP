@@ -33,9 +33,9 @@
     },
     {
       "source_id": "github-community",
-      "canonical_profile_id": "autoeq-392d1a7b2eb8419079d3004d",
-      "revision_id": "rev-5c63291a4fe3fd8e27c96233",
-      "source_record_id": "AlbertH0ng/headphones-eq-match:results/KZ PR2 (Harpo) ParametricEQ.txt:9be33f55ef5bfd6c35cfaa5730b41d9c8d99c507",
+      "canonical_profile_id": "autoeq-004c16260ed101b67957c666",
+      "revision_id": "rev-61fb17d1a7c3a142d0804e12",
+      "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Simgot Audio EW200 ParametricEQ.txt:cb997d2c113fca50ea609c85187489fc8147356f",
       "source_kind": "repository",
       "scope": "headphone",
       "is_latest_revision": true,
@@ -276,93 +276,93 @@
         "tuning_label": "AutoEq (Innerfidelity measurement)"
       },
       {
-        "canonical_profile_id": "autoeq-392d1a7b2eb8419079d3004d",
+        "canonical_profile_id": "autoeq-004c16260ed101b67957c666",
         "creator": "AutoEq",
         "headphone": {
-          "manufacturer": "KZ",
-          "model": "PR2",
+          "manufacturer": "Simgot Audio",
+          "model": "EW200",
           "pads_or_mode": null,
           "variant": null
         },
         "revisions": [
           {
-            "acoustic_fingerprint": "5c63291a4fe3fd8e27c96233b66fea9b64820dd51c984014656d45e01dbef0a5",
+            "acoustic_fingerprint": "61fb17d1a7c3a142d0804e1225faa1fae22a4ab89bd3e095102f2a45b1830e74",
             "filters": [
               {
                 "frequency_hz": 105.0,
-                "gain_db": -3.0,
+                "gain_db": 1.0,
                 "q": 0.7,
                 "slope": null,
                 "type": "low_shelf"
               },
               {
-                "frequency_hz": 690.0,
-                "gain_db": 2.1,
-                "q": 1.31,
+                "frequency_hz": 8017.0,
+                "gain_db": 3.6,
+                "q": 1.13,
                 "slope": null,
                 "type": "peak"
               },
               {
-                "frequency_hz": 1907.0,
-                "gain_db": -2.3,
-                "q": 1.51,
+                "frequency_hz": 153.0,
+                "gain_db": -2.1,
+                "q": 0.78,
                 "slope": null,
                 "type": "peak"
               },
               {
-                "frequency_hz": 6278.0,
-                "gain_db": 4.4,
-                "q": 4.43,
+                "frequency_hz": 794.0,
+                "gain_db": 2.8,
+                "q": 1.01,
                 "slope": null,
                 "type": "peak"
               },
               {
-                "frequency_hz": 61.0,
-                "gain_db": 2.7,
-                "q": 1.17,
+                "frequency_hz": 2472.0,
+                "gain_db": -1.4,
+                "q": 0.3,
                 "slope": null,
                 "type": "peak"
               },
               {
                 "frequency_hz": 10000.0,
-                "gain_db": -11.0,
+                "gain_db": -2.4,
                 "q": 0.7,
                 "slope": null,
                 "type": "high_shelf"
               },
               {
-                "frequency_hz": 10000.0,
-                "gain_db": 4.4,
-                "q": 1.08,
+                "frequency_hz": 4761.0,
+                "gain_db": -1.7,
+                "q": 4.96,
                 "slope": null,
                 "type": "peak"
               },
               {
-                "frequency_hz": 2519.0,
-                "gain_db": -0.8,
-                "q": 2.4,
+                "frequency_hz": 6133.0,
+                "gain_db": 1.6,
+                "q": 5.59,
                 "slope": null,
                 "type": "peak"
               },
               {
-                "frequency_hz": 4845.0,
-                "gain_db": -2.2,
-                "q": 6.0,
+                "frequency_hz": 3418.0,
+                "gain_db": 0.9,
+                "q": 3.56,
                 "slope": null,
                 "type": "peak"
               },
               {
-                "frequency_hz": 3265.0,
-                "gain_db": 1.9,
-                "q": 5.76,
+                "frequency_hz": 1477.0,
+                "gain_db": -0.3,
+                "q": 2.9,
                 "slope": null,
                 "type": "peak"
               }
             ],
             "first_seen_at_epoch_seconds": 1788061991,
             "is_latest": true,
-            "preamp_gain_db": -4.5,
-            "revision_id": "rev-5c63291a4fe3fd8e27c96233",
+            "preamp_gain_db": -2.7,
+            "revision_id": "rev-61fb17d1a7c3a142d0804e12",
             "sound_impact_summary": null,
             "source_references": [
               {
@@ -373,14 +373,14 @@
                 "provenance_tier": "measurement_derived",
                 "published_at_epoch_seconds": null,
                 "redistribution_policy": "structured-data-only",
-                "source_dataset": "Harpo",
+                "source_dataset": "crinacle",
                 "source_id": "autoeq",
                 "source_kind": "measurement_derived",
-                "source_product_id": "PR2",
-                "source_record_id": "results/Harpo/in-ear/KZ PR2/KZ PR2 ParametricEQ.txt",
-                "source_vendor_id": "KZ",
+                "source_product_id": "EW200",
+                "source_record_id": "results/crinacle/711 in-ear/Simgot Audio EW200/Simgot Audio EW200 ParametricEQ.txt",
+                "source_vendor_id": "Simgot Audio",
                 "updated_at_epoch_seconds": null,
-                "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/Harpo/in-ear/KZ%20PR2/KZ%20PR2%20ParametricEQ.txt"
+                "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/crinacle/711%20in-ear/Simgot%20Audio%20EW200/Simgot%20Audio%20EW200%20ParametricEQ.txt"
               },
               {
                 "creator": null,
@@ -392,15 +392,31 @@
                 "redistribution_policy": "structured-data-only",
                 "source_id": "github-community",
                 "source_kind": "repository",
-                "source_product_id": "PR2",
-                "source_record_id": "AlbertH0ng/headphones-eq-match:results/KZ PR2 (Harpo) ParametricEQ.txt:9be33f55ef5bfd6c35cfaa5730b41d9c8d99c507",
-                "source_vendor_id": "KZ",
+                "source_product_id": "EW200",
+                "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Simgot Audio EW200 ParametricEQ.txt:cb997d2c113fca50ea609c85187489fc8147356f",
+                "source_vendor_id": "Simgot Audio",
                 "updated_at_epoch_seconds": null,
-                "url": "https://github.com/AlbertH0ng/headphones-eq-match/blob/3707e05b453049ac53091043f41aba3fe6e403ac/results/KZ PR2 (Harpo) ParametricEQ.txt"
+                "url": "https://github.com/SchulzCode/Y2Reborn/blob/927e52aa4490fb30489be0cc2648b718d5a1822a/assets/eq/Simgot Audio EW200 ParametricEQ.txt"
+              },
+              {
+                "creator": null,
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "github-community",
+                "source_kind": "repository",
+                "source_product_id": "EW200",
+                "source_record_id": "SchulzCode/Y2Reborn:assets/eq/Simgot Audio EW200 ParametricEQ.txt:cb997d2c113fca50ea609c85187489fc8147356f",
+                "source_vendor_id": "Simgot Audio",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/SchulzCode/Y2Reborn/blob/dd3e09e95e0e91eff65b26c02fe84c3ac3a53ee7/assets/eq/Simgot Audio EW200 ParametricEQ.txt"
               }
             ],
             "source_updated_at_epoch_seconds": null,
-            "source_version_label": "9be33f55ef5bfd6c35cfaa5730b41d9c8d99c507",
+            "source_version_label": "cb997d2c113fca50ea609c85187489fc8147356f",
             "verification_status": "verified"
           }
         ],
@@ -408,7 +424,7 @@
           "kind": "unknown",
           "name": null
         },
-        "tuning_label": "AutoEq (Harpo measurement)"
+        "tuning_label": "AutoEq (crinacle / 711 in-ear measurement)"
       },
       {
         "canonical_profile_id": "community-0f9a9264fb4fabf1beec586a",

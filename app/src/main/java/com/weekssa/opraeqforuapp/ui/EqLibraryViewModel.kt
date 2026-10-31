@@ -509,7 +509,7 @@ class EqLibraryViewModel(
             when (val result = fiioJa11ControlRepository.setDefaults(request)) {
                 is FiioJa11DefaultsResult.Verified -> {
                     mutableFiioJa11DeviceState.value = state.defaultsVerified(result.snapshot, result.report)
-                    android.util.Log.i("Ja11Defaults", "candidate=${BuildConfig.CANDIDATE_SOURCE_SHA} operationId=${result.report.operationId} stage=${result.report.stage} volumeWrites=${result.report.counts.volumeWrites} programWrites=${result.report.counts.programWrites} micWrites=${result.report.counts.micWrites} uacWrites=0 eqBandWrites=0 eqGainWrites=0 applyWrites=0 saveWrites=0 eqBankReadback=${result.report.eqReadback} finalVolume=${result.snapshot.outputVolume} finalProgram=${result.snapshot.eqProgram} finalMic=${result.snapshot.headsetControlEnabled}")
+                    android.util.Log.i("Ja11Defaults", "candidate=${BuildConfig.CANDIDATE_SOURCE_SHA} operationId=${result.report.operationId} mechanism=${result.report.mechanism} stage=${result.report.stage} volumeWrites=${result.report.counts.volumeWrites} programWrites=${result.report.counts.programWrites} micWrites=${result.report.counts.micWrites} uacWrites=${result.report.counts.uacWrites} eqBandWrites=${result.report.counts.eqBandWrites} eqGainWrites=${result.report.counts.eqGainWrites} applyWrites=${result.report.counts.eqApplyWrites} saveWrites=${result.report.counts.eqSaveWrites} eqBankReadback=${result.report.eqReadback} finalVolume=${result.snapshot.outputVolume} finalProgram=${result.snapshot.eqProgram} finalMic=${result.snapshot.headsetControlEnabled}")
                 }
                 is FiioJa11DefaultsResult.ReviewChanged -> {
                     mutableFiioJa11DeviceState.value = state.readSuccess(result.snapshot).copy(
@@ -518,9 +518,9 @@ class EqLibraryViewModel(
                 }
                 is FiioJa11DefaultsResult.Failed -> {
                     val report = result.report
-                    android.util.Log.e("Ja11Defaults", "candidate=${BuildConfig.CANDIDATE_SOURCE_SHA} operationId=${report.operationId} stage=${report.stage} volumeWrites=${report.counts.volumeWrites} programWrites=${report.counts.programWrites} micWrites=${report.counts.micWrites} detail=${report.detail}")
-                    mutableFiioJa11DeviceState.value.defaultsFailure(
-                        "Defaults were not verified (${report.stage}). Do not retry until the JA11 state has been read and reviewed.", report,
+                    android.util.Log.e("Ja11Defaults", "candidate=${BuildConfig.CANDIDATE_SOURCE_SHA} operationId=${report.operationId} mechanism=${report.mechanism} stage=${report.stage} volumeWrites=${report.counts.volumeWrites} programWrites=${report.counts.programWrites} micWrites=${report.counts.micWrites} uacWrites=${report.counts.uacWrites} eqBandWrites=${report.counts.eqBandWrites} eqGainWrites=${report.counts.eqGainWrites} applyWrites=${report.counts.eqApplyWrites} saveWrites=${report.counts.eqSaveWrites} eqBankReadback=${report.eqReadback} detail=${report.detail}")
+                    mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.defaultsFailure(
+                        "Defaults were not verified. Read the current JA11 state before retrying.", report,
                         lastVerifiedSnapshot = report.lastVerifiedSnapshot ?: mutableFiioJa11DeviceState.value.snapshot,
                     )
                 }
