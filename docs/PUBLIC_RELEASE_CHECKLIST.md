@@ -4,6 +4,23 @@ This document records the GitHub-release gates for EQ Library. Google Play remai
 
 The checklist is organized around the **current release state**. Detailed historical implementation/testing evidence remains in the versioned release notes and hands-on checklists instead of being duplicated indefinitely here.
 
+## v0.9.0-beta.1 preparation — not a published release
+
+Public stable/latest remains v0.8.3. Current development is package `com.weekssa.opraeqforuapp`, versionName `0.9.0-beta.1`, code15, under the [sealed plan](releases/v0.9.0/PLAN.md) and [complete requirements](releases/v0.9.0/REQUIREMENTS.md). See the [execution report](releases/v0.9.0/EXECUTION_REPORT.md) for exact current candidate and gate results rather than carrying historical evidence forward.
+
+- [x] Approved scope, complete source appendix, immutable seal, baseline and reversible preservation recorded.
+- [x] Pinned configuration source compiled and compared; all five filters separately researched and optional implementation deferred for insufficient evidence.
+- [x] Local coherent computer gates and independent final source/release review complete (823 JVM, 305 Python, 75 API35 instrumentation; minified API26/35/36 smoke/lifecycle/accessibility).
+- [ ] Hosted checks verified on the final documentation/PR head.
+- [ ] Exact PR head approved and merged normally; exact-main gates verified.
+- [ ] Main-only official signed artifact independently verified, with exact-signed clean/upgrade checks.
+- [ ] One final owner-confirmed physical session, separate field persistence proof and exact original-state restoration complete.
+- [ ] Exact qualification/artifact record says READY FOR BETA with current evidence.
+- [ ] Separate publication approval received; qualified bytes promoted as immutable prerelease/nonlatest.
+- [ ] Tag/source/assets/checksum/signer/provenance/prerelease and unchanged stable latest verified.
+
+No beta readiness, hardware support expansion or external distribution is established by this preparation. Historical installed-device statements below are dated evidence; PROJECT_STATE.md records the later installed-byte verification separately.
+
 ## Repository release readiness
 
 - [x] Apache-2.0 software license present.

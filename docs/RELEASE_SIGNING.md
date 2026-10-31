@@ -2,6 +2,12 @@
 
 This document covers the permanent Android signing identity used for direct GitHub APK distribution. Google Play setup is intentionally deferred.
 
+## v0.9.0-beta.1 approval boundary
+
+The [approved plan](releases/v0.9.0/PLAN.md) permits preparation on the feature branch, then requires approval of the exact PR head before merge and official signing. `github-release.yml` remains main-only and candidate-only, with contents-read permissions and no release/distribution step. It accepts the one explicit beta tag `v0.9.0-beta.1` in addition to its preserved stable route. Candidate metadata distinguishes beta from stable, records no publication on sign, and pins source/version/signer/mapping evidence.
+
+Only the separately approved beta publisher may promote the qualified immutable artifact with `prerelease=true` and `make_latest=false`. It must preserve stable v0.8.3/latest and record later evidence/documentation commits separately from the candidate. Exact official clean-install/in-place-upgrade, final physical persistence/restoration and the qualification record precede publication approval. The workflow's `beta-release-approval` environment is a configured name; required reviewer protection has not been established here and no repository settings were changed. No signing or publication has been exercised for this candidate. Emulator smoke keys/debug signatures are development evidence only and never replace the pinned official signer.
+
 ## Security invariant
 
 Every installable GitHub release must be signed by the same long-lived Android release key.

@@ -1,102 +1,136 @@
-# v0.9.0 execution report
+# v0.9.0-beta.1 execution report
 
-Status: IMPLEMENTATION IN PROGRESS; baseline preserved and contract sealed. NOT READY FOR BETA: coherent computer gates, official artifact and final hardware/restoration evidence remain pending.
+Status: COMPUTER IMPLEMENTATION VERIFIED; local evidence reconciliation complete. Final hosted exact-head results are recorded in PR119 Checks and its owner packet after this evidence commit. **NOT READY FOR BETA** until the official signed candidate, required physical persistence and exact restoration pass. No merge, official signing, physical test or publication has occurred.
 
-## Identity and preservation
+## Source, seal and preservation
 
-- Baseline/branch: 35f0c90a0e55e701d4343ed978a440d34aae13aa / codex/v0.9.0-ja11-persistence.
-- Original checkout unchanged; 14 untracked files archived and independently hash-verified, originals retained.
-- Evidence directory: /Users/stephenweeks/Library/Caches/OPRA-EQ/v0.9.0-beta.1/execution-20261030T231605Z.
-- Approved plan recovered exactly from this chat's IMPLEMENT user message; original upload embedded verbatim.
-- Relevant baseline inputs digest: e4502e4d19202834bea52c5bb610f583d1c9d21edec6f281be9c8207b24aeb72.
-- Requirements: 650 line-level and explicit control/native/filter entries; all imported, no product acceptance inferred.
+- Repository: weekssa/OPRA-EQ-for-UAPP; isolated branch `codex/v0.9.0-ja11-persistence`; [draft PR119](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/119).
+- Baseline: `35f0c90a0e55e701d4343ed978a440d34aae13aa`; tree `7d6d88477ef2a45a50b96382eceff6b777093f3c`; relevant-input digest `e4502e4d19202834bea52c5bb610f583d1c9d21edec6f281be9c8207b24aeb72`.
+- Upload: SHA-256 `5d3833e11a014f23753d68bb67b710b53c86062493ed3f352a83518a104b77f7`, preserved verbatim in PLAN. Exact approved chat plan is also preserved before the execution binding.
+- PLAN SHA-256 `a108a2182a28a82252c64956216d31b6dcba9c67bf522a51d6d86a073d6e729b`; SEAL manifest SHA-256 `b258bc43c156f247cb13ef4372286aafe20e643b52980bd6a7bf4a035f912a6b`. Neither changed after sealing.
+- Independent contract audit confirmed all384 nonblank upload lines and237 approved-plan lines. All650 original mapping/control/native/filter rows remain;63 component records and19 physical-step records now specify distinct methods, exact locators and evidence limits. Compound obligations require every component; mapping is not acceptance.
+- Fourteen pre-existing untracked files were archived outside Git with original paths, hashes and metadata, independently verified, and left in place. Unrelated branches/worktrees, historical controller files and blocked tasks remain untouched. No reset/clean or historical mutation replay.
+- Private evidence root: `/Users/stephenweeks/Library/Caches/OPRA-EQ/v0.9.0-beta.1/execution-20261030T231605Z`. Raw logs, archives, APKs, signer/mapping data, emulator captures and dependency insight stay outside product source.
+- Original upload contains three Markdown hard-break lines with terminal spaces. Full baseline diff whitespace checking reports only those three immutable appendix lines; all other changed paths pass ordinary `git diff --check`. Verbatim bytes/seal take precedence over cosmetic removal.
 
-## Completed baseline evidence (do not rerun unchanged)
+## Implemented behavior and evidence boundaries
 
-- :app:testDebugUnitTest: PASS, 799 tests, 0 failures/errors/skips.
-- :app:lintDebug: PASS.
-- :app:assembleDebug: PASS.
-- :app:tasks --all: PASS; required task names discovered.
-- Baseline completed before product edits. No physical access, official signing, merge or publication.
+Defaults failure-publication and unexpected changed-bank success defects are fixed with reproducing repository and real ViewModel tests. User1-native Set as Default obtains fresh authoritative complete bank data, rejects stale/inexact/incomplete values, restages identical frequency/gain/Q/type and global gain, applies once, verifies volatile state, saves once, and verifies fresh final state. Pre-Save session generation is fenced; only final read-only recovery may accept Save re-enumeration. Native writes no mic/UAC, uses no Reset/flat substitution/helper target, and never retries Save or silently invokes fallback.
 
-## Delegation and pricing
+An explicitly requested User1 target may be activated before the bank read. Other programs retain the explicitly confirmed microphone round trip chosen before mutation. Confirmation discloses both mic transitions/reconnects; unavailable bank comparison is reported rather than described as preserved. Native arbitrary-program Save semantics remain unqualified. This is software delivery, **not** a claim that native volume/program retention has survived power loss.
 
-- Preflight 2026-10-30 23:23:57 UTC (18:23:57 America/Chicago): official DeepSeek pricing inspected. Outside all weekday peak windows, therefore off-peak regardless of holiday exception.
-- DeepSeek Flash per 1M tokens: cache hit $0.003, cache miss $0.15, output $0.60.
-- Route available: native OpenCodex v1 spawn, deepseek/deepseek-flash. Dispatch pending contract verification; no provider/config changes.
+[REFERENCE_EVIDENCE.md](REFERENCE_EVIDENCE.md) records the pinned Ircama build, original-code intercepted command comparator, three research passes, historical620e1a4 failure, official codec conflict, source lineage and EUPL-1.2 review. Only configuration target was compiled; no firmware/boot tool was built/run. No third-party implementation source was copied into the Apache-2.0 app. Qualified Android gain encoding is retained. The old candidate already sent Save(3); unchanged staging/Apply distinguishes the new transaction without claiming a firmware cause. Historical19/Classic mic evidence retains unavailable-bank and identity limits; original lost-bank restoration is not invented.
 
-## Corrections
+| Optional mode | Reference value | Mandatory investigation | Implementation disposition |
+|---|---:|---|---|
+| FAST-LL | 1 | Complete, three passes + compiled packet | DEFERRED: insufficient independent exact-JA11 reply/runtime/persistence evidence |
+| FAST-PC | 2 | Complete, three passes + compiled packet | DEFERRED: same independently tracked gap |
+| Slow-LL | 3 | Complete, three passes + compiled packet | DEFERRED: same independently tracked gap |
+| Slow-PC | 4 | Complete, three passes + compiled packet | DEFERRED: same independently tracked gap |
+| NON-OS | 5 | Complete, three passes + compiled packet | DEFERRED: same independently tracked gap |
 
-Native safety/UI gate: two diagnosed correction cycles (exact staging/session fencing/attempt accounting; truthful explicit fallback copy). Sample coverage gate: cycle 1 assigned after exact baseline-input comparison established stale fixture identity. Maximum three per mandatory failing gate, one unchanged transient rerun; no reset by model/branch/name.
+All five remain disabled; none is classified hardware-unavailable. Independent source/firmware/UAC applicability, reply/effect, Save/power-loss and companion proof are missing for each. Related forks/menu wiring are not independent confirmation.
 
-## Outliers
+Release tooling accepts the one explicit beta version/code15, distinguishes candidate from unchanged public stablev0.8.3/code14, keeps signing main-only and distribution-free, and preserves the legacy publisher. The new fixed v0.9 adapter binds exact run/artifact/archive/APK/signer and sealed plan; permits later docs-only evidence commits without rebuilding; requires PASS qualification/readiness/restoration before any tag/release mutation; publishes immutable prerelease/nonlatest bytes; and verifies stablelatest. Resume metadata now shares one publisher identity and hashes the actual preserved manifest. QUALIFICATION.json deliberately remains PENDING with null official fields. Environment reviewer protection and truth of human-entered evidence are not established by JSON validation.
 
-None recorded. .codex/config.toml is absent in this checkout; specialist role guidance remains advisory, native v1 tools are available, so no repair is needed.
+## Candidate identities and computer results
 
-## Remaining gates
+- Safety source: `aaf126b2`; native/version source: `9d051052d0e23807172e7912f9475a0df5bcf191`.
+- Android verification source: `38f140666670abf587ad00a69d3a243f4a770c0c` (test-only provenance correction after unchanged production inputs).
+- Reviewed release tooling source: `0aefd836f9435bcb643803c77ecbb3bd1f8af518`. Later evidence/documentation commits are separate. The PR body and final owner handoff identify the exact final head after reconciliation.
+- Development debug APK SHA-256 `8e76154d557de0c25150d663d23ce3b06da8f278cf36916120288e1f6b6a7a7a`.
+- Qualified emulator-only minified APK SHA-256 `6ef80a15ba574c1eb6654d9010e5dfaabbd03dc500e6d259a08af8e863bfb8c1`; wrapper development test signer `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`. The earlier home-debug-key artifact was rejected by upgrade and is not qualified. No official APK/signer tuple exists yet.
 
-Reference build and bounded evidence research; product implementation and regression tests; computer-based gates; independent review; draft PR/exact-PR merge approval; main-only signing; final owner-confirmed physical qualification/restoration; separate publication approval.
+| Gate | Result and actual evidence |
+|---|---|
+| Preserved baseline | PASS799 JVM/0 failures/errors/skips, lintDebug, assembleDebug; baseline-android.log and original input/XML digests retained, not rerun unchanged |
+| Full Android candidate | PASS823 JVM/0 failures/errors/skips; lintDebug/lintRelease, debug/release/androidTest assembly; candidate-android-38f14066.log, XML and lint reports |
+| R8 | PASS verify-r8-mapping.sh; mapping SHA-256632e76b2994d17c60b795eaab50681c3deac533eae177006d8243bb569a9bb14 |
+| Python/repository/contracts | PASS305 tests in1.697s; captured actual worker output preserved; foundation, stable promotion, legacy beta and v0.9 contracts pass; registry15 sources and Favorite samples14/profiles13/exclusions2 pass |
+| Workflow validation | PASS actionlint1.7.12 on both changed workflows; official archive SHA verified. ShellCheck/Pyflakes integrations unavailable/disabled, not claimed exercised |
+| API35 instrumentation | PASS75/0 failures/errors/skips on disposable emulator5584; XML/log retained |
+| API26 minified clean/populated Library | PASS existing smoke helper; api26-minified-clean/result.txt and screenshots |
+| API35 minified clean/install/upgrade | PASS clean and0.8.3/code14→0.9.0-beta.1/code15 update; Personal EQ Room row, Manual DataStore preference, populated Library and crash buffer; development test signer only |
+| API36 lifecycle/UI/offline/scaling | PASS background/foreground, force-stop/relaunch, empty state, cached Library; font1.5/density480 checked and restored. Authoritative no-default-network cached-library proof plus enabled TalkBack app focus and successful Settings navigation recorded; speech/audio quality not measured |
+| Independent review | Contract/source/native and release reviews complete; bounded final source review through0aefd836 found no mandatory blocker. Reviewers inspected and did not independently rerun reported tests |
+| Hosted exact-head checks | Initial implementation head: CodeQL/catalog/community PASS; Android CI running at evidence close. Final exact-head results live in [PR119 Checks](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/119/checks) and PR owner packet; all required results must pass before merge is requested |
+| Official signed clean/upgrade | NOT RUN; after approved exact-PR merge and main-only signing |
+| Physical persistence/restoration | NOT RUN; final owner-confirmed Pixel9/JA11 session only; [complete19-step checklist](HARDWARE_CHECKLIST.md) prepared |
 
-## Intake corrections before product edits
+Android source manifest/dependencies are unchanged except version metadata. Merged permissions match baseline exactly: INTERNET plus existing WorkManager WAKE_LOCK/ACCESS_NETWORK_STATE/RECEIVE_BOOT_COMPLETED/FOREGROUND_SERVICE and AndroidX signature dynamic-receiver permission. Merge-report provenance is preserved. Current-device enumeration and UsbManager.hasPermission still guard permission opens. Grant/denial/stale-grant/detach/cardinality/generation tests pass. No broad permission/dependency change was made.
 
-Existing JA11 domain/fiio and ui/FiioJa11 file paths added to the discovered allowlist; this corrects inventory omissions within approved JA11 scope, not a feature expansion. Python command placeholders resolved to bundled Python 3.12.14. Generated intake seal refreshed once before independent contract approval.
+## Delegation, diagnosis and finite correction ledger
 
-## Resume and quota override
+OpenCodex v1 actually dispatched sole implementation writer Schrodinger (`01a18f2d-2fde-75c3-8579-40ef8d129b23`), DeepSeek Flash/High, after contract verification. Official pricing/time checked23:23/23:36UTC October30 and01:52:55UTC October31: off-peak cache-hit/cache-miss/output rates$0.003/$0.15/$0.60 per1M. Saturday starts are off-peak. Primary handled synthesis/docs/integration/verification; bounded read-only specialists handled contract/native/filter/release reviews. No controller revival, provider substitution, v2 delegation, schedule or new enforcement framework.
 
-User resumed approved work; preserved baseline inputs/results unchanged. The read-only investigator hit a native model usage limit and produced no audit. Primary verified exact approved text, verbatim source, zero unmapped nonblank source/approved lines, five explicit filter entries, archive and seal. Independent candidate review remains mandatory later. At 23:36 UTC the user-approved 95% override was applied through OpenCodex UI: autoSwitchThreshold 90 -> 95, the only changed top-level field; private backup retained. Existing default provider and hard-lock setting were preserved. No credits/reset consumed. Current native usage read 82%/36%, ordinary usage allowed. DeepSeek Flash off-peak pricing reverified at 23:36:50 UTC; no holiday ambiguity outside peak windows.
+The owner-approved95% override changed only OpenCodex autoSwitchThreshold90→95 through supported UI after private backup and fresh quota/route preflight. Existing provider/hard-lock state was preserved; no reset credit used. Initial native investigator quota failure produced no audit; one resume after natural measured reset succeeded. Original native configuration/credentials remain unchanged.
 
-## Actual implementation dispatch
+| Failing gate | Diagnosed cycles used | Result |
+|---|---:|---|
+| Native safety/UI | 2 | Exact staging/session/attempt safeguards; explicit truthful mic fallback copy; PASS software |
+| Favorite sample coverage/integration | 2 | Baseline stale fixture regenerated; duplicate historical provenance references all verified without changing catalog/resolver; PASS |
+| Release tooling | 2 | Separate source/qualification/notes checks; consistent interrupted-upload metadata; PASS software + independent review |
+| Emulator upgrade setup | 1 | Wrong home debug key rejected; corrected to baseline wrapper key, resumed against retained seeded data; PASS |
+| Accessibility test setup | 1 | First focus capture hit Accessibility Suite notification overlay; actual app focus is checked separately before claiming navigation proof |
 
-Native OpenCodex v1 spawn accepted worker 01a18f2d-2fde-75c3-8579-40ef8d129b23 (Schrodinger), model deepseek/deepseek-flash, High. Pre-dispatch clock 2026-10-30 23:36:50 UTC; off-peak pricing verified. Sole writer owns the two confirmed defaults safety corrections and matching tests; primary continues reference build/research/docs. No automatic model substitution or provider changes.
+Maximum3 diagnosed corrections per mandatory failure plus1 unchanged transient rerun; no failure counter reset by agent/branch/name. No exhausted mandatory gate or deferred mandatory failure. Initial compilation/linking issues for the isolated reference were diagnosed against exact include/SDK/TAPI errors; installed matching15.4SDK resolved them without global changes. Reopening passing gates requires changed relevant inputs or contradictory evidence.
 
-## Immutable source formatting
+## Single outlier list — review once after release work
 
-The original uploaded source contains three deliberate Markdown hard-break lines (two terminal spaces). Full git diff --check reports those exact three lines in the verbatim PLAN appendix. They are preserved under the approved byte-exact source requirement, not removed or labeled a clean diff. The immutable PLAN digest and exact suffix comparison validate those source bytes; all other changed files still require the ordinary whitespace check. No runtime validation is relaxed.
+| Issue/evidence | Release relevance | Suggested later workstream |
+|---|---|---|
+| Legacy v0.8.0-beta publisher pins stablelatestv0.7.2 | Pre-existing; separate v0.9 adapter and legacy contract tests pass; behavior preserved | Separate legacy-tool retirement/maintenance review |
+| Unchanged USB permission PendingIntent is mutable/package-targeted; current Android sample is immutable | No reproduced release-blocking failure; exact device/actual permission revalidated; no source change here | Separate compatibility/security review, not speculative patching |
+| Dependabot57 opened2026-10-27: Guava GHSA-xxph-c9ww-hj94/CVE-2026-102554; GitHub high, upstream moderate5.9; fixed33.7.2 | No full Guava in releaseRuntimeClasspath;33.3.1-jre in androidLintTool. No shipped runtime reachability established; alert remains open and no repository-wide vulnerability clearance claimed | Separate tooling/security maintenance review using recorded dependency insight |
 
-## Safety implementation slice complete
+No outlier fixes/issues/projects were started. Permitted-path and baseline diff inspection found no unrelated product change; exact changed-file inventory is below. Preserve untracked historical resources and all private evidence.
 
-DeepSeek reproduced both pre-fix failures (changed-bank unexpected Verified; ViewModel busy state never cleared), corrected the two defects, and passed 103 focused tests with zero failures/errors/skips. Primary inspected the diff and real ViewModel regression; parent focused command succeeded on current cached outputs. Full coherent-candidate verification remains pending after further implementation. Source paths are the two production files and corresponding repository/ViewModel tests only.
+## Finish condition and next authorized action
 
-## Reference build
+Local reconciliation is complete. Inspect hosted checks for the final documentation head, record their exact run identities in the PR owner packet, then present that exact PR head for merge approval. This avoids another documentation-only rebuild loop merely to copy a hosted result into its own tested commit. A changed head requires renewed approval. Official main-only signing, exact-signed emulator gates, final physical qualification with field-specific true power-loss evidence, exact actual-state restoration and separate publication approval remain pending in that order. Do not initiate earlier wireless pairing/JA11 tests. Beta approval is not stablev0.9.0 approval.
 
-Pinned configuration tool and intercepted source comparator PASS, no hardware accessed. Five individual filter packets and native Save sequence reproduced from original C. See REFERENCE_EVIDENCE.md for codec discrepancy, staging comparison and remaining program-specific gaps.
+Restoration status: no physical mutation occurred in this workstream; actual final hardware restoration is NOT RUN. READY FOR BETA cannot be declared from computer tests or another field's persistence. Current beta disposition remains NOT READY; the immediate handoff target is an off-device-verified exact PR for merge approval.
 
-## Active continuation checkpoint
+## Exact changed-file inventory
 
-Native worker 01a18f2d-2fde-75c3-8579-40ef8d129b23 implemented User1-only native defaults with unchanged staging, Apply, one Save, read-only final recovery and mechanism-aware reports; 113 focused tests and lint passed. Primary review requested bounded correction cycle 1: reject non-exact staging, fence pre-Save operations to reviewed session, count issued attempts consistently and simplify production wording. Cycle 1 completed: 118 focused tests, zero failures/errors/skips; lint passed. Independent reviewer found only fallback-copy overclaim/omitted mic disclosure; cycle 2 assigned to same writer. No primary product edits.
+All paths below were checked against the sealed allowlist and approved requirement mappings; app changes remain JA11-specific, with the necessary generated fixture/provenance test gate corrections. No catalog/registry, dependency, unrelated protocol or controller change.
 
-Native read-only investigator 01a18f2f-6909-7fd0-8a19-c38646e0dd57 completed all three filter research passes after measured quota reset to 3%. Each optional filter implementation is deferred for insufficient exact-JA11 evidence, not classified unavailable. No quota-reset credit consumed. Three disposable AVD definitions created privately (API26/35/36); only explicit emulator serials may be used. Official signing/merge/physical/publication gates remain unauthorized.
-
-## Current implemented behavior and limitations
-
-Native User 1 defaults stages exactly the fresh authoritative five bands and global gain, applies once, verifies volatile state, saves once, and verifies final state. No mic/UAC writes or automatic fallback/replay. Pre-Save generation stays pinned; only post-Save read-only recovery may reacquire a session. Requested other programs use the explicit microphone round trip selected before mutation. Arbitrary program Save payloads remain unqualified; native selected-program/volume power-loss persistence is NOT demonstrated yet.
-
-The original defaults failure-publication defect and changed-bank false-success handling are fixed with reproducing tests. All five reconstruction filters have completed mandatory investigation and separately deferred optional implementation; details and source/provenance/encoding decisions are in REFERENCE_EVIDENCE.md.
-
-## Source, candidate and scope fields
-
-- Seal: PLAN.md SHA-256 a108a2182a28a82252c64956216d31b6dcba9c67bf522a51d6d86a073d6e729b; verified again at resume. Source appendix SHA-256 5d3833e11a014f23753d68bb67b710b53c86062493ed3f352a83518a104b77f7.
-- Baseline: 35f0c90a0e55e701d4343ed978a440d34aae13aa. Product commits and exact candidate head will be frozen after the sole writer finishes.
-- Changed files/scope: safety and native changes are restricted to existing JA11 repository, ViewModel, DEVICE copy and tests; release-tooling slice is limited to the sealed allowlist. Exact final diff inventory pending.
-- APK/checksum/signer: no official v0.9.0-beta.1 artifact exists. Development/emulator artifacts do not establish release provenance. Main-only signing awaits exact-PR merge approval.
-- Automated results: preserved 799-test baseline; safety 103 focused tests; native cycle 1 118 focused tests and lint. Full coherent-candidate suite pending.
-- Emulator results: private API26/35/36 AVD definitions prepared; API35 boot verified. Candidate instrumentation/smoke/lifecycle gates pending.
-- Hardware qualification: NOT RUN under final-stage-only boundary. No new physical device evidence or hardware ledger claim.
-- Restoration: NOT RUN; no device mutation occurred in this workstream. Historical lost-bank restoration remains unverified and is not invented.
-- Readiness: NOT READY FOR BETA until all mandatory gates including physical persistence and restoration pass. This workstream continues to the exact-PR merge approval gate before official signing/hardware/publication.
-
-## Release tooling dispatch and diagnosed sample gate
-
-At 2026-10-31 01:52:55 UTC, Saturday off-peak pricing was rechecked on the official page ($0.003/$0.15/$0.60 per 1M cache-hit/cache-miss/output). The same DeepSeek v1 worker was actually assigned version/candidate validation, candidate-only main signing and exact-artifact beta promotion. No workflow dispatch or official signing was authorized.
-
-Registry validation PASS (15 sources). Sample coverage fails because baseline catalog selected a newer github-community sample (Simgot EW200) while the checked-in test fixture still selected KZ PR2. Verifier, catalog, registry and fixture are byte-identical to baseline 35f0c90a. The smallest gate correction is regeneration of that test fixture with the existing tool; no catalog/registry change or unrelated ingestion work is authorized.
-
-## Independent contract refinement
-
-Reviewer Plato verified exact source appendix, approved-plan coverage and seal, but found generic verification methods and combined obligations insufficiently checkable. Before further product edits, the checklist now links all original rows to 63 explicit component records and 19 separate physical-step records, with exact F/N/D locators and independent lifecycle/program/stop-condition outcomes. Original line text/IDs remain intact. Product writer paused after the bounded release slice during this correction; seal unchanged. Independent refinement review confirmed all 384 source and 237 approved nonblank lines retained, all 650 original rows present, and all 19 exact step mappings. Its two remaining points were corrected: preparation/ADB-contingency clauses now map to V48/V49; H08 names detach/generation evidence and H13 names command/operation traces rather than inferring no replay from matching readback. PLAN/seal unchanged.
-
-## Release tooling independent review
-
-Read-only reviewer Aristotle found three bounded blockers: publisher conflated signed candidate source with later evidence/documentation source; publication notes title did not match the verifier; and no exact qualification/restoration readiness record guarded mutation. The notes title was corrected. Release correction cycle 1 is assigned to the same DeepSeek writer: separate immutable candidate identity from later scoped docs, require an exact minimal qualification record before any tag/release write, verify notes in the read-only lane, and test full publish/resume/negative paths. The beta environment is configured in YAML, not demonstrated to have reviewer protection; no environment or repository setting was changed.
-
-Outlier: the preserved v0.8.0-beta publisher is historically pinned to v0.7.2 latest and appears stale against current v0.8.3. This is present on baseline and does not block the separate v0.9 adapter. Preserve its behavior/tests; consider a separate legacy-tool retirement review afterward, without fixing it in this release.
+```text
+.github/workflows/github-release.yml
+.github/workflows/publish-beta-prerelease.yml
+CHANGELOG.md
+README.md
+app/build.gradle.kts
+app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/FiioJa11MyDacContentTest.kt
+app/src/main/java/com/weekssa/opraeqforuapp/data/dac/FiioJa11ControlRepository.kt
+app/src/main/java/com/weekssa/opraeqforuapp/ui/EqLibraryViewModel.kt
+app/src/main/java/com/weekssa/opraeqforuapp/ui/FiioJa11DeviceUiState.kt
+app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/DacDeviceStatus.kt
+app/src/test/java/com/weekssa/opraeqforuapp/data/dac/FiioJa11ControlRepositoryTest.kt
+app/src/test/java/com/weekssa/opraeqforuapp/data/kt02h20/AndroidKt02h20HidSessionTest.kt
+app/src/test/java/com/weekssa/opraeqforuapp/data/library/CanonicalFavoriteAliasIntegrationTest.kt
+app/src/test/java/com/weekssa/opraeqforuapp/ui/FiioJa11DefaultsUiStateTest.kt
+app/src/test/java/com/weekssa/opraeqforuapp/ui/FiioJa11DeviceUiStateTest.kt
+app/src/test/resources/catalog/favorite-source-samples.json
+docs/ARCHITECTURE.md
+docs/CHATGPT_PROJECT_RUNBOOK.md
+docs/FIIO_JA11_CAPABILITY_MATRIX.md
+docs/FIIO_JA11_PROTOCOL_NOTES.md
+docs/PROJECT_STATE.md
+docs/PUBLIC_RELEASE_CHECKLIST.md
+docs/RELEASE_SIGNING.md
+docs/releases/v0.9.0-beta.1.md
+docs/releases/v0.9.0/EXECUTION_REPORT.md
+docs/releases/v0.9.0/HARDWARE_CHECKLIST.md
+docs/releases/v0.9.0/PLAN.md
+docs/releases/v0.9.0/QUALIFICATION.json
+docs/releases/v0.9.0/REFERENCE_EVIDENCE.md
+docs/releases/v0.9.0/REQUIREMENTS.md
+docs/releases/v0.9.0/SEAL.sha256
+tools/publish_v090_beta_release.py
+tools/test_publish_v090_beta_release.py
+tools/test_v090_release.py
+tools/test_v090_repository_foundation.py
+tools/v090_release.py
+tools/validate-repository-foundation.py
+```

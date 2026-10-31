@@ -1,12 +1,12 @@
 # Current Project State
 
-Last verified: 2026-10-21. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
+Workstream last verified: 2026-10-30. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
 ## v0.9.0-beta.1 workstream (2026-10-30)
 
 - Candidate build: **v0.9.0-beta.1**, versionCode `15`
 
-Approved work is isolated on `codex/v0.9.0-ja11-persistence`, baseline `35f0c90a0e55e701d4343ed978a440d34aae13aa`. Public stable remains v0.8.3/code14; the development target is 0.9.0-beta.1/code15. This does not change the public stable tuple below. The [canonical plan/seal](releases/v0.9.0/PLAN.md), [complete checklist](releases/v0.9.0/REQUIREMENTS.md), and [execution report](releases/v0.9.0/EXECUTION_REPORT.md) govern current candidate status.
+Approved work is isolated on `codex/v0.9.0-ja11-persistence`, baseline `35f0c90a0e55e701d4343ed978a440d34aae13aa`. Public stable remains v0.8.3/code14; the development target is 0.9.0-beta.1/code15. This does not change the public stable tuple below. [Draft PR #119](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/119) contains the implementation; local computer checks and independent review pass, with final-head hosted checks pending. The [canonical plan/seal](releases/v0.9.0/PLAN.md), [complete checklist](releases/v0.9.0/REQUIREMENTS.md), and [execution report](releases/v0.9.0/EXECUTION_REPORT.md) govern current candidate status.
 
 Native User1 defaults is implemented for computer qualification with unchanged fresh staging/Apply/one Save and no microphone writes. Other programs use the explicit mic round trip. All five optional filters completed research but remain individually deferred for insufficient exact-device evidence. No candidate hardware, signer or release readiness claim is made. Exact-PR merge approval precedes main-only signing; final physical qualification/restoration and separate publication approval remain required. Historical PR #93/#96 and retired controller tasks are preserved and are not resumed.
 
