@@ -159,6 +159,8 @@ Black Pearl `.txt` export uses the verified pyBlackPearl `PK / LS / HS` peak/she
 
 ### FiiO JA11
 
+The in-development **v0.9.0-beta.1** candidate adds native Set as Default for an explicitly requested User 1 target, preserving fresh exact EQ data without microphone writes. Other programs retain the explicit microphone round trip. Candidate power-loss persistence remains unqualified until the final physical session. FAST-LL, FAST-PC, Slow-LL, Slow-PC and NON-OS were each investigated and remain disabled for insufficient independent JA11 evidence. See the [approved plan and evidence](docs/releases/v0.9.0/PLAN.md); public stable remains v0.8.3.
+
 v0.7.0 includes a strict FiiO JA11 USB identity, a five-band User 1 editor, explicit Review → Apply controls, one-Save persistence, final readback, and failure handling within the existing transaction boundary.
 
 The software path is verified. Physical evidence remains limited to the exact reports and candidate identities recorded in the repository ledger; broader JA11 power-cycle qualification is not claimed.

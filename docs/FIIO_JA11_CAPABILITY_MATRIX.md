@@ -10,6 +10,20 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
+## v0.9.0-beta.1 candidate boundary (2026-10-30)
+
+The approved [sealed plan](releases/v0.9.0/PLAN.md) supersedes historical no-native-investigation wording for this workstream only. The in-development Set as Default path for an explicitly requested User 1 target uses fresh exact unchanged five-band/global-gain staging, Apply, volatile verification, one Save(3), and final readback without mic writes. Other programs retain the explicitly confirmed microphone round trip. This candidate has **no new physical persistence qualification**; J029 and J032/J033 remain bounded to their exact historical tuples. Neither success simulation nor prior Flash evidence proves native volume persistence for this candidate. Runtime Apply is separate from Set as Default.
+
+| Optional mode | Reference `0x11` value | Current disposition |
+| --- | --- | --- |
+| FAST-LL | 1 | Insufficiently evidenced; implementation deferred individually |
+| FAST-PC | 2 | Insufficiently evidenced; implementation deferred individually |
+| Slow-LL | 3 | Insufficiently evidenced; implementation deferred individually |
+| Slow-PC | 4 | Insufficiently evidenced; implementation deferred individually |
+| NON-OS | 5 | Insufficiently evidenced; implementation deferred individually |
+
+All five mandatory investigations are complete. Source-generated packets are demonstrated; independent exact-JA11 acceptance, firmware/UAC applicability, runtime effect, Save/power-loss persistence and companion preservation remain unproven for each mode. This is not a hardware-unavailable finding. No functioning controls are enabled. See [three-pass evidence and provenance](releases/v0.9.0/REFERENCE_EVIDENCE.md) and the [requirements checklist](releases/v0.9.0/REQUIREMENTS.md).
+
 ## 2026-10-14 v0.8.3 private beta defaults observation
 
 Exact beta source `7cea4545dddbee2da0b436e0684a9c489835e3cd`, package
