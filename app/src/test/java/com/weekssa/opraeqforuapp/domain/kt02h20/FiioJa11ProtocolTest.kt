@@ -248,6 +248,16 @@ class FiioJa11ProtocolTest {
         )
     }
 
+    @Test
+    fun saveToFlashCarriesTheSelectedPresetAsPayload() {
+        FiioJa11Protocol.EqProgram.entries.forEach { program ->
+            assertArrayEquals(
+                bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x19, 0x01, program.code, 0x00, 0xEE),
+                FiioJa11Protocol.saveToFlashReport(program),
+            )
+        }
+    }
+
     private fun bytes(vararg values: Int): ByteArray = ByteArray(values.size) { index ->
         (values[index] and 0xFF).toByte()
     }

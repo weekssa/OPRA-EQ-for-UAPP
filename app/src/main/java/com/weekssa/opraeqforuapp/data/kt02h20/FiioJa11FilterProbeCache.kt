@@ -3,7 +3,7 @@ package com.weekssa.opraeqforuapp.data.kt02h20
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 
 /**
- * Per-session cache for the optional JA11 digital-filter probe (`0x11`).
+ * Per-session cache for the optional JA11 digital-filter probe (`0x04`).
  *
  * A unit that ignores the command costs one response timeout per read, so the result is probed
  * once per USB session. A `null` result is cached too: it means "this session did not report the

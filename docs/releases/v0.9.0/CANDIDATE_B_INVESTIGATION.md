@@ -199,3 +199,11 @@ supported or unsupported.
 
 **Open refinement:** implement the vendor ordering for built-ins (selection → `0x19` only, verify by
 readback) and re-validate Off/Classic on a new identity.
+
+## Independent review (2026-11-01)
+
+A bounded read-only Luna review of the correction and J035 found no blocking defect and two P2s, both
+fixed: a protocol test now encodes `saveToFlashReport(program)` for all five presets (guarding against
+a future constant-payload regression), and stale `0x11` comments were corrected to `0x04`. The rebuilt
+APK is byte-identical (`f522c944…`), so the physically verified identity remains valid. 831 JVM tests
+pass.

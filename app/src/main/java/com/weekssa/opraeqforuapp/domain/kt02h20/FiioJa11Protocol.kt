@@ -86,7 +86,7 @@ object FiioJa11Protocol {
     }
 
     /**
-     * JA11 reconstruction-filter selection (`0x11`).
+     * JA11 reconstruction-filter selection (`0x04`, the FiiO Control command; `0x11` is the retired Savitech-derived probe).
      *
      * Values and names follow the pinned Ircama reference and its compiled command comparator. The
      * meanings are the reference author's claims; exact-device applicability is negotiated at runtime

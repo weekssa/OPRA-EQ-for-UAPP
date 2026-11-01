@@ -972,7 +972,7 @@ class FiioJa11ControlRepository(
             ?: return failedOrChanged(generation, "headset control")
         val program = field("EQ program", source::readEqProgram)
             ?: return failedOrChanged(generation, "EQ program")
-        // Optional capability probe: a missing or unparsable `0x11` reply disables the control
+        // Optional capability probe: a missing or unparsable `0x04` reply disables the control
         // instead of failing the snapshot, because no JA11 filter value is assumed.
         val digitalFilter = if (source.isSessionCurrent(generation)) {
             source.readDigitalFilterMode()
