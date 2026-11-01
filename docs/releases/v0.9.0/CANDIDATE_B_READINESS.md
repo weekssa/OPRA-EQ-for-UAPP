@@ -105,3 +105,19 @@ disabled.
 
 This document, the investigation, protocol notes, capability matrix, project state and runbook are
 updated. J034 and J035 remain unchanged historical physical records.
+
+## Final beta.5 candidate identity (2026-11-01)
+
+| Item | Value |
+|---|---|
+| Version | `0.9.0-beta.5` / code `19` |
+| Package | `com.weekssa.opraeqforuapp.v090beta` |
+| Source | `655810c7b1a6ceae72767b9dbe48d1409aab2d70` |
+| APK SHA-256 | `9f1c9c0e1a300ab021bc051abe8f685ebfde060bdda0d18b4358fe5e406c0ca6` |
+| Signer | local test `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f` |
+| Variant | `privateBeta` (R8 minified, local test signing, update checks off) |
+| Qualification | persistence code identical to J035-qualified beta.3; UI-only change, no new physical claim |
+
+Gates: 834 JVM tests, lint debug/release/privateBeta, debug/release/privateBeta/androidTest builds, R8,
+306 Python/contract tests, 78/78 API 35 instrumentation, API 26 and API 35 install/launch. The DEVICE
+filter row is absent, the probe is dormant and filter writes are rejected when the flag is off.
