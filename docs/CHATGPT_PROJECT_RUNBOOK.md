@@ -4,6 +4,12 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
+## 2026-11-01 v0.9.0 stable publication and closeout — current release
+
+EQ Library v0.9.0 is public stable/latest. Release ID `430455005` was published at `2026-11-01T09:38:36Z` from exact source `1eebfda363a580591abdb3b109b8af5df5b82a90` (PR #124). The official signed-candidate run `41288639063` succeeded and produced artifact `13076990020`; promotion run `41289359379` passed exact-artifact checks, hosted clean install, v0.8.3 upgrade and publication. The annotated `v0.9.0` tag peels to the exact source and binds the candidate provenance. A fresh public APK download independently matched the candidate APK SHA-256. Full hashes and readback evidence are in [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md).
+
+The post-publication release-note correction removes stale pending-GO and old-stable wording; the public notes now state v0.9.0 is latest and report the passed install/upgrade gates. **Goal A is delivered** on the J035 evidence basis. **Goal B remains deferred and was not delivered**; the digital-filter research handoff is preserved. J034 and J035 remain unchanged. The documentation closeout is proposed separately and must not be merged until the owner approves its exact PR head.
+
 ## Historical v0.9.0-beta.1 execution boundary (2026-10-30)
 
 This section is superseded by the 2026-11-01 recovery entry below, which is the current boundary. It

@@ -4,23 +4,23 @@ This document records the GitHub-release gates for EQ Library. Google Play remai
 
 The checklist is organized around the **current release state**. Detailed historical implementation/testing evidence remains in the versioned release notes and hands-on checklists instead of being duplicated indefinitely here.
 
-## v0.9.0-beta.1 preparation — not a published release
+## Historical v0.9.0 candidate preparation — superseded by stable release
 
-Public stable/latest remains v0.8.3. Current development is package `com.weekssa.opraeqforuapp`, versionName `0.9.0-beta.1`, code15, under the [sealed plan](releases/v0.9.0/PLAN.md) and [complete requirements](releases/v0.9.0/REQUIREMENTS.md). See the [execution report](releases/v0.9.0/EXECUTION_REPORT.md) for exact current candidate and gate results rather than carrying historical evidence forward.
+The former beta.1 preparation record is superseded by Candidate B/J035, PR #124, and the v0.9.0 stable publication. Its dated evidence remains in the release execution records.
 
-- [x] Approved scope, complete source appendix, immutable seal, baseline and reversible preservation recorded.
-- [x] Pinned configuration source compiled and compared; all five filters separately researched and optional implementation deferred for insufficient evidence.
-- [x] Local coherent computer gates and independent final source/release review complete (823 JVM, 305 Python, 75 API35 instrumentation; minified API26/35/36 smoke/lifecycle/accessibility).
-- [x] Hosted checks verified on the final PR head `333bd5d6948383547d0ae6b7eb16f3e00b9c6162`: Android CI `41160439307`, exact-head `41161677854` (after one unchanged transient rerun), CodeQL `41160439312`, catalog `41160439310`, community `41160439313`; twelve check contexts green.
-- [x] Exact PR head approved and merged normally as merge commit `0e378a3266ba3e5bfd08ad8a69c9c0909386cd2c`; on that commit the Android CI build, API 35 emulator UI (75/75), minified-R8 and CodeQL jobs passed.
-- [ ] Hosted `min-api-smoke` on that merge commit failed twice for a diagnosed CI emulator fault (system_server death in attempt 1; a 20 s adbd timeout after `adb root` in attempt 2), not a product fault. The API 26 claim was re-verified locally on the identical tree (minified release APK, clean install, populated `Manufacturers` catalog). Hardening that scaffolding is a separate CI follow-up; see the execution report outlier list.
-- [x] Main-only official signed artifact independently verified: run `41167513158` produced `EQ-Library-v0.9.0-beta.1-beta-0e378a3.apk` (SHA-256 `845c42e77180aa0a5f36eae9cb95c9c765be294e17ae58829c1b12d102c09f79`, signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, versionName `0.9.0-beta.1`, code15); API 35 clean install and public v0.8.3 in-place upgrade both launched successfully.
-- [ ] One final owner-confirmed physical session, separate field persistence proof and exact original-state restoration complete.
-- [ ] Exact qualification/artifact record says READY FOR BETA with current evidence.
-- [ ] Separate publication approval received; qualified bytes promoted as immutable prerelease/nonlatest.
-- [ ] Tag/source/assets/checksum/signer/provenance/prerelease and unchanged stable latest verified.
+## Current stable release: v0.9.0
 
-No beta readiness, hardware support expansion or external distribution is established by this preparation. Historical installed-device statements below are dated evidence; PROJECT_STATE.md records the later installed-byte verification separately.
+EQ Library v0.9.0 is the immutable public stable release and is returned by `/releases/latest`. v0.8.3 is the previous stable release.
+
+- [x] Public release [v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), release ID `430455005`, published `2026-11-01T09:38:36Z`, non-draft, non-prerelease and latest.
+- [x] Source identity: PR #124 merge and annotated tag `v0.9.0` resolve to `1eebfda363a580591abdb3b109b8af5df5b82a90`; tag object `1c4e3fdabbc7c2a97f93685abb5758263595b46b` binds the exact signed candidate run/artifact/archive digest.
+- [x] Stable metadata: package `com.weekssa.opraeqforuapp`, versionName `0.9.0`, versionCode `20`.
+- [x] Signed candidate [run 41288639063](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/41288639063) succeeded from exact source; artifact ID `13076990020`; archive SHA-256 `ba5937e0191175539115df9e253c456364b6d3a17eae50ed54f381c1139bb131`.
+- [x] Candidate APK SHA-256 `8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`; signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 `40892ce76c2d0cd2fe1b8f5f22524aa648a31033e3663a296490610d4377cf96`.
+- [x] Promotion [run 41289359379](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/41289359379) passed candidate verification, tag creation and publication. Hosted stable clean install and v0.8.3 in-place upgrade passed.
+- [x] Public APK downloaded independently; its SHA-256 matches the signed candidate. Public release notes were corrected after publication to identify v0.9.0 as stable/latest and describe the completed gates. Digital filters are explicitly documented as not delivered.
+- [x] Goal A was delivered on the exact J035 evidence basis; Goal B remains deferred. The research handoff is preserved and J034/J035 were not modified.
+- [x] Detailed source, candidate, tag, release and public asset provenance: [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md).
 
 ## Repository release readiness
 
@@ -40,24 +40,14 @@ No beta readiness, hardware support expansion or external distribution is establ
   and never rebuilds or re-signs the APK.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
 
-## Current stable release: v0.8.3
+## Historical previous stable release: v0.8.3
 
-EQ Library v0.8.3 is the immutable public stable release and is returned by
-[`/releases/latest`](https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest).
-v0.8.2 is the previous stable release; the immutable v0.8.0-beta remains preserved as historical
-prerelease evidence.
+EQ Library v0.8.3 is preserved as the immediately previous stable release. Its original source,
+signing, publication and device evidence remain in the dated record below and in
+[`release-engineering/v0.8.3-stable/ARTIFACTS.md`](release-engineering/v0.8.3-stable/ARTIFACTS.md).
 
-- [x] Stable source identity: main commit `899755507f812c940f3ab9381a856c80c6030885`; annotated tag object `1a584839b699ce2f0ff447582719fbeb19915392` peels to that exact source and binds the official signed candidate run/artifact and archive digest. PR #97 merged normally as this source.
-- [x] Exact-main Android CI: run `38648012952` passed all four jobs: unit/lint/build/R8, exact-source Kotlin analysis, API 26 release smoke, and API 35 connected UI tests. PR #97 CodeQL/Kotlin analysis passed at exact head `96399e902f7390c6f27bfc42bfc412790328457a`.
-- [x] Stable metadata: package `com.weekssa.opraeqforuapp`, versionName `0.8.3`, versionCode `14`, advancing v0.8.2 code `13`.
-- [x] Official signed candidate: run `38649163805`, artifact `11934142420`, archive SHA-256 `500c5c693ea41f35e5025041b9fddebab3d44c863151411d871a8255cc6e31bb`; APK SHA-256 `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`; R8 mapping SHA-256 `45601e0f655cb82f5965b2077faebb310a8009826ceb7bd9cb30966d20ed16d9` remains private.
-- [x] Candidate verification: APK package/version/code, source SHA, checksum, v2/v3 signatures, pinned signer certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, R8 mapping and zip alignment passed independent readback.
-- [x] API 35 exact-candidate promotion gates: clean install and v0.8.2 in-place upgrade passed within promotion run `38650109951` before tag creation.
-- [x] Exact-artifact promotion: run `38650109951` created annotated `v0.8.3` and published the unchanged signed candidate; release ID `413252769` is immutable, non-draft, non-prerelease, and current latest.
-- [x] All six public asset downloads were independently checked against GitHub SHA-256 digests; public APK bytes match the candidate and checksum sidecar. Tag peels to exact source; public release body matches `docs/releases/v0.8.3.md`. Full evidence is in `docs/release-engineering/v0.8.3-stable/ARTIFACTS.md`.
-- [x] Owner accepted Beta v1 and authorized go-live. Exact beta and its data remain installed on the Pixel 9; final reported DAC state is volume 19 / Classic, Mic On, UAC 2.0. No production APK was installed over it. J032/J033 preserve the PASS WITH LIMITS and do not claim USB bus capture, User 1 bank preservation, or unique same-unit continuity.
-
-Status: **v0.8.3 is current stable/latest.** Its exact candidate, promotion, public asset, owner acceptance, and hardware evidence limits are recorded in the v0.8.3 release-engineering record, JA11 validation ledger, capability matrix, and runbook.
+- [x] The v0.8.3-to-v0.9.0 in-place upgrade passed in promotion run `41289359379`.
+- [x] Its APK checksum and installed-device evidence remain historical and unchanged.
 
 ## Historical previous stable release: v0.8.2
 

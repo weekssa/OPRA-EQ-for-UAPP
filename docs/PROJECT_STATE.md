@@ -1,40 +1,19 @@
 # Current Project State
 
-Workstream last verified: 2026-10-30. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
+Workstream last verified: 2026-11-01. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.9.0 release workstream (2026-11-01, in progress)
+## Current stable release: v0.9.0 (published 2026-11-01)
 
-- Candidate build: **v0.9.0**, versionCode `20`
-
-The v0.9.0 release scope is now final: **Goal A complete and physically verified** (J035), **Goal B
-deferred** as a vendor-exposed limitation on JA11 firmware 2.20. The final private candidate is
-`0.9.0-beta.5`/code 19 with the digital-filter row removed and the probe/write paths dormant behind
-`JA11_FILTER_CONTROL_ENABLED = false`. Research is preserved in
-`docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`. Merge, official signing and publication
-await the owner GO.
-
-Candidate B (`0.9.0-beta.3`/code 17) corrects the two defects the official FiiO command table
-exposed: the `0x19` payload is the selected preset (not constant 3), and the filter command is `0x04`
-with values 0..4 (not `0x11`). Physical result (J035): **Goal A PASS** — all five presets persisted across genuine power removal with
-the User 1 bank untouched and zero mic/UAC writes. **Goal B is device-specific not supported (vendor-exposed)**; final readiness and the owner scope decision are in [CANDIDATE_B_READINESS.md](releases/v0.9.0/CANDIDATE_B_READINESS.md). The vendor Android JA11 2.20 device record, the unanswered reads and the unused web helpers were re-verified: the vendor `0x04`
-filter read received no reply and no filter write was attempted. See
-[CANDIDATE_B_INVESTIGATION.md](releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md).
-
-The owner-approved [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) supersedes only the
-beta.1 release *ordering* for this workstream: a private, locally test-signed beta (package
-`com.weekssa.opraeqforuapp.v090beta`) is prepared and qualified before merge or official signing.
-Public stable remains v0.8.3/code14, and the official beta.1 candidate below remains historical
-evidence rather than a superseded claim.
-
-The recovery extends native program/volume persistence from User 1 to all five JA11 programs with no
-microphone writes, adds the digital reconstruction-filter selector below EQ program, and applies the
-runtime-then-Set-as-Default save policy with separate runtime, saved and unknown startup states.
-Computer evidence and the 2026-11-01 physical session are recorded in
-[the recovery report](releases/v0.9.0/RECOVERY_REPORT.md) and J034 of the JA11 ledger. Physical
-result: User 1 + volume survived genuine power removal; **built-in program persistence failed** and
-Save(3) rewrote the stored User 1 bank, which was then restored exactly and verified. The native
-all-program path is unsafe; the beta.1 User 1-only restriction was correct. Merge, official signing
-and publication remain owner-gated.
+- Release: [EQ Library v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), public, immutable, non-draft, non-prerelease, current latest; release ID `430455005`, published `2026-11-01T09:38:36Z`.
+- Exact source: `1eebfda363a580591abdb3b109b8af5df5b82a90` (PR #124 merge).
+- Application: `com.weekssa.opraeqforuapp`, versionName `0.9.0`, versionCode `20`.
+- Official candidate workflow [run 41288639063](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/41288639063) succeeded; signed artifact ID `13076990020`, artifact `EQ-Library-v0.9.0-signed-1eebfda363a580591abdb3b109b8af5df5b82a90`, archive SHA-256 `ba5937e0191175539115df9e253c456364b6d3a17eae50ed54f381c1139bb131`.
+- Official APK SHA-256 `8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`; signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 `40892ce76c2d0cd2fe1b8f5f22524aa648a31033e3663a296490610d4377cf96`.
+- Promotion workflow [run 41289359379](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/41289359379) succeeded. Clean install and v0.8.3-to-v0.9.0 in-place upgrade passed. The annotated `v0.9.0` tag object `1c4e3fdabbc7c2a97f93685abb5758263595b46b` peels to the exact source and binds the candidate run/artifact/archive digest.
+- The public APK was independently downloaded and hashed; it matches the official candidate SHA-256. Full provenance and verification are in [v0.9.0 stable artifacts](release-engineering/v0.9.0-stable/ARTIFACTS.md).
+- **Goal A delivered:** all five JA11 EQ programs and saved volume passed the exact J035 physical qualification across genuine power removal; the User 1 bank remained intact and no microphone/UAC writes occurred. Evidence remains specific to one Pixel 9, one JA11 at firmware 2.20 and the tested transaction.
+- **Goal B deferred:** digital reconstruction filters were not delivered. The JA11 vendor path did not expose the control on the tested firmware; the complete research handoff remains at `docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`.
+- No physical qualification entries J034/J035 or the digital-filter research handoff were changed during release closeout.
 
 ## v0.9.0-beta.1 workstream (2026-10-30)
 
@@ -48,16 +27,15 @@ Native User1 defaults is implemented for computer qualification with unchanged f
 
 - Product: EQ Library / OPRA EQ for UAPP
 - Android application ID: `com.weekssa.opraeqforuapp`
-- Current public stable release: **v0.8.3**, versionCode `14`
-- Public release: [v0.8.3](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.3), immutable stable release and `/releases/latest`
-- Annotated tag: `v0.8.3` (object `1a584839b699ce2f0ff447582719fbeb19915392`)
-- Release source: `899755507f812c940f3ab9381a856c80c6030885`
-- Exact stable APK SHA-256: `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`
+- Current public stable release: **v0.9.0**, versionCode `20`
+- Public release: [v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), release ID `430455005`, immutable stable release and `/releases/latest`
+- Annotated tag: `v0.9.0` (object `1c4e3fdabbc7c2a97f93685abb5758263595b46b`)
+- Release source: `1eebfda363a580591abdb3b109b8af5df5b82a90`
+- Exact stable APK SHA-256: `8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`
 - Pinned signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
-- Full source/build/APK/checksum/signer/public asset evidence: [`release-engineering/v0.8.3-stable/ARTIFACTS.md`](release-engineering/v0.8.3-stable/ARTIFACTS.md)
-- Historical `origin/main` checkpoint after PR #110 (2026-10-21, before PR #111): `41aba8a08ce18f7df2342e4cce3b09b00858e6ef`. This is not the current main tip. PR #111 later merged the dependency-alert documentation closeout; see [`repository foundation evidence`](maintenance/2026-10-20-repository-foundation/EVIDENCE_INDEX.md). The dependency remediation does not change `app/src`, `app/build.gradle.kts`, the main manifest, or the public release baseline. Production version metadata remains `0.8.3` / code `14`.
+- Full source/build/APK/checksum/signer/public asset evidence: [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md)
 
-The exact APK/source tuple above proves the public release identity. It does **not** prove which artifact is currently installed on an owner's phone.
+The exact APK/source tuple proves public release identity. It does **not** prove which artifact is currently installed on an owner's phone.
 
 ## Installed device state
 
