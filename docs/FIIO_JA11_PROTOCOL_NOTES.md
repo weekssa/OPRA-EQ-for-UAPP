@@ -3,6 +3,54 @@
 Status: **Model D makes serial optional continuity evidence while retaining exact candidate/session/cardinality, expected-reset, authoritative-readback, and no-replay gates. The clean branch `codex/ja11-v0.8.1-minimal` is based on `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`, with frozen production source `9493cf030acb440f92e547fc667f6a5399616045`. Local G1-G7 pass, including 768 JVM tests and seven production Android USB-session Robolectric tests. Fresh independent review and exact-head CI for the revised PR #81 head remain pending. The host-verified diagnostic APK is `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`; it embeds the source SHA, verifies with v2, is aligned, and previously cold-launched on an isolated API 35 emulator. J027 is a partial physical session on this exact source/APK and prior PR #81 head `2e81dc99...`; it remains partial and is not relabelled to the revised head. The owner reported the phone window ready; do not begin physical acceptance until the final off-phone gates and exact tuple are reported.**
 
 
+## v0.9.0-beta.2 native defaults and filter recovery (2026-11-01)
+
+### Candidate B correction (2026-11-01) — official FiiO command semantics
+
+The official FiiO Control web bundle (`fiiocontrol.fiio.com`, `index-7hb30NUo.js`, SHA-256
+`4bc6204460a14434d9790fa1b016182fbf28bc2ec35d810f60abf091b9913d1e`) resolves both open questions:
+
+1. **`0x19` payload is the selected preset**, not a constant. `setSaveEqToDeviceByCtrl()` sends
+   `0x19` with `eqPre.value` (Vocal 0, Classic 1, Bass 2, User 1 3, Off 4). Our candidate always sent
+   3, which is why saving with Classic active wrote into the User 1 slot (J034). The corrected path
+   sends the requested program.
+2. **The filter command is `0x04`**, read `BB 0B 04` and write `AA 0A 04 [value]`, with
+   SD_SHARP=0, SHARP=1, SD_SLOW=2, SLOW=3, NO_OVERSAMPLING=4 (Short Delay Sharp / Sharp Roll-off /
+   Short Delay Slow / Slow Roll-off / Non-Oversampling). `0x11` came from a Savitech/CB5100 lineage
+   and is not the JA11 vendor command; probing it explains the unanswered read.
+
+Other vendor commands observed: `0x01` max volume, `0x07` balance, `0x08` output volume, `0x10`
+screen orientation, `0x15` band, `0x16` preset, `0x17` gain, `0x18` band count, `0x1A` EQ switch,
+`0x1B` reset PEQ, `0x21` factory reset. These are recorded for investigation; only `0x04`, `0x16`,
+`0x19` and the already-qualified commands are implemented.
+
+Physical validation of the corrected save and the `0x04` read is still required; the vendor source
+establishes command semantics, not JA11 persistence behavior.
+
+The recovery candidate generalizes the native defaults transaction to every program. Sequence:
+
+**Physical result (2026-11-01, J034):** the generalization to every program is **unsafe**. `0x19`
+Save(3) commits the working five-band area into the stored User 1 bank and does not persist an active
+built-in program selection; saving with Classic active replaced the user's User 1 bank (the app
+reported the mismatch as a failure). User 1 + volume did survive a genuine power removal. Keep the
+native path to User 1 only.
+write the requested program `0x16/[code]` and volume `0x02/[level]` at runtime and verify them;
+read bands `0x15` (5) and global gain `0x17` fresh for the now-active program; reject inexact or
+missing values; restage identical bands and gain; Apply `0x18/01`; verify bands/gain/program/
+volume/mic/UAC in the same session; Save `0x19/03` once; verify a fresh final state, accepting one
+bounded re-enumeration. No microphone (`0x12`), UAC (`0x20`) or helper-program write occurs. The
+acoustic meaning of a built-in program's coefficient set is not claimed; only exact round-tripping is.
+
+Digital filter: read `02 BB 0B 00 00 11 00 00 EE`; write `02 AA 0A 00 00 11 01 vv 00 EE` with
+`vv` 1..5. The parser requires the command byte and a value in 1..5; anything else disables the
+control. Names (FAST-LL, FAST-PC, Slow-LL, Slow-PC, NON-OS) remain the pinned reference author's
+claims, not independently confirmed JA11 behavior. Persistence of a filter selection is unproven.
+
+Save restarts: the transport already tolerates a post-Save detach, so the approved UX applies the
+edit at runtime first and then offers Set as Default with the interruption disclosed. Runtime,
+saved-startup and unknown states are separate; reconnect never replays a cached claim. All of this is
+software evidence; the physical power-removal test is the only persistence proof.
+
 ## v0.9.0-beta.1 native defaults candidate (2026-10-30)
 
 Current development follows the [sealed reference-first plan](releases/v0.9.0/PLAN.md). The pinned configuration tool was compiled in isolation and its original source executed through intercepted HID writes with no device access. The reference Save path is five bands (25 ms each), 10 ms, Apply `0x18/01`, 50 ms, Save `0x19/03`. The Android path retains its qualified slower transport spacing and signed BE/tenths gain codec; reference LE/2560 arithmetic conflicts with accepted official evidence and is not copied.
@@ -11,6 +59,25 @@ For an explicitly requested User 1 target only: activate/verify that target if n
 
 Other active programs still use the explicit microphone round trip selected before writes. No arbitrary Save payload or helper-program mechanism is inferred. The historical 620e1a4 User1 payload was already 3; staging/Apply distinguishes the new transaction, and its firmware cause remains unproven. Candidate runtime/readback tests are software evidence, not native volume/program persistence through physical power loss. The five `0x11` filters remain individually unqualified and disabled. [Reference analysis](releases/v0.9.0/REFERENCE_EVIDENCE.md) preserves full source/lineage/license distinctions. Later dated records below retain their original evidence limits.
 
+
+### J035 physical result (2026-11-01)
+
+The corrected preset-valued `0x19` save persisted Vocal (0), Classic (1), Bass (2), User 1 (3) and
+Off (4) across genuine power removal and cold reattachment. The User 1 bank and global gain were
+unchanged after every built-in save; no microphone or UAC write occurred. Volume changes persist only
+when saved (runtime-only changes revert to the stored pair). The vendor `0x04` filter read received no
+valid reply on firmware 2.20 and no filter write was sent; the vendor JA11 2.20 device table
+declares no filter control, so the capability is classified device-specific not supported
+(vendor-exposed).
+
+### Vendor call-path check (2026-11-01)
+
+The official web app defines `getFilterModeByCtrl`/`setFilterModeByCtrl` (`0x04`, values 0..4) but
+no examined UI chunk calls them, and the Audio Config page has no filter control. The JA11 answered
+neither `0x11` nor `0x04`. The vendor Android JA11 2.20 device table declares no filter control, so the feature is classified
+device-specific not supported (vendor-exposed). No filter write has been sent. A
+read-only probe diagnostic (`Ja11FilterProbe`) now logs the raw request/response for a future
+authorized session.
 ## 2026-10-09 owner-approved Model D — current identity and restart policy
 
 The owner approved session-specific identity requirements for the v0.8.1 correction. This section

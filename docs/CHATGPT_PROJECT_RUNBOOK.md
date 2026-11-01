@@ -4,13 +4,73 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
-## Active v0.9.0-beta.1 execution boundary (2026-10-30)
+## Historical v0.9.0-beta.1 execution boundary (2026-10-30)
+
+This section is superseded by the 2026-11-01 recovery entry below, which is the current boundary. It
+is retained as beta.1 evidence.
 
 The owner-approved [canonical plan](releases/v0.9.0/PLAN.md) preserves the complete upload verbatim and binds every clause through the [requirements checklist](releases/v0.9.0/REQUIREMENTS.md). It fixes baseline `35f0c90a0e55e701d4343ed978a440d34aae13aa` and isolates development on `codex/v0.9.0-ja11-persistence`. The [execution report](releases/v0.9.0/EXECUTION_REPORT.md) records current tests/corrections/outliers and unresolved gates; public stable remains v0.8.3.
 
 User1-native defaults is a candidate transaction preserving exact fresh bank/global gain, with one Apply/Save and no mic writes. Other-program native persistence is unqualified; explicit mic round trip remains. Five filter investigations are completed and individually deferred with [source evidence](releases/v0.9.0/REFERENCE_EVIDENCE.md). No new hardware claim follows from compiled reference or simulated tests. Routine corrections must prevent an existing requirement/gate, use the smallest patch, and stay within three diagnosed cycles per failure. Unrelated discoveries are listed once for later review. Native/OpenCodex v1 uses one coordinated DeepSeek implementation writer and bounded read-only review; retired controller procedures below are historical and unused.
 
 The current authorized destination is computer verification plus independent review and an exact draft PR for merge approval. Main-only official signing follows approved merge; physical Pixel/JA11 testing occurs only after candidate freeze and off-device gates; publication requires separate approval. Do not initiate earlier pairing, reuse historical hardware mutations, or promote another artifact.
+
+## 2026-11-01 v0.9.0-beta.2 JA11 recovery (program/volume persistence, digital filter)
+
+The owner locked a [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) over the beta.1
+workstream. It supersedes only the beta.1 release ordering: a private, locally test-signed
+**EQ Library 0.9 Beta** (`com.weekssa.opraeqforuapp.v090beta`, `0.9.0-beta.2`/16) is qualified
+before merge or official signing. The sealed plan and seal remain unmodified. Public stable remains
+v0.8.3/code14.
+
+Implemented on branch `codex/v0.9.0-recovery` (base `8233d87b`, implementation source
+`fd63a81e`): native program/volume persistence for all five programs with no microphone cycle
+(runtime program/volume, fresh exact five-band/global-gain restaging, one Apply, volatile verification,
+one Save(3), final verification with one bounded re-enumeration); one Digital filter selector under
+EQ program, enabled only by a strictly parsed `0x11` reply; runtime-then-Set-as-Default save policy
+with separate runtime/saved/unknown startup states; and the private beta identity.
+
+Computer evidence: 830 JVM tests, 306 Python/contract tests, `lintDebug`, `lintRelease`, `lintPrivateBeta`, debug/release/privateBeta/androidTest builds, R8 mapping, API 35 and API 36
+instrumentation 78/78 each, API 26 minified install/launch, API 36 background/force-stop/relaunch and
+font-scale 1.5/density 480 checks. Private beta APK
+`bbe1c78956737ac94fec0069b8accd4ca9419e8f0806578af3ce2274277c0dd1`, local test signer
+`0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`.
+
+Recorded limitation: instrumentation against the R8-minified app is not achievable with this suite.
+AGP does not package app dependencies into the androidTest APK, so shrinking/inlining removes classes
+and members the tests call; `-dontshrink`/`-dontoptimize` make R8 fail on `androidx.core` lambdas.
+The minified artifact is therefore verified by exact install/identity/launch/lifecycle checks, and
+the full suite runs on the debug variant. Physical Pixel 9/JA11 persistence, filter behavior and
+exact restoration remain NOT RUN and owner-gated; publication is not authorized.
+
+## 2026-11-01 physical session J034 — native built-in persistence fails
+
+The frozen beta.2 candidate was installed on the owner Pixel 9 (Android 17) with the JA11 at
+firmware 2.20 and run against the real device. User 1 + volume 40 survived a genuine power removal
+with five band writes, one gain, one Apply, one Save and zero microphone/UAC writes; the bank was
+unchanged. **Classic + volume 35 failed:** the program did not persist, and Save(3) committed the
+working curve into the stored User 1 bank. The app reported the mismatch as a failure.
+
+Conclusion: `0x19` Save(3) writes the working EQ area to User 1 and does not persist a built-in
+program selection. Native Set as Default must stay User 1-only; the all-program extension is unsafe.
+The captured User 1 bank was restored through the editor (matching final readback) and verified across
+another power cycle. The digital filter row stayed disabled because the unit returned no `0x11` reply.
+Full record: `docs/FIIO_JA11_VALIDATION_LEDGER.md` J034. Candidate B (explicit microphone round trip)
+is now evidence-justified but has not been built or qualified.
+
+## 2026-11-01 Candidate B — vendor command semantics correct both root causes
+
+The official FiiO Control bundle (`index-7hb30NUo.js`, SHA-256 `4bc62044…`) shows that `0x19` takes
+the **selected preset** as its payload (Vocal 0 … Off 4). Our constant 3 wrote the active working
+curve into User 1 and left the startup preset at 3 — the J034 failure. The same source shows the
+reconstruction filter uses **`0x04`** (read `BB 0B 04`, write `AA 0A 04 value`) with values 0..4;
+`0x11` is a Savitech lineage command and was the wrong probe.
+
+Candidate `0.9.0-beta.3`/code 17 implements both corrections (830 JVM tests, lint/build/R8, 16/16
+FiioJa11 UI tests). Physical session J035: **Goal A PASS** — Vocal, Classic, Bass, User 1 and Off all
+persisted across genuine power removal with the User 1 bank untouched and zero microphone/UAC writes;
+saved volume persists while runtime-only changes revert. **Goal B device-specific not supported (vendor-exposed)** — the vendor `0x04`
+filter read received no valid reply and no filter write was attempted. Full record: J035. Final evidence review, the vendor chain verification and the owner scope decision are in docs/releases/v0.9.0/CANDIDATE_B_READINESS.md; beta.3 remains the qualified basis and beta.4 stays uninstalled.
 
 ## 1. Mandatory reading
 

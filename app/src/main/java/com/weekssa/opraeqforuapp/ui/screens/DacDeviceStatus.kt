@@ -35,6 +35,8 @@ import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.ui.FiioJa11StartupDefaultStatus
+import com.weekssa.opraeqforuapp.ui.fiioJa11StartupStatusText
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsEqReadback
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage
@@ -179,7 +181,7 @@ private fun FiioJa11DeviceStatus(
         error = state.error,
         enabled = connected,
         busy = state.isBusy || state.pendingRestartWrite != null || operationBusy,
-        operationMessage = if (state.isSavingDefaults) "Saving settings…" else null,
+        operationMessage = if (state.isSavingDefaults) "Saving startup defaults…" else null,
         onRefresh = onRead,
         controlName = ::fiioControlName,
     )
@@ -238,6 +240,32 @@ private fun FiioJa11DeviceStatus(
         enabled = controlsEnabled,
         onClick = { choosingEqProgram = true },
     )
+    Text(
+        text = "Startup defaults",
+        style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.padding(top = 14.dp),
+    )
+    Text(
+        text = fiioJa11StartupStatusText(state.startupDefaultStatus)
+            ?: "Unplugging JA11 restores the volume and EQ program saved as its startup defaults.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 2.dp),
+    )
+    if (state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED) {
+        TextButton(
+            onClick = {
+                defaultsReview = FiioJa11DefaultsRequest(
+                    reviewedSnapshot = snapshot,
+                    requestedVolume = snapshot.outputVolume,
+                    requestedProgram = snapshot.eqProgram,
+                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                )
+            },
+            enabled = controlsEnabled,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp),
+        ) { Text("Set as Default…") }
+    }
 
     DeviceSectionTitle("Microphone")
     Row(
@@ -339,33 +367,20 @@ private fun FiioJa11DeviceStatus(
                         ) { Text("+1") }
                     }
                     Text(
-                        text = "This is the JA11's native 0–60 hardware level. Keep listening volume conservative.",
+                        text = "This is the JA11's native 0–60 hardware level. Nothing is sent until you apply.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
             confirmButton = {
-                Column(horizontalAlignment = Alignment.End) {
-                    TextButton(
-                        onClick = {
-                            stagedVolume = null
-                            onSetVolume(staged)
-                        },
-                        enabled = controlsEnabled && staged != snapshot.outputVolume,
-                    ) { Text("Apply") }
-                    TextButton(
-                        onClick = {
-                            defaultsReview = FiioJa11DefaultsRequest(
-                                reviewedSnapshot = snapshot,
-                                requestedVolume = staged,
-                                requestedProgram = snapshot.eqProgram,
-                                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-                            )
-                        },
-                        enabled = controlsEnabled,
-                    ) { Text("Set as Default") }
-                }
+                TextButton(
+                    onClick = {
+                        stagedVolume = null
+                        onSetVolume(staged)
+                    },
+                    enabled = controlsEnabled && staged != snapshot.outputVolume,
+                ) { Text("Apply") }
             },
             dismissButton = {
                 TextButton(onClick = { stagedVolume = null }) { Text("Cancel") }
@@ -399,29 +414,14 @@ private fun FiioJa11DeviceStatus(
                 }
             },
             confirmButton = {
-                Column(horizontalAlignment = Alignment.End) {
-                    TextButton(
-                        onClick = {
-                            choosingEqProgram = false
-                            stagedProgram?.let(onSetEqProgram)
-                            stagedEqProgramName = null
-                        },
-                        enabled = controlsEnabled && stagedProgram != snapshot.eqProgram,
-                    ) { Text("Apply") }
-                    TextButton(
-                        onClick = {
-                            stagedProgram?.let { program ->
-                                defaultsReview = FiioJa11DefaultsRequest(
-                                    reviewedSnapshot = snapshot,
-                                    requestedVolume = snapshot.outputVolume,
-                                    requestedProgram = program,
-                                    targetControlId = FiioJa11DeviceControls.EQ_PROGRAM,
-                                )
-                            }
-                        },
-                        enabled = controlsEnabled,
-                    ) { Text("Set as Default") }
-                }
+                TextButton(
+                    onClick = {
+                        choosingEqProgram = false
+                        stagedProgram?.let(onSetEqProgram)
+                        stagedEqProgramName = null
+                    },
+                    enabled = controlsEnabled && stagedProgram != snapshot.eqProgram,
+                ) { Text("Apply") }
             },
             dismissButton = {
                 TextButton(onClick = { choosingEqProgram = false; stagedEqProgramName = null }) { Text("Cancel") }
@@ -432,10 +432,8 @@ private fun FiioJa11DeviceStatus(
     defaultsReview?.let { request ->
         AlertDialog(
             onDismissRequest = { defaultsReview = null },
-            title = { Text("Set JA11 defaults?") },
-            text = {
-                Text(fiioJa11DefaultsConfirmationText(request))
-            },
+            title = { Text("Set startup defaults?") },
+            text = { Text(fiioJa11DefaultsConfirmationText(request)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -446,7 +444,7 @@ private fun FiioJa11DeviceStatus(
                         onSetDefaults(request)
                     },
                     enabled = controlsEnabled,
-                ) { Text("Confirm and Set Default") }
+                ) { Text("Save as Default") }
             },
             dismissButton = {
                 TextButton(onClick = { defaultsReview = null }) { Text("Cancel") }

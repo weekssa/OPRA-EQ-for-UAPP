@@ -5,14 +5,11 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValidation
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
-import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
-import com.weekssa.opraeqforuapp.domain.dac.HardwareEqNativeFingerprint
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
-import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -35,15 +32,19 @@ interface FiioJa11DeviceControlSource {
     suspend fun readHeadsetControlEnabled(): Boolean?
     suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
     suspend fun readEqSnapshot(): HardwareEqSnapshotBundle? = null
+    suspend fun readEqBand(index: Int): FiioJa11Protocol.Band? = null
+    suspend fun readEqGlobalGainDb(): Double? = null
+    suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? = null
     suspend fun readUacMode(): FiioJa11Protocol.UacMode?
     suspend fun writeOutputVolume(level: Int): Boolean
+    suspend fun writeDigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode): Boolean = false
     suspend fun writeHeadsetControlEnabled(enabled: Boolean): Boolean
     suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean
     suspend fun writeUacMode(mode: FiioJa11Protocol.UacMode): Boolean
     suspend fun writeEqBand(index: Int, band: FiioJa11Protocol.Band): Boolean = false
     suspend fun writeEqGlobalGain(gainDb: Double): Boolean = false
     suspend fun applyEqChanges(): Boolean = false
-    suspend fun saveEqToFlash(): Boolean = false
+    suspend fun saveEqToFlash(program: FiioJa11Protocol.EqProgram): Boolean = false
     suspend fun awaitFinalReadbackReconnect(): Boolean = false
 }
 
@@ -84,17 +85,18 @@ enum class FiioJa11DefaultsStage {
 }
 
 enum class FiioJa11DefaultsMechanism {
-    NATIVE_USER_1_REWRITE,
+    /** Native reference-derived staging/Apply/Save path. Never writes the microphone. */
+    NATIVE_PROGRAM_REWRITE,
     MIC_RECONNECT,
     ;
 
     companion object {
-        fun forRequestedProgram(program: FiioJa11Protocol.EqProgram): FiioJa11DefaultsMechanism =
-            if (program == FiioJa11Protocol.EqProgram.USER_1) {
-                NATIVE_USER_1_REWRITE
-            } else {
-                MIC_RECONNECT
-            }
+        /**
+         * Volume/program defaults always use the native path. The microphone round trip is a
+         * separately built fallback and is never selected automatically.
+         */
+        fun forRequestedProgram(@Suppress("UNUSED_PARAMETER") program: FiioJa11Protocol.EqProgram): FiioJa11DefaultsMechanism =
+            NATIVE_PROGRAM_REWRITE
     }
 }
 
@@ -129,7 +131,7 @@ data class FiioJa11DefaultsOperationReport(
     val detail: String? = null,
 ) {
     init {
-        require(mechanism != FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE || counts.micWrites == 0)
+        require(mechanism != FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE || counts.micWrites == 0)
         require(
             mechanism != FiioJa11DefaultsMechanism.MIC_RECONNECT ||
                 (counts.eqBandWrites == 0 && counts.eqGainWrites == 0 &&
@@ -156,13 +158,6 @@ data class FiioJa11DefaultsRequest(
         require(requestedVolume in FiioJa11Protocol.MIN_OUTPUT_VOLUME..FiioJa11Protocol.MAX_OUTPUT_VOLUME)
         require(targetControlId == FiioJa11DeviceControls.OUTPUT_VOLUME ||
             targetControlId == FiioJa11DeviceControls.EQ_PROGRAM)
-        require(
-            if (targetControlId == FiioJa11DeviceControls.OUTPUT_VOLUME) {
-                requestedProgram == reviewedSnapshot.eqProgram
-            } else {
-                requestedVolume == reviewedSnapshot.outputVolume
-            },
-        )
     }
 }
 
@@ -209,6 +204,16 @@ sealed interface FiioJa11ControlWriteResult {
 class FiioJa11ControlRepository(
     private val source: FiioJa11DeviceControlSource,
     private val operationGate: DacOperationGate = MutexDacOperationGate(),
+    /**
+     * v0.9.0 ships with the JA11 digital-filter control dormant: the vendor exposes no filter
+     * control for firmware 2.20, so no probe or write may occur in ordinary workflows.
+     */
+    private val filterControlEnabled: Boolean = false,
+    /**
+     * Candidate B switch. The shipped candidate always uses the native path; the explicit
+     * microphone round trip is a separately identified fallback that is never selected at runtime.
+     */
+    private val allowMicRoundTripFallback: Boolean = false,
 ) {
     /** Runs one explicitly confirmed defaults operation while holding the shared JA11 gate. */
     suspend fun setDefaults(request: FiioJa11DefaultsRequest): FiioJa11DefaultsResult =
@@ -218,7 +223,16 @@ class FiioJa11ControlRepository(
 
     private suspend fun setDefaultsUnlocked(request: FiioJa11DefaultsRequest): FiioJa11DefaultsResult {
         val operationId = java.util.UUID.randomUUID().toString()
-        val mechanism = FiioJa11DefaultsMechanism.forRequestedProgram(request.requestedProgram)
+        // FiiO Control sends `0x19` with the currently selected preset; a constant 3 targets User 1
+        // regardless of the active preset and damaged the bank in J034. The save payload is now the
+        // requested program, which keeps the write in the slot the working curve came from.
+        val mechanism = if (allowMicRoundTripFallback &&
+            request.requestedProgram != FiioJa11Protocol.EqProgram.USER_1
+        ) {
+            FiioJa11DefaultsMechanism.MIC_RECONNECT
+        } else {
+            FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE
+        }
         var stage = FiioJa11DefaultsStage.BASELINE
         var baseline: FiioJa11DeviceSnapshot? = null
         var originalMic: Boolean? = null
@@ -250,8 +264,8 @@ class FiioJa11ControlRepository(
             !sameRelevantState(current, request.reviewedSnapshot)
         ) return FiioJa11DefaultsResult.ReviewChanged(current)
 
-        if (mechanism == FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE) {
-            return setUserOneDefaultsNatively(
+        if (mechanism == FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE) {
+            return setProgramVolumeDefaultsNatively(
                 request = request,
                 reviewedCurrent = current,
                 operationId = operationId,
@@ -391,7 +405,26 @@ class FiioJa11ControlRepository(
         }
     }
 
-    private suspend fun setUserOneDefaultsNatively(
+    private data class ActiveProgramSnapshot(
+        val device: FiioJa11DeviceSnapshot,
+        val bands: List<FiioJa11Protocol.Band>,
+        val globalGainDb: Double,
+    )
+
+    private data class NativeFinalRead(
+        val snapshot: ActiveProgramSnapshot?,
+        val detail: String?,
+    )
+
+    /**
+     * Native JA11 program/volume persistence.
+     *
+     * The active program's working EQ is read fresh, re-staged exactly, applied once, verified in the
+     * same session, and committed with the single reference Save(3). The microphone, UAC mode and
+     * built-in coefficient meanings are never inferred; any failure stops the transaction and leaves
+     * only read-only recovery.
+     */
+    private suspend fun setProgramVolumeDefaultsNatively(
         request: FiioJa11DefaultsRequest,
         reviewedCurrent: FiioJa11DeviceSnapshot,
         operationId: String,
@@ -410,6 +443,7 @@ class FiioJa11ControlRepository(
         fun failed(
             detail: String,
             eqReadback: FiioJa11DefaultsEqReadback = FiioJa11DefaultsEqReadback.UNAVAILABLE,
+            snapshot: FiioJa11DeviceSnapshot? = lastVerifiedSnapshot,
         ): FiioJa11DefaultsResult.Failed = FiioJa11DefaultsResult.Failed(
             FiioJa11DefaultsOperationReport(
                 operationId = operationId,
@@ -418,93 +452,31 @@ class FiioJa11ControlRepository(
                 requestedVolume = request.requestedVolume,
                 requestedProgram = request.requestedProgram,
                 counts = counts,
-                lastVerifiedSnapshot = lastVerifiedSnapshot,
-                mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+                lastVerifiedSnapshot = snapshot,
+                mechanism = FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE,
                 eqReadback = eqReadback,
                 detail = detail,
             ),
         )
 
-        if (request.requestedProgram != FiioJa11Protocol.EqProgram.USER_1) {
-            return failed("The native defaults path is restricted to an explicitly requested User 1 target.")
-        }
-
-        if (current.eqProgram != FiioJa11Protocol.EqProgram.USER_1) {
+        if (current.eqProgram != request.requestedProgram) {
             if (!reviewedSessionIsCurrent()) {
-                return failed("The JA11 session changed before the explicitly requested User 1 activation.")
+                return failed("The JA11 session changed before the requested EQ program could be written.")
             }
             counts = counts.copy(programWrites = 1)
-            if (!source.writeEqProgram(FiioJa11Protocol.EqProgram.USER_1)) {
-                return failed("The JA11 did not accept the explicitly requested User 1 activation.")
+            if (!source.writeEqProgram(request.requestedProgram)) {
+                return failed("The JA11 did not accept the requested EQ program.")
             }
             current = when (val result = readSnapshotForGeneration(reviewedGeneration)) {
                 is FiioJa11ControlReadResult.Success -> result.snapshot
-                else -> return failed("The explicitly requested User 1 activation could not be verified.")
+                else -> return failed("The requested EQ program could not be verified.")
             }
-            if (current.eqProgram != FiioJa11Protocol.EqProgram.USER_1 ||
-                current.outputVolume != request.requestedVolume ||
+            if (current.eqProgram != request.requestedProgram ||
                 !sameCompanions(reviewedCurrent, current)
             ) {
-                return failed("User 1 or a companion setting did not verify after explicit activation.")
+                return failed("The requested EQ program or a companion setting did not verify.")
             }
             lastVerifiedSnapshot = current
-        }
-
-        stage = FiioJa11DefaultsStage.NATIVE_SNAPSHOT
-        val activeSnapshot = readCompleteActiveUserOneSnapshot(reviewedGeneration)
-            ?: return failed("A complete fresh active User 1 snapshot could not be read. No EQ data was staged.")
-        current = activeSnapshot.device
-        lastVerifiedSnapshot = current
-        nativeTargetMismatch(
-            read = activeSnapshot,
-            request = request,
-            reviewedCurrent = reviewedCurrent,
-            expectedFingerprint = null,
-            requireTargetVolume = false,
-        )?.let { reason -> return failed(reason) }
-
-        stage = FiioJa11DefaultsStage.NATIVE_STAGE
-        val targetBands = activeSnapshot.eq.snapshot.filters
-            .sortedBy(HardwareEqFilter::index)
-            .map { filter ->
-                filter.toExactJa11Band()
-                    ?: return failed("The active User 1 bank contains a filter that cannot be restaged exactly.")
-            }
-        if (targetBands.size != FiioJa11Protocol.BAND_COUNT ||
-            activeSnapshot.eq.snapshot.filters.map(HardwareEqFilter::index).sorted() !=
-            (0 until FiioJa11Protocol.BAND_COUNT).toList()
-        ) {
-            return failed("The active User 1 snapshot is not a complete five-band bank. No EQ data was staged.")
-        }
-        val targetGainDb = activeSnapshot.eq.snapshot.dedicatedEqPreampDb
-            ?: return failed("The active User 1 global EQ gain is unavailable. No EQ data was staged.")
-        if (!targetGainDb.isExactlyRepresentable(10.0)) {
-            return failed("The active User 1 global EQ gain cannot be restaged exactly. No EQ data was staged.")
-        }
-        try {
-            targetBands.forEachIndexed { index, band ->
-                FiioJa11Protocol.writeBandReport(index, band)
-            }
-            FiioJa11Protocol.writeGlobalGainReport(targetGainDb)
-        } catch (_: IllegalArgumentException) {
-            return failed("The active User 1 bank is outside the exact JA11 staging range. No EQ data was staged.")
-        }
-
-        targetBands.forEachIndexed { index, band ->
-            if (!reviewedSessionIsCurrent()) {
-                return failed("The JA11 session changed before band ${index + 1} could be staged.")
-            }
-            counts = counts.copy(eqBandWrites = index + 1)
-            if (!source.writeEqBand(index, band)) {
-                return failed("The JA11 did not accept unchanged User 1 band ${index + 1}.")
-            }
-        }
-        if (!reviewedSessionIsCurrent()) {
-            return failed("The JA11 session changed before the unchanged global EQ gain could be staged.")
-        }
-        counts = counts.copy(eqGainWrites = 1)
-        if (!source.writeEqGlobalGain(targetGainDb)) {
-            return failed("The JA11 did not accept the unchanged User 1 global EQ gain.")
         }
 
         if (current.outputVolume != request.requestedVolume) {
@@ -517,39 +489,87 @@ class FiioJa11ControlRepository(
             }
             current = when (val result = readSnapshotForGeneration(reviewedGeneration)) {
                 is FiioJa11ControlReadResult.Success -> result.snapshot
-                else -> return failed("The requested volume could not be verified before Apply.")
+                else -> return failed("The requested volume could not be verified.")
             }
             if (current.outputVolume != request.requestedVolume ||
-                current.eqProgram != FiioJa11Protocol.EqProgram.USER_1 ||
+                current.eqProgram != request.requestedProgram ||
                 !sameCompanions(reviewedCurrent, current)
             ) {
-                return failed("The requested volume or a companion setting changed before Apply.")
+                return failed("The requested volume or a companion setting did not verify.")
             }
             lastVerifiedSnapshot = current
         }
 
+        stage = FiioJa11DefaultsStage.NATIVE_SNAPSHOT
+        val activeBefore = readCompleteActiveProgramSnapshot(reviewedGeneration)
+            ?: return failed("A complete fresh EQ readback could not be read. No EQ data was staged.")
+        lastVerifiedSnapshot = activeBefore.device
+        defaultsMismatch(
+            read = activeBefore,
+            request = request,
+            reviewedCurrent = reviewedCurrent,
+            expectedBands = null,
+            expectedGain = null,
+        )?.let { reason -> return failed(reason) }
+
+        stage = FiioJa11DefaultsStage.NATIVE_STAGE
+        activeBefore.bands.forEachIndexed { index, band ->
+            if (!band.isExactlyRepresentable()) {
+                return failed("Band ${index + 1} cannot be re-staged exactly. No EQ data was staged.")
+            }
+        }
+        if (!activeBefore.globalGainDb.isExactlyRepresentable(10.0) ||
+            activeBefore.globalGainDb !in FiioJa11Protocol.MIN_GLOBAL_GAIN_DB..FiioJa11Protocol.MAX_GLOBAL_GAIN_DB
+        ) {
+            return failed("The active global EQ gain cannot be re-staged exactly. No EQ data was staged.")
+        }
+        try {
+            activeBefore.bands.forEachIndexed { index, band ->
+                FiioJa11Protocol.writeBandReport(index, band)
+            }
+            FiioJa11Protocol.writeGlobalGainReport(activeBefore.globalGainDb)
+        } catch (_: IllegalArgumentException) {
+            return failed("The active EQ is outside the exact JA11 staging range. No EQ data was staged.")
+        }
+
+        activeBefore.bands.forEachIndexed { index, band ->
+            if (!reviewedSessionIsCurrent()) {
+                return failed("The JA11 session changed before band ${index + 1} could be staged.")
+            }
+            counts = counts.copy(eqBandWrites = index + 1)
+            if (!source.writeEqBand(index, band)) {
+                return failed("The JA11 did not accept unchanged band ${index + 1}.")
+            }
+        }
+        if (!reviewedSessionIsCurrent()) {
+            return failed("The JA11 session changed before the unchanged global EQ gain could be staged.")
+        }
+        counts = counts.copy(eqGainWrites = 1)
+        if (!source.writeEqGlobalGain(activeBefore.globalGainDb)) {
+            return failed("The JA11 did not accept the unchanged global EQ gain.")
+        }
+
         stage = FiioJa11DefaultsStage.NATIVE_APPLY
         if (!reviewedSessionIsCurrent()) {
-            return failed("The JA11 session changed before Apply. The unchanged User 1 bank was not saved.")
+            return failed("The JA11 session changed before Apply. The EQ bank was not saved.")
         }
         counts = counts.copy(eqApplyWrites = 1)
         if (!source.applyEqChanges()) {
-            return failed("The JA11 did not accept Apply for the unchanged User 1 bank.")
+            return failed("The JA11 did not accept Apply for the preserved EQ bank.")
         }
 
         stage = FiioJa11DefaultsStage.NATIVE_VOLATILE_VERIFY
-        val volatileRead = readCompleteActiveUserOneSnapshot(reviewedGeneration)
-            ?: return failed("The applied User 1 bank could not be read back in the same session.")
-        current = volatileRead.device
-        lastVerifiedSnapshot = current
-        nativeTargetMismatch(
-            read = volatileRead,
+        val volatile = readCompleteActiveProgramSnapshot(reviewedGeneration)
+            ?: return failed("The applied EQ could not be read back in the same session.")
+        lastVerifiedSnapshot = volatile.device
+        defaultsMismatch(
+            read = volatile,
             request = request,
             reviewedCurrent = reviewedCurrent,
-            expectedFingerprint = activeSnapshot.eq.fingerprint,
+            expectedBands = activeBefore.bands,
+            expectedGain = activeBefore.globalGainDb,
         )?.let { reason ->
-            val changed = volatileRead.eq.fingerprint != activeSnapshot.eq.fingerprint
-            return failed(reason, if (changed) FiioJa11DefaultsEqReadback.CHANGED else FiioJa11DefaultsEqReadback.UNAVAILABLE)
+            return failed(reason, FiioJa11DefaultsEqReadback.CHANGED)
         }
 
         stage = FiioJa11DefaultsStage.NATIVE_SAVE
@@ -557,27 +577,27 @@ class FiioJa11ControlRepository(
             return failed("The JA11 session changed after volatile verification. Save was not sent.")
         }
         counts = counts.copy(eqSaveWrites = 1)
-        if (!source.saveEqToFlash()) {
-            return failed("The JA11 applied the unchanged User 1 bank, but the one Save boundary did not complete.")
+        if (!source.saveEqToFlash(request.requestedProgram)) {
+            return failed("The JA11 applied the preserved EQ, but the one Save boundary did not complete.")
         }
 
         stage = FiioJa11DefaultsStage.NATIVE_FINAL_VERIFY
         val finalRead = readNativeFinalState(
             request = request,
             reviewedCurrent = reviewedCurrent,
-            expectedFingerprint = activeSnapshot.eq.fingerprint,
+            expected = activeBefore,
         )
-        finalRead.read?.let {
+        finalRead.snapshot?.let {
             current = it.device
             lastVerifiedSnapshot = current
         }
         if (finalRead.detail != null) {
-            val eqReadback = when {
-                finalRead.read == null -> FiioJa11DefaultsEqReadback.UNAVAILABLE
-                finalRead.read.eq.fingerprint != activeSnapshot.eq.fingerprint -> FiioJa11DefaultsEqReadback.CHANGED
-                else -> FiioJa11DefaultsEqReadback.MATCHED
+            val readback = when {
+                finalRead.snapshot == null -> FiioJa11DefaultsEqReadback.UNAVAILABLE
+                bandsAndGainMatch(finalRead.snapshot, activeBefore) -> FiioJa11DefaultsEqReadback.MATCHED
+                else -> FiioJa11DefaultsEqReadback.CHANGED
             }
-            return failed(finalRead.detail, eqReadback)
+            return failed(finalRead.detail, readback)
         }
 
         stage = FiioJa11DefaultsStage.COMPLETE
@@ -589,25 +609,15 @@ class FiioJa11ControlRepository(
             requestedProgram = request.requestedProgram,
             counts = counts,
             lastVerifiedSnapshot = current,
-            mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+            mechanism = FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE,
             eqReadback = FiioJa11DefaultsEqReadback.MATCHED,
         )
         return FiioJa11DefaultsResult.Verified(current, report)
     }
 
-    private data class ActiveUserOneSnapshot(
-        val device: FiioJa11DeviceSnapshot,
-        val eq: HardwareEqSnapshotBundle,
-    )
-
-    private data class NativeFinalRead(
-        val read: ActiveUserOneSnapshot?,
-        val detail: String?,
-    )
-
-    private suspend fun readCompleteActiveUserOneSnapshot(
+    private suspend fun readCompleteActiveProgramSnapshot(
         requiredGeneration: Long? = null,
-    ): ActiveUserOneSnapshot? {
+    ): ActiveProgramSnapshot? {
         if (requiredGeneration != null &&
             (source.sessionGeneration != requiredGeneration || !source.isSessionCurrent(requiredGeneration))
         ) {
@@ -618,58 +628,79 @@ class FiioJa11ControlRepository(
             else -> return null
         }
         if (requiredGeneration != null && device.sessionGeneration != requiredGeneration) return null
-        if (device.eqProgram != FiioJa11Protocol.EqProgram.USER_1) return null
-        val eq = source.readEqSnapshot() ?: return null
-        val filterIndices = eq.snapshot.filters.map(HardwareEqFilter::index).sorted()
-        if (eq.snapshot.sessionGeneration != device.sessionGeneration ||
-            eq.snapshot.activeProgram != FiioJa11Protocol.EqProgram.USER_1 ||
-            filterIndices != (0 until FiioJa11Protocol.BAND_COUNT).toList() ||
-            source.sessionGeneration != device.sessionGeneration ||
-            !source.isSessionCurrent(device.sessionGeneration) ||
-            (requiredGeneration != null && source.sessionGeneration != requiredGeneration)
+        val bands = buildList {
+            repeat(FiioJa11Protocol.BAND_COUNT) { index ->
+                add(source.readEqBand(index) ?: return null)
+            }
+        }
+        val gain = source.readEqGlobalGainDb() ?: return null
+        if (source.sessionGeneration != device.sessionGeneration ||
+            !source.isSessionCurrent(device.sessionGeneration)
         ) {
             return null
         }
-        return ActiveUserOneSnapshot(device, eq)
+        return ActiveProgramSnapshot(device, bands, gain)
     }
 
-    private fun nativeTargetMismatch(
-        read: ActiveUserOneSnapshot,
+    private fun defaultsMismatch(
+        read: ActiveProgramSnapshot,
         request: FiioJa11DefaultsRequest,
         reviewedCurrent: FiioJa11DeviceSnapshot,
-        expectedFingerprint: HardwareEqNativeFingerprint?,
-        requireTargetVolume: Boolean = true,
+        expectedBands: List<FiioJa11Protocol.Band>?,
+        expectedGain: Double?,
     ): String? {
-        if (requireTargetVolume && read.device.outputVolume != request.requestedVolume) {
-            return "The requested volume did not verify with the active User 1 bank."
+        if (read.device.outputVolume != request.requestedVolume) {
+            return "The requested volume did not verify with the active EQ program."
         }
-        if (read.device.eqProgram != FiioJa11Protocol.EqProgram.USER_1) {
-            return "User 1 was not the active EQ program during native verification."
+        if (read.device.eqProgram != request.requestedProgram) {
+            return "The requested EQ program was not active during verification."
         }
         if (read.device.headsetControlEnabled != reviewedCurrent.headsetControlEnabled) {
-            return "The microphone state changed during the native User 1 path."
+            return "The microphone state changed during the native defaults path."
         }
         if (!sameCompanionsAfterRestart(reviewedCurrent, read.device)) {
-            return "A companion JA11 setting changed during the native User 1 path."
+            return "A companion JA11 setting changed during the native defaults path."
         }
-        if (expectedFingerprint != null && read.eq.fingerprint != expectedFingerprint) {
-            return "The User 1 EQ readback changed after unchanged restaging."
+        if (expectedBands != null) {
+            expectedBands.forEachIndexed { index, expected ->
+                val actual = read.bands.getOrNull(index)
+                    ?: return "Band ${index + 1} is missing after Apply."
+                if (!FiioJa11Protocol.nearlyMatches(expected, actual)) {
+                    return "Band ${index + 1} changed after Apply."
+                }
+            }
+        }
+        if (expectedGain != null && abs(read.globalGainDb - expectedGain) > 0.051) {
+            return "The global EQ gain changed after Apply."
         }
         return null
     }
 
+    private fun bandsAndGainMatch(read: ActiveProgramSnapshot, expected: ActiveProgramSnapshot): Boolean =
+        read.bands.size == expected.bands.size &&
+            read.bands.zip(expected.bands).all { (actual, wanted) ->
+                FiioJa11Protocol.nearlyMatches(wanted, actual)
+            } &&
+            abs(read.globalGainDb - expected.globalGainDb) <= 0.051
+
     private suspend fun readNativeFinalState(
         request: FiioJa11DefaultsRequest,
         reviewedCurrent: FiioJa11DeviceSnapshot,
-        expectedFingerprint: HardwareEqNativeFingerprint,
+        expected: ActiveProgramSnapshot,
     ): NativeFinalRead {
         val firstGeneration = source.sessionGeneration
         val firstDetachGeneration = source.detachGeneration
-        val first = readCompleteActiveUserOneSnapshot()
+        val first = readCompleteActiveProgramSnapshot()
         val firstDetail = if (first == null) {
-            "The fresh final User 1 readback could not complete after Save."
+            "The fresh final readback could not complete after Save."
         } else {
-            nativeTargetMismatch(first, request, reviewedCurrent, expectedFingerprint)
+            defaultsMismatch(
+                read = first,
+                request = request,
+                reviewedCurrent = reviewedCurrent,
+                expectedBands = expected.bands,
+                expectedGain = expected.globalGainDb,
+            )
         }
         val firstStable = source.sessionGeneration == firstGeneration &&
             source.detachGeneration == firstDetachGeneration
@@ -684,41 +715,28 @@ class FiioJa11ControlRepository(
 
         val retryGeneration = source.sessionGeneration
         val retryDetachGeneration = source.detachGeneration
-        val retry = readCompleteActiveUserOneSnapshot()
-            ?: return NativeFinalRead(null, "The replacement-session User 1 readback could not complete after Save.")
-        nativeTargetMismatch(retry, request, reviewedCurrent, expectedFingerprint)?.let { reason ->
-            return NativeFinalRead(retry, reason)
-        }
+        val retry = readCompleteActiveProgramSnapshot()
+            ?: return NativeFinalRead(null, "The replacement-session readback could not complete after Save.")
+        defaultsMismatch(
+            read = retry,
+            request = request,
+            reviewedCurrent = reviewedCurrent,
+            expectedBands = expected.bands,
+            expectedGain = expected.globalGainDb,
+        )?.let { reason -> return NativeFinalRead(retry, reason) }
         if (source.sessionGeneration != retryGeneration || source.detachGeneration != retryDetachGeneration) {
             return NativeFinalRead(retry, "The JA11 USB session changed again during final verification.")
         }
         return NativeFinalRead(retry, null)
     }
 
-    private fun HardwareEqFilter.toExactJa11Band(): FiioJa11Protocol.Band? {
-        if (!enabled) return null
-        val nativeType = when (type) {
-            EqFilterType.PEAK -> "peak_dip"
-            EqFilterType.LOW_SHELF -> "low_shelf"
-            EqFilterType.HIGH_SHELF -> "high_shelf"
-            else -> return null
-        }
-        if (!frequencyHz.isExactlyRepresentable(1.0) ||
-            !gainDb.isExactlyRepresentable(10.0) ||
-            !q.isExactlyRepresentable(100.0) ||
-            frequencyHz !in FiioJa11Protocol.MIN_FREQUENCY_HZ..FiioJa11Protocol.MAX_FREQUENCY_HZ ||
-            gainDb !in FiioJa11Protocol.MIN_BAND_GAIN_DB..FiioJa11Protocol.MAX_BAND_GAIN_DB ||
-            q !in FiioJa11Protocol.MIN_Q..FiioJa11Protocol.MAX_Q
-        ) {
-            return null
-        }
-        return FiioJa11Protocol.Band(
-            type = nativeType,
-            frequencyHz = frequencyHz.roundToInt().toDouble(),
-            gainDb = (gainDb * 10.0).roundToInt() / 10.0,
-            q = (q * 100.0).roundToInt() / 100.0,
-        )
-    }
+    private fun FiioJa11Protocol.Band.isExactlyRepresentable(): Boolean =
+        frequencyHz.isExactlyRepresentable(1.0) &&
+            gainDb.isExactlyRepresentable(10.0) &&
+            q.isExactlyRepresentable(100.0) &&
+            frequencyHz in FiioJa11Protocol.MIN_FREQUENCY_HZ..FiioJa11Protocol.MAX_FREQUENCY_HZ &&
+            gainDb in FiioJa11Protocol.MIN_BAND_GAIN_DB..FiioJa11Protocol.MAX_BAND_GAIN_DB &&
+            q in FiioJa11Protocol.MIN_Q..FiioJa11Protocol.MAX_Q
 
     private fun Double.isExactlyRepresentable(scale: Double): Boolean {
         if (!isFinite()) return false
@@ -752,6 +770,8 @@ class FiioJa11ControlRepository(
             a.outputVolume == b.outputVolume &&
             a.headsetControlEnabled == b.headsetControlEnabled &&
             a.eqProgram == b.eqProgram &&
+            (a.digitalFilterMode == null || b.digitalFilterMode == null ||
+                a.digitalFilterMode == b.digitalFilterMode) &&
             a.uacMode == b.uacMode
 
     private fun sameCompanions(before: FiioJa11DeviceSnapshot, after: FiioJa11DeviceSnapshot): Boolean =
@@ -773,6 +793,9 @@ class FiioJa11ControlRepository(
             val descriptor = FiioJa11DeviceControls.descriptor(intent.controlId)
                 ?: return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
             if (intent.controlId !in FiioJa11DeviceControls.softwareImplementedWriteControlIds) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
+            }
+            if (intent.controlId == FiioJa11DeviceControls.DIGITAL_FILTER && !filterControlEnabled) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
             }
             val validation = descriptor.validateForWrite(intent.requestedValue)
@@ -811,6 +834,10 @@ class FiioJa11ControlRepository(
                     intent.expectedSessionGeneration,
                     baseline.sessionGeneration,
                 )
+            }
+            if (intent.controlId == FiioJa11DeviceControls.DIGITAL_FILTER && baseline.digitalFilterMode == null) {
+                // No validated reply established the control on this JA11; never guess a value.
+                return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
             }
 
             val baselineValue = FiioJa11DeviceControls.valueFromSnapshot(intent.controlId, baseline)
@@ -953,6 +980,13 @@ class FiioJa11ControlRepository(
             ?: return failedOrChanged(generation, "headset control")
         val program = field("EQ program", source::readEqProgram)
             ?: return failedOrChanged(generation, "EQ program")
+        // Optional capability probe: a missing or unparsable `0x04` reply disables the control
+        // instead of failing the snapshot, because no JA11 filter value is assumed.
+        val digitalFilter = if (filterControlEnabled && source.isSessionCurrent(generation)) {
+            source.readDigitalFilterMode()
+        } else {
+            null
+        }
         val uac = field("UAC mode", source::readUacMode)
             ?: return failedOrChanged(generation, "UAC mode")
         if (uac.productId != productId) return FiioJa11ControlReadResult.ReadFailed("UAC mode / USB identity")
@@ -967,6 +1001,7 @@ class FiioJa11ControlRepository(
                 outputVolume = volume,
                 headsetControlEnabled = headset,
                 eqProgram = program,
+                digitalFilterMode = digitalFilter,
                 uacMode = uac,
             ),
         )
@@ -981,6 +1016,10 @@ class FiioJa11ControlRepository(
         FiioJa11DeviceControls.EQ_PROGRAM -> {
             val valueId = (value as? DacControlValue.Discrete)?.valueId ?: return false
             source.writeEqProgram(FiioJa11DeviceControls.eqProgram(valueId) ?: return false)
+        }
+        FiioJa11DeviceControls.DIGITAL_FILTER -> {
+            val valueId = (value as? DacControlValue.Discrete)?.valueId ?: return false
+            source.writeDigitalFilterMode(FiioJa11DeviceControls.digitalFilterMode(valueId) ?: return false)
         }
         FiioJa11DeviceControls.HEADSET_CONTROL -> {
             val enabled = (value as? DacControlValue.Toggle)?.enabled ?: return false
@@ -1005,6 +1044,13 @@ class FiioJa11ControlRepository(
             add("headset control")
         }
         if (controlId != FiioJa11DeviceControls.EQ_PROGRAM && before.eqProgram != after.eqProgram) add("EQ program")
+        if (controlId != FiioJa11DeviceControls.DIGITAL_FILTER &&
+            before.digitalFilterMode != null &&
+            after.digitalFilterMode != null &&
+            before.digitalFilterMode != after.digitalFilterMode
+        ) {
+            add("digital filter")
+        }
         if (controlId != FiioJa11DeviceControls.UAC_MODE && before.uacMode != after.uacMode) add("UAC mode")
         if (controlId != FiioJa11DeviceControls.UAC_MODE && before.usbProductId != after.usbProductId) add("USB identity")
         // Stream/sample-rate may legitimately change independently while audio is playing. It is read
@@ -1057,8 +1103,15 @@ class SessionFiioJa11DeviceControlSource(
     override suspend fun readHeadsetControlEnabled(): Boolean? = sessions.fiioJa11Transport.readHeadsetControlEnabled()
     override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = sessions.fiioJa11Transport.readEqProgram()
     override suspend fun readEqSnapshot(): HardwareEqSnapshotBundle? = sessions.readFiioJa11Snapshot()
+    override suspend fun readEqBand(index: Int): FiioJa11Protocol.Band? =
+        sessions.fiioJa11Transport.readBand(index)
+    override suspend fun readEqGlobalGainDb(): Double? = sessions.fiioJa11Transport.readGlobalGainDb()
+    override suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? =
+        sessions.fiioJa11Transport.readDigitalFilterMode()
     override suspend fun readUacMode(): FiioJa11Protocol.UacMode? = sessions.fiioJa11Transport.readUacMode()
     override suspend fun writeOutputVolume(level: Int): Boolean = sessions.fiioJa11Transport.writeOutputVolume(level)
+    override suspend fun writeDigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode): Boolean =
+        sessions.fiioJa11Transport.writeDigitalFilterMode(mode)
     override suspend fun writeHeadsetControlEnabled(enabled: Boolean): Boolean =
         sessions.fiioJa11Transport.writeHeadsetControlEnabled(enabled)
     override suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean =
@@ -1070,7 +1123,8 @@ class SessionFiioJa11DeviceControlSource(
         sessions.fiioJa11Transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(gainDb))
     override suspend fun applyEqChanges(): Boolean =
         sessions.fiioJa11Transport.sendReport(FiioJa11Protocol.applyReport())
-    override suspend fun saveEqToFlash(): Boolean = sessions.fiioJa11Transport.saveToFlash()
+    override suspend fun saveEqToFlash(program: FiioJa11Protocol.EqProgram): Boolean =
+        sessions.fiioJa11Transport.saveToFlash(program)
     override suspend fun awaitFinalReadbackReconnect(): Boolean =
         sessions.fiioJa11Transport.awaitFinalReadbackReconnect()
 }

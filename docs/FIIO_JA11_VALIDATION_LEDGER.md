@@ -777,3 +777,104 @@ fingerprint was recorded, and no independent User 1 EQ payload was supplied. The
 retains the exact Beta v1 and data, with final reported JA11 settings volume 19 / Classic, Mic On,
 UAC 2.0. No new phone mutation occurred during release. No User 1 preservation, bus-level count,
 or same-unit continuity claim is made here.
+
+## 2026-11-01 J034 — v0.9.0-beta.2 native defaults physical session (FAIL for built-in programs)
+
+**Candidate:** package `com.weekssa.opraeqforuapp.v090beta`, version `0.9.0-beta.2` / code `16`,
+APK SHA-256 `bbe1c78956737ac94fec0069b8accd4ca9419e8f0806578af3ce2274277c0dd1`, local development
+test signer `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`, source
+`fd63a81e5061959ce44ebb65478b7f582fd307de` on `codex/v0.9.0-recovery`.
+
+**Device:** Pixel 9, Android 17 (SDK 37), wireless ADB. JA11 firmware `2.20`, USB `2972:0102`
+(UAC 2.0), sole supported attached DAC. No device serial or fingerprint was captured.
+
+**Baseline before any mutation (read-only):** EQ program Off, device volume 60/60, microphone On,
+UAC 2.0, sample rate 384 kHz. Digital filter reported **"Not available on this JA11"** — the unit
+returned no valid `0x11` reply, so the app sent no filter command (no filter write was attempted).
+Stored User 1 bank captured by activating User 1 at runtime: global gain -3.70 dB;
+(1) LOW SHELF 76 Hz +4.00 dB Q 0.38; (2) PEAK 3800 Hz +3.00 dB Q 0.38; (3) PEAK 1500 Hz -1.50 dB
+Q 1.00; (4) PEAK 2700 Hz +1.00 dB Q 2.67; (5) PEAK 200 Hz -1.00 dB Q 1.73.
+
+**Test 1 — User 1 / volume 40 (native Set as Default).** Runtime volume write verified; then
+`Save volume 40 and User 1` completed with app counters `eqBandWrites=5, eqGainWrites=1,
+applyWrites=1, saveWrites=1, volumeWrites=0, programWrites=0, micWrites=0, uacWrites=0`,
+`eqBankReadback=MATCHED`, `finalVolume=40`, `finalProgram=USER_1`, `finalMic=true`. After genuine
+power removal and reconnect the device read **User 1 / volume 40**, the User 1 bank was unchanged,
+microphone On and UAC 2.0. The startup indicator returned to its neutral wording (no cached replay).
+**PASS (single unit, User 1 only): volume and User 1 selection survived power removal.**
+
+**Test 2 — Classic / volume 35 (the missing built-in case).** Runtime program and volume writes
+verified (device reported Classic 35). `Save volume 35 and Classic` then failed at final verification:
+app counters `eqBandWrites=5, eqGainWrites=1, applyWrites=1, saveWrites=1, micWrites=0, uacWrites=0`,
+`detail=The requested EQ program was not active during verification`. After the save the device read
+**User 1 / volume 35**, not Classic. The User 1 bank had been replaced by the working coefficients
+that were staged while Classic was active: PEAK 230 Hz -4.90 dB Q 1.00; PEAK 80 Hz +2.50 dB Q 1.00;
+PEAK 2500 Hz +2.50 dB Q 1.00; PEAK 6000 Hz -2.90 dB Q 1.00; PEAK 8000 Hz 0.00 dB Q 1.50, global
+gain still -3.70 dB. **FAIL: the built-in program selection did not persist, and Save(3) wrote the
+working EQ into the User 1 bank.** The app reported this as a failure, not a success.
+
+**Interpretation.** On this unit `0x19` Save(3) commits the working five-band area to User 1; it does
+not persist an active built-in program selection. Restaging a built-in program's working coefficients
+therefore overwrites the stored User 1 bank. The beta.1 restriction of the native path to User 1 was
+correct, and the all-program native path is unsafe. Volume writes did persist across the observed
+reconnects.
+
+**Restoration (completed).** The User 1 bank was re-entered through the app's explicit editor
+(15 hardware value changes shown in Review) and applied with "Apply to DAC"; the final readback
+matched the captured baseline exactly. A further genuine power removal and reconnect kept the
+restored bank intact. The stored startup pair was then returned to **User 1 / volume 60** with a
+User 1 Set as Default (`eqBandWrites=5, eqGainWrites=1, apply=1, save=1, micWrites=0`,
+`eqBankReadback=MATCHED`), and the runtime program was set back to **Off / 60** to match the observed
+session start. The pre-session *stored* program was never observed before mutation; after the first
+save the unit booted User 1, so its stored program appears to have been User 1.
+
+**Evidence limits.** App counters are not USB bus captures. One unit, one firmware, one host. No
+serial/fingerprint continuity is claimed. The restoration proves the editor path can rewrite the
+captured values, not that the original factory state was known.
+
+## 2026-11-01 J035 — v0.9.0-beta.3 Candidate B physical validation (all five presets)
+
+**Candidate:** `com.weekssa.opraeqforuapp.v090beta`, `0.9.0-beta.3` / code `17`, APK SHA-256
+`f522c9448b4925164422daaca9ebb203af1db89108e3c3c5cdbcfe0ac29be6a4`, local test signer
+`0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`, source
+`db35f4290ae40f4e19720e99497951ab5c3a9bf2`. Installed in place over beta.2 (same package/signer);
+version confirmed on device. Pixel 9, Android 17; JA11 firmware 2.20, USB `2972:0102`.
+
+**Baseline before testing:** runtime Off / volume 60; stored User 1 / volume 60; mic On; UAC 2.0;
+User 1 bank (gain -3.70; LOW SHELF 76 +4.00 Q0.38; 3800 +3.00 Q0.38; 1500 -1.50 Q1.00; 2700 +1.00
+Q2.67; 200 -1.00 Q1.73). Digital filter row "Not available on this JA11".
+
+**Step 1 — filter discovery (`0x04`).** The corrected read produced no valid reply; the row stayed
+disabled and no filter write was sent. (The Savitech-derived `0x11` had also failed in J034.) Raw
+response bytes/timing were not captured by the app; that remains an evidence gap.
+
+**Step 3 — volume-only, no save.** Runtime volume changed 60 → 45 with the startup status
+"set for this session only". After genuine power removal the unit returned to **volume 60 / User 1**
+(the stored pair). Runtime-only changes do not persist; the stored startup state is applied at boot.
+
+**Step 4 — Off save (payload 4).** Completed: `eqBandWrites=5, eqGainWrites=1, applyWrites=1,
+saveWrites=1, micWrites=0, uacWrites=0`, `eqBankReadback=MATCHED`, `finalProgram=OFF`. User 1 bank
+read back unchanged. After genuine power removal the unit booted **Off / volume 60**. **PASS.**
+
+**Step 5 — Classic save (payload 1).** Completed with the same counts and `finalProgram=CLASSIC`.
+User 1 unchanged. After power removal the unit booted **Classic / 60**. **PASS.**
+
+**Continuation — Vocal and Bass.** Vocal (`payload 0`) completed and persisted across power removal;
+Bass (`payload 2`) completed and persisted. User 1 read back unchanged after each save.
+
+**Result:** all five presets (Vocal 0, Classic 1, Bass 2, User 1 3, Off 4) were saved with the
+preset-specific `0x19` payload, survived a genuine USB power removal and cold reattachment, and left
+the User 1 bank and global gain untouched. No microphone or UAC write occurred at any point; no
+microphone round trip was used.
+
+**Restoration:** a User 1 save (`payload 3`, volume 60) restored the stored pair to **User 1 / 60**;
+runtime was set back to **Off / 60**; a further power removal confirmed the unit boots User 1 / 60,
+and the User 1 bank matched the baseline exactly.
+
+**Deviation recorded:** for built-in saves this candidate still restages the active five bands and
+gain and issues Apply before `0x19`; the vendor flow stages bands only for User 1. The staged values
+were the device's own readback, so the four built-in saves were no-ops, but the vendor-exact ordering
+(selection → `0x19` only) is a pending refinement.
+
+**Filter status:** no valid reply to either `0x11` or the vendor `0x04`; capability unresolved, not
+declared absent. No filter write was attempted.

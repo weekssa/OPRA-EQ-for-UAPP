@@ -2,9 +2,43 @@
 
 Workstream last verified: 2026-10-30. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
+## v0.9.0 release workstream (2026-11-01, in progress)
+
+- Candidate build: **v0.9.0**, versionCode `20`
+
+The v0.9.0 release scope is now final: **Goal A complete and physically verified** (J035), **Goal B
+deferred** as a vendor-exposed limitation on JA11 firmware 2.20. The final private candidate is
+`0.9.0-beta.5`/code 19 with the digital-filter row removed and the probe/write paths dormant behind
+`JA11_FILTER_CONTROL_ENABLED = false`. Research is preserved in
+`docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`. Merge, official signing and publication
+await the owner GO.
+
+Candidate B (`0.9.0-beta.3`/code 17) corrects the two defects the official FiiO command table
+exposed: the `0x19` payload is the selected preset (not constant 3), and the filter command is `0x04`
+with values 0..4 (not `0x11`). Physical result (J035): **Goal A PASS** — all five presets persisted across genuine power removal with
+the User 1 bank untouched and zero mic/UAC writes. **Goal B is device-specific not supported (vendor-exposed)**; final readiness and the owner scope decision are in [CANDIDATE_B_READINESS.md](releases/v0.9.0/CANDIDATE_B_READINESS.md). The vendor Android JA11 2.20 device record, the unanswered reads and the unused web helpers were re-verified: the vendor `0x04`
+filter read received no reply and no filter write was attempted. See
+[CANDIDATE_B_INVESTIGATION.md](releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md).
+
+The owner-approved [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) supersedes only the
+beta.1 release *ordering* for this workstream: a private, locally test-signed beta (package
+`com.weekssa.opraeqforuapp.v090beta`) is prepared and qualified before merge or official signing.
+Public stable remains v0.8.3/code14, and the official beta.1 candidate below remains historical
+evidence rather than a superseded claim.
+
+The recovery extends native program/volume persistence from User 1 to all five JA11 programs with no
+microphone writes, adds the digital reconstruction-filter selector below EQ program, and applies the
+runtime-then-Set-as-Default save policy with separate runtime, saved and unknown startup states.
+Computer evidence and the 2026-11-01 physical session are recorded in
+[the recovery report](releases/v0.9.0/RECOVERY_REPORT.md) and J034 of the JA11 ledger. Physical
+result: User 1 + volume survived genuine power removal; **built-in program persistence failed** and
+Save(3) rewrote the stored User 1 bank, which was then restored exactly and verified. The native
+all-program path is unsafe; the beta.1 User 1-only restriction was correct. Merge, official signing
+and publication remain owner-gated.
+
 ## v0.9.0-beta.1 workstream (2026-10-30)
 
-- Candidate build: **v0.9.0-beta.1**, versionCode `15`
+- Historical candidate build: **v0.9.0-beta.1**, versionCode `15`
 
 PR [#119](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/119) merged normally into `main` as merge commit `0e378a3266ba3e5bfd08ad8a69c9c0909386cd2c` from approved head `333bd5d6948383547d0ae6b7eb16f3e00b9c6162` (baseline `35f0c90a0e55e701d4343ed978a440d34aae13aa`). All PR-head hosted contexts passed. Main-only signing run `41167513158` produced the official beta candidate `EQ-Library-v0.9.0-beta.1-beta-0e378a3.apk` (SHA-256 `845c42e77180aa0a5f36eae9cb95c9c765be294e17ae58829c1b12d102c09f79`, signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`), which installed and launched on API 35 and upgraded in place from public v0.8.3. Public stable remains v0.8.3/code14; the development target is 0.9.0-beta.1/code15. This does not change the public stable tuple below. Physical persistence and exact restoration remain NOT RUN, so the candidate is not yet ready for beta. The [canonical plan/seal](releases/v0.9.0/PLAN.md), [complete checklist](releases/v0.9.0/REQUIREMENTS.md), and [execution report](releases/v0.9.0/EXECUTION_REPORT.md) govern current candidate status.
 

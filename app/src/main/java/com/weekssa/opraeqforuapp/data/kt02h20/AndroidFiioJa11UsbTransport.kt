@@ -25,6 +25,7 @@ class AndroidFiioJa11UsbTransport(
     private var savePreviousDetachGeneration = 0L
     private var savePreviousSerial: String? = null
     private var awaitingLateSaveDetach = false
+    private val filterProbe = FiioJa11FilterProbeCache()
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
     val present: StateFlow<Boolean> = hid.present
@@ -90,6 +91,42 @@ class AndroidFiioJa11UsbTransport(
         decoder = FiioJa11Protocol::headsetControlFromResponse,
     )
 
+    /**
+     * Probes the optional filter once per USB session. A unit that ignores `0x11` would otherwise
+     * cost its response timeout on every DEVICE refresh; the probe is invalidated by a filter write
+     * and naturally re-probed after a re-enumeration.
+     */
+    suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? {
+        val generation = hid.sessionGeneration
+        if (filterProbe.isCachedFor(generation)) return filterProbe.value()
+        val detachGeneration = hid.detachGeneration
+        val request = FiioJa11Protocol.readDigitalFilterModeReport()
+        val sessionCurrentBeforeSend = hid.isCurrentSession(generation, detachGeneration)
+        val startedNanos = System.nanoTime()
+        val response = hid.exchange(report = request, minResponseBytes = 1, acceptResponse = { true })
+        val elapsedMillis = (System.nanoTime() - startedNanos) / 1_000_000L
+        val sessionStable = response != null && hid.isCurrentSession(generation, detachGeneration)
+        android.util.Log.i(
+            "Ja11FilterProbe",
+            Ja11FilterProbeDiagnostics.describe(
+                generation = generation,
+                detachGeneration = detachGeneration,
+                requestHex = request.toJa11TraceHex(),
+                response = response,
+                sessionStable = sessionStable,
+                sessionCurrentBeforeSend = sessionCurrentBeforeSend,
+                elapsedMillis = elapsedMillis,
+            ),
+        )
+        val value = if (sessionStable) {
+            FiioJa11Protocol.digitalFilterModeFromResponse(requireNotNull(response))
+        } else {
+            null
+        }
+        filterProbe.record(generation, value)
+        return value
+    }
+
     override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = exchangeOneByte(
         request = FiioJa11Protocol.readEqProgramReport(),
         decoder = FiioJa11Protocol::eqProgramFromResponse,
@@ -108,6 +145,11 @@ class AndroidFiioJa11UsbTransport(
 
     suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean =
         sendReport(FiioJa11Protocol.writeEqProgramReport(program))
+
+    suspend fun writeDigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode): Boolean {
+        filterProbe.invalidate()
+        return sendReport(FiioJa11Protocol.writeDigitalFilterModeReport(mode))
+    }
 
     suspend fun writeUacMode(mode: FiioJa11Protocol.UacMode): Boolean =
         sendReport(FiioJa11Protocol.writeUacModeReport(mode))
@@ -132,7 +174,13 @@ class AndroidFiioJa11UsbTransport(
         )
     }
 
-    override suspend fun saveToFlash(): Boolean {
+    override suspend fun saveToFlash(): Boolean = saveToFlash(FiioJa11Protocol.EqProgram.USER_1)
+
+    /**
+     * Persist to the preset slot the device is currently set to. FiiO Control sends the selected
+     * preset as the `0x19` payload; a constant 3 writes into User 1 regardless of the active preset.
+     */
+    suspend fun saveToFlash(program: FiioJa11Protocol.EqProgram): Boolean {
         val previousGeneration = hid.sessionGeneration
         val previousDetachGeneration = hid.detachGeneration
         val previousSerial = hid.connectedDeviceSerial
@@ -140,7 +188,7 @@ class AndroidFiioJa11UsbTransport(
         savePreviousDetachGeneration = previousDetachGeneration
         savePreviousSerial = previousSerial
         awaitingLateSaveDetach = false
-        if (!sendReport(FiioJa11Protocol.saveToFlashReport())) return false
+        if (!sendReport(FiioJa11Protocol.saveToFlashReport(program))) return false
 
         // Observe USB state changes through the bounded post-Save window. A detected detach must
         // complete on a fresh unique session before final readback; a stable session is retained

@@ -213,6 +213,51 @@ class FiioJa11ProtocolTest {
         assertNull(FiioJa11Protocol.firmwareVersionFromResponse(bytes(0xBB, 0x0B, 0x00, 0x00, 0x02, 0x01, 0x3C)))
     }
 
+    @Test
+    fun digitalFilterModeReportsUseTheReferenceFrames() {
+        assertArrayEquals(
+            bytes(0x02, 0xBB, 0x0B, 0x00, 0x00, 0x04, 0x00, 0x00, 0xEE),
+            FiioJa11Protocol.readDigitalFilterModeReport(),
+        )
+        FiioJa11Protocol.DigitalFilterMode.entries.forEach { mode ->
+            assertArrayEquals(
+                bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x04, 0x01, mode.code, 0x00, 0xEE),
+                FiioJa11Protocol.writeDigitalFilterModeReport(mode),
+            )
+        }
+    }
+
+    @Test
+    fun digitalFilterResponseRequiresAValidReplyAndKnownMode() {
+        assertEquals(
+            FiioJa11Protocol.DigitalFilterMode.SLOW_PC,
+            FiioJa11Protocol.digitalFilterModeFromResponse(
+                bytes(0x02, 0xBB, 0x0B, 0x00, 0x00, 0x04, 0x00, 0x03, 0xEE),
+            ),
+        )
+        assertNull(FiioJa11Protocol.digitalFilterModeFromResponse(bytes(0x02, 0xBB, 0x0B, 0x00)))
+        assertNull(
+            FiioJa11Protocol.digitalFilterModeFromResponse(
+                bytes(0x02, 0xBB, 0x0B, 0x00, 0x00, 0x04, 0x00, 0x05, 0xEE),
+            ),
+        )
+        assertNull(
+            FiioJa11Protocol.digitalFilterModeFromResponse(
+                bytes(0x02, 0xBB, 0x0B, 0x00, 0x00, 0x16, 0x00, 0x02, 0xEE),
+            ),
+        )
+    }
+
+    @Test
+    fun saveToFlashCarriesTheSelectedPresetAsPayload() {
+        FiioJa11Protocol.EqProgram.entries.forEach { program ->
+            assertArrayEquals(
+                bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x19, 0x01, program.code, 0x00, 0xEE),
+                FiioJa11Protocol.saveToFlashReport(program),
+            )
+        }
+    }
+
     private fun bytes(vararg values: Int): ByteArray = ByteArray(values.size) { index ->
         (values[index] and 0xFF).toByte()
     }

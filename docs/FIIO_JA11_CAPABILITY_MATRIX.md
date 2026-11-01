@@ -10,6 +10,35 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
+## v0.9.0-beta.2 recovery boundary (2026-11-01)
+
+The [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) extends native defaults from User 1
+to **all five programs** and adds the digital-filter selector. In this candidate the transaction
+writes the requested program and volume at runtime, reads the active five bands and global gain
+fresh, restages those exact values, applies once, verifies, sends one Save(3), and verifies the final
+state while tolerating one bounded re-enumeration. Microphone and UAC writes are zero.
+
+**Physical result (2026-11-01, J034):** the all-program native path **failed for built-in programs and
+is unsafe.** On the tested unit `0x19` Save(3) commits the working five-band area into the stored
+User 1 bank and does **not** persist an active built-in program selection; saving while Classic was
+active replaced the user's User 1 bank. The app reported the failure truthfully. User 1 + volume
+survived a genuine power removal, so the User 1-only native path remains the qualified native use.
+Do not extend native Set as Default to Vocal, Classic, Bass or Off without new evidence and a
+different transaction.
+
+The digital filter row exists in DEVICE below EQ program with five mutually exclusive values. It is
+enabled only when a strictly parsed `0x11` read reply returns 1..5; otherwise it reads "Not
+available on this JA11" and no filter command is sent. Filter write readback is verified; filter
+persistence is not claimed.
+
+| Optional mode | Reference `0x11` value | Candidate disposition |
+| --- | --- | --- |
+| FAST-LL | 1 | **Superseded**: vendor uses `0x04` value 0 (SD_SHARP). Physical read pending |
+| FAST-PC | 2 | Vendor `0x04` value 1 (SHARP). Physical read pending |
+| Slow-LL | 3 | Vendor `0x04` value 2 (SD_SLOW). Physical read pending |
+| Slow-PC | 4 | Vendor `0x04` value 3 (SLOW). Physical read pending |
+| NON-OS | 5 | Vendor `0x04` value 4 (NO_OVERSAMPLING). Physical read pending |
+
 ## v0.9.0-beta.1 candidate boundary (2026-10-30)
 
 The approved [sealed plan](releases/v0.9.0/PLAN.md) supersedes historical no-native-investigation wording for this workstream only. The in-development Set as Default path for an explicitly requested User 1 target uses fresh exact unchanged five-band/global-gain staging, Apply, volatile verification, one Save(3), and final readback without mic writes. Other programs retain the explicitly confirmed microphone round trip. This candidate has **no new physical persistence qualification**; J029 and J032/J033 remain bounded to their exact historical tuples. Neither success simulation nor prior Flash evidence proves native volume persistence for this candidate. Runtime Apply is separate from Set as Default.
@@ -24,6 +53,23 @@ The approved [sealed plan](releases/v0.9.0/PLAN.md) supersedes historical no-nat
 
 All five mandatory investigations are complete. Source-generated packets are demonstrated; independent exact-JA11 acceptance, firmware/UAC applicability, runtime effect, Save/power-loss persistence and companion preservation remain unproven for each mode. This is not a hardware-unavailable finding. No functioning controls are enabled. See [three-pass evidence and provenance](releases/v0.9.0/REFERENCE_EVIDENCE.md) and the [requirements checklist](releases/v0.9.0/REQUIREMENTS.md).
 
+
+
+### Vendor call-path check (2026-11-01)
+
+The official FiiO Control web bundle defines `0x04` filter read/write helpers but no examined UI
+chunk calls them, and the open-source JA11 driver has no filter command. The JA11 did not answer
+either `0x11` or `0x04`. The vendor Android JA11 2.20 device record declares no filter control, so the capability is
+classified **device-specific not supported (vendor-exposed)**; a hidden firmware capability cannot be
+excluded without vendor confirmation. No filter write has been sent. See
+[CANDIDATE_B_INVESTIGATION.md](releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md).
+### J035 physical result (2026-11-01)
+
+All five presets were saved with the preset-specific `0x19` payload and survived genuine power
+removal (Vocal, Classic, Bass, User 1, Off), with the User 1 bank and global gain unchanged and zero
+microphone/UAC writes. Saved volume persisted; runtime-only volume did not. Digital-filter `0x04`
+produced no valid reply, and the vendor JA11 2.20 table exposes no filter control; the feature is classified device-specific not
+supported (vendor-exposed). No filter write was attempted. Full record: J035 in the validation ledger.
 ## 2026-10-14 v0.8.3 private beta defaults observation
 
 Exact beta source `7cea4545dddbee2da0b436e0684a9c489835e3cd`, package

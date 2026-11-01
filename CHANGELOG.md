@@ -4,7 +4,35 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version without a prerelease suffix, such as `0.8.0`, is a stable public release.
 
+## [0.9.0] - 2026-11-01
+
+### FiiO JA11 saved settings
+
+- Native Set as Default saves the selected built-in EQ program (Vocal, Classic, Bass, User 1, Off) and the device volume as JA11 startup defaults, verified across genuine power removal. The transaction keeps the active EQ and microphone setting intact and makes no microphone or UAC writes.
+- Runtime edits apply immediately and stay labelled session-only until saved; a verified save is labelled as saved for startup.
+
+### Deferred
+
+- JA11 digital reconstruction filters are not exposed by the official vendor implementation for firmware 2.20, so the control is absent from this release. The complete investigation and reopening criteria are preserved in `docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`.
+
 ## [Unreleased]
+
+
+### 0.9.0-beta.5 release candidate
+
+- Native JA11 EQ program and volume persistence is physically verified (J035): Vocal, Classic, Bass, User 1 and Off persist across genuine power removal with the User 1 bank untouched and no microphone/UAC writes.
+- The deferred digital-filter control is removed from the JA11 DEVICE screen. The probe and write paths are dormant behind `JA11_FILTER_CONTROL_ENABLED = false`; no filter command runs in normal workflows.
+- The complete digital-filter investigation is preserved in `docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md` for a future version.
+- Version `0.9.0-beta.5` / code 19, private package `com.weekssa.opraeqforuapp.v090beta`, local test signing.
+### 0.9.0-beta.2 recovery candidate
+
+Physical result (2026-11-01, J034): the native all-program save is **unsafe**. User 1 + volume survived a genuine power removal, but saving with a built-in program active did not persist that program and committed the working curve into the stored User 1 bank. The app reported the failure truthfully; the captured bank was restored exactly and verified. Native Set as Default must remain User 1-only.
+
+- Native JA11 program persistence was implemented for all programs and then constrained to **User 1 only** after the 2026-11-01 physical session (J034): built-in saves do not persist the program and overwrite the stored User 1 bank. The retained transaction uses runtime writes, fresh exact five-band/global-gain restaging, one Apply, volatile verification, one Save(3), and final verification with one bounded re-enumeration, with no microphone/UAC write and no retry or replay.
+- Add one **Digital filter** selector (FAST-LL, FAST-PC, Slow-LL, Slow-PC, NON-OS) directly below EQ program. It is enabled only after a strictly parsed `0x11` device reply; otherwise the row explains that JA11 reported no filter and sends nothing.
+- Apply the approved save policy: a program/volume edit commits at runtime, then **Set as Default…** saves the current pair and discloses the brief disconnect. Runtime, saved-startup and unknown states stay separate and are never replayed after a reconnect.
+- Add the separate private beta identity **EQ Library 0.9 Beta** (`com.weekssa.opraeqforuapp.v090beta`, `0.9.0-beta.2`/16, minified, local test signer, update checks off).
+- Software evidence only: 830 JVM tests, 306 Python/repository contract tests, API 35 and API 36 instrumentation (78/78 each), API 26 minified install/launch, API 36 lifecycle and large-font checks, R8 mapping. Physical JA11 persistence and restoration remain NOT RUN; minified-app instrumentation remains a diagnosed open tooling gap.
 
 ### 0.9.0-beta.1 candidate
 

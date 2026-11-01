@@ -15,6 +15,7 @@ class FiioJa11DeviceControlsTest {
         outputVolume = 59,
         headsetControlEnabled = true,
         eqProgram = FiioJa11Protocol.EqProgram.USER_1,
+        digitalFilterMode = FiioJa11Protocol.DigitalFilterMode.FAST_LL,
         uacMode = FiioJa11Protocol.UacMode.UAC_2,
     )
 
@@ -23,6 +24,7 @@ class FiioJa11DeviceControlsTest {
         assertThat(FiioJa11DeviceControls.descriptors.map { it.id.value }).containsExactly(
             "fiio_ja11.output_volume",
             "fiio_ja11.eq_program",
+            "fiio_ja11.digital_filter",
             "fiio_ja11.headset_control",
             "fiio_ja11.uac_mode",
             "fiio_ja11.sample_rate",
@@ -38,6 +40,7 @@ class FiioJa11DeviceControlsTest {
         assertThat(FiioJa11DeviceControls.softwareImplementedWriteControlIds).containsExactly(
             FiioJa11DeviceControls.OUTPUT_VOLUME,
             FiioJa11DeviceControls.EQ_PROGRAM,
+            FiioJa11DeviceControls.DIGITAL_FILTER,
             FiioJa11DeviceControls.HEADSET_CONTROL,
             FiioJa11DeviceControls.UAC_MODE,
         )
@@ -57,6 +60,8 @@ class FiioJa11DeviceControlsTest {
             .isEqualTo(DacControlValue.Discrete("user_1"))
         assertThat(FiioJa11DeviceControls.valueFromSnapshot(FiioJa11DeviceControls.UAC_MODE, snapshot))
             .isEqualTo(DacControlValue.Discrete("uac_2"))
+        assertThat(FiioJa11DeviceControls.valueFromSnapshot(FiioJa11DeviceControls.DIGITAL_FILTER, snapshot))
+            .isEqualTo(DacControlValue.Discrete("fast_ll"))
         assertThat(FiioJa11DeviceControls.valueFromSnapshot(FiioJa11DeviceControls.SAMPLE_RATE, snapshot))
             .isEqualTo(DacControlValue.Text("352.8 kHz"))
     }

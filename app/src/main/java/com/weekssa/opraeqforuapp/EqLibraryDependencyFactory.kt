@@ -115,6 +115,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
     val fiioJa11ControlRepository = FiioJa11ControlRepository(
         source = SessionFiioJa11DeviceControlSource(dacSessionRepository),
         operationGate = FiioJa11SessionOperationGate(dacSessionRepository),
+        filterControlEnabled = BuildConfig.JA11_FILTER_CONTROL_ENABLED,
     )
     val ew300GainStateStore = Ew300GainStatePreferences(appContext)
     val hardwareRepository = HardwareEqRepository(
