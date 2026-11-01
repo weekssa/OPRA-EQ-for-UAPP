@@ -164,7 +164,7 @@ Stop conditions: any unexpected bank change, any program/volume mismatch after a
 write with an invalid reply, or uncertain restoration. The vendor factory-reset command (`0x21`) is
 recorded as a recovery option but is not authorized for use without explicit approval.
 
-## Candidate B artifact and final assessment (2026-11-01)
+## Candidate B artifact and final assessment (2026-11-01, after J035)
 
 | Item | Value |
 |---|---|
@@ -173,18 +173,29 @@ recorded as a recovery option but is not authorized for use without explicit app
 | APK SHA-256 | `f522c9448b4925164422daaca9ebb203af1db89108e3c3c5cdbcfe0ac29be6a4` |
 | Source | `db35f4290ae40f4e19720e99497951ab5c3a9bf2` |
 | Signer | local test `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f` |
-| Gates | 830 JVM, lint debug/release/privateBeta, debug/release/privateBeta/androidTest builds, R8 mapping, 16/16 FiioJa11 DEVICE UI tests on API 35 |
+| Physical record | `docs/FIIO_JA11_VALIDATION_LEDGER.md` J035 |
 
-**Goal A — genuine built-in EQ program and volume persistence without mic/UAC/reconnect:**
-`BLOCKED` on physical validation. The root cause is identified and corrected (save payload must be the
-selected preset; it was constant 3), and the transaction is unit-tested for all five programs. It is
-not yet demonstrated that `Save(preset)` persists the startup preset or that volume persists without
-a save. The minimal discriminating test is Phase 7 steps 3–5.
+**Goal A — EQ program and volume persistence: PASS (physical, all five presets).**
 
-**Goal B — digital filters:** `BLOCKED` on physical validation, with the discovery defect corrected.
-The vendor uses `0x04` with values 0..4; the app previously probed the Savitech-derived `0x11`. A
-single read-only `0x04` read on the unit will establish whether the capability exists; no write is
-sent until that reply is validated.
+Vocal, Classic, Bass, User 1 and Off were each saved with `0x19` carrying the selected preset,
+survived a genuine USB power removal and cold reattachment, and left the User 1 bank and global gain
+unchanged. Saved volume persisted; runtime-only volume did not (the unit returns to its stored pair).
+No microphone or UAC write occurred and no reconnect workaround was used.
 
-Neither goal is declared supported. No microphone or UAC workaround is enabled. No hardware write
-has been performed under Candidate B.
+Limits: one unit, one firmware (2.20), one host. Volume was qualified at 60 (with earlier J034 runs
+at 40/35); other volumes are not individually qualified. A vendor-ordering deviation remains: built-in
+saves still restage the active bank and Apply before `0x19`, which the vendor does only for User 1;
+the staged values were the device's own readback, so the writes were no-ops, but the exact ordering
+should be aligned in the next candidate.
+
+**Goal B — digital filters: BLOCKED (unresolved, not absent).**
+
+The vendor `0x04` read produced no valid reply on firmware 2.20, just as the earlier `0x11` probe did;
+no filter write was attempted. A fresh copy of the official bundle confirms `0x04` is the vendor filter
+command with values 0..4, so the JA11's silence is a device/firmware observation, not a known correct
+discovery that succeeded. Remaining evidence needed: raw HID response bytes/timing for `0x04`, the
+vendor UI's per-device gating for JA11, and any firmware note or capture. The feature is not claimed
+supported or unsupported.
+
+**Open refinement:** implement the vendor ordering for built-ins (selection → `0x19` only, verify by
+readback) and re-validate Off/Classic on a new identity.

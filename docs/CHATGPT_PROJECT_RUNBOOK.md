@@ -67,9 +67,10 @@ reconstruction filter uses **`0x04`** (read `BB 0B 04`, write `AA 0A 04 value`) 
 `0x11` is a Savitech lineage command and was the wrong probe.
 
 Candidate `0.9.0-beta.3`/code 17 implements both corrections (830 JVM tests, lint/build/R8, 16/16
-FiioJa11 UI tests). Both goals remain **BLOCKED** on the minimal physical validation in
-`docs/releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md`; no microphone or UAC workaround is enabled and no
-Candidate B hardware write has occurred.
+FiioJa11 UI tests). Physical session J035: **Goal A PASS** — Vocal, Classic, Bass, User 1 and Off all
+persisted across genuine power removal with the User 1 bank untouched and zero microphone/UAC writes;
+saved volume persists while runtime-only changes revert. **Goal B unresolved** — the vendor `0x04`
+filter read received no valid reply and no filter write was attempted. Full record: J035.
 
 ## 1. Mandatory reading
 

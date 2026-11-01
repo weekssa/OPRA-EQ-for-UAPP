@@ -53,6 +53,14 @@ The approved [sealed plan](releases/v0.9.0/PLAN.md) supersedes historical no-nat
 
 All five mandatory investigations are complete. Source-generated packets are demonstrated; independent exact-JA11 acceptance, firmware/UAC applicability, runtime effect, Save/power-loss persistence and companion preservation remain unproven for each mode. This is not a hardware-unavailable finding. No functioning controls are enabled. See [three-pass evidence and provenance](releases/v0.9.0/REFERENCE_EVIDENCE.md) and the [requirements checklist](releases/v0.9.0/REQUIREMENTS.md).
 
+
+### J035 physical result (2026-11-01)
+
+All five presets were saved with the preset-specific `0x19` payload and survived genuine power
+removal (Vocal, Classic, Bass, User 1, Off), with the User 1 bank and global gain unchanged and zero
+microphone/UAC writes. Saved volume persisted; runtime-only volume did not. Digital-filter `0x04`
+produced no valid reply, so the filter capability remains **unresolved** (not declared absent); no
+filter write was attempted. Full record: J035 in the validation ledger.
 ## 2026-10-14 v0.8.3 private beta defaults observation
 
 Exact beta source `7cea4545dddbee2da0b436e0684a9c489835e3cd`, package

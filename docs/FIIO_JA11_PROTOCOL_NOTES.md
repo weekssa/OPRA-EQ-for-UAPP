@@ -59,6 +59,14 @@ For an explicitly requested User 1 target only: activate/verify that target if n
 
 Other active programs still use the explicit microphone round trip selected before writes. No arbitrary Save payload or helper-program mechanism is inferred. The historical 620e1a4 User1 payload was already 3; staging/Apply distinguishes the new transaction, and its firmware cause remains unproven. Candidate runtime/readback tests are software evidence, not native volume/program persistence through physical power loss. The five `0x11` filters remain individually unqualified and disabled. [Reference analysis](releases/v0.9.0/REFERENCE_EVIDENCE.md) preserves full source/lineage/license distinctions. Later dated records below retain their original evidence limits.
 
+
+### J035 physical result (2026-11-01)
+
+The corrected preset-valued `0x19` save persisted Vocal (0), Classic (1), Bass (2), User 1 (3) and
+Off (4) across genuine power removal and cold reattachment. The User 1 bank and global gain were
+unchanged after every built-in save; no microphone or UAC write occurred. Volume changes persist only
+when saved (runtime-only changes revert to the stored pair). The vendor `0x04` filter read received no
+valid reply on firmware 2.20 and no filter write was sent; the capability is unresolved.
 ## 2026-10-09 owner-approved Model D — current identity and restart policy
 
 The owner approved session-specific identity requirements for the v0.8.1 correction. This section

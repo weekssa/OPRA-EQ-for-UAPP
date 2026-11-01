@@ -153,6 +153,10 @@ program was never observed; after the first save the unit boots User 1.
 Next: Candidate A cannot meet the stated goal for built-in programs. Candidate B (explicit microphone
 round trip, already present behind an off switch) is now evidence-justified and needs its own identity,
 UI exposure and affected gates before any further phone session.
+
+**J035 physical result:** candidate `0.9.0-beta.3` saved all five presets with the preset-specific
+`0x19` payload; each survived genuine power removal with the User 1 bank untouched, and saved volume
+persisted. The vendor `0x04` filter read received no reply and no filter write was sent.
 ## Not run / open
 
 ### Candidate B correction (2026-11-01, after J034)
