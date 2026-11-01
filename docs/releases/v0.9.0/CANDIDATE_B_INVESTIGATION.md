@@ -207,7 +207,7 @@ without vendor confirmation. No filter write has been attempted.
 
 A read-only diagnostic was added for the next authorized session: the filter probe now logs the
 request hex, response length and hex, session generation and stability, without user data. Candidate
-`0.9.0-beta.4` / code 18 (APK `0fbd6fb1…`, source pending commit) contains only this diagnostic plus
+`0.9.0-beta.4` / code 18 (APK `651100980a7d…`, source `5e28c9fb…`) contains only this diagnostic plus
 the Goal A tests; it is **not installed** over the qualified beta.3.
 
 Next minimal read-only step (requires authorization): launch beta.4, open My DAC, and capture one
