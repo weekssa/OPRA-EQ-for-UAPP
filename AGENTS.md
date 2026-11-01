@@ -47,10 +47,12 @@ The shared multi-model workflow at `/Users/stephenweeks/Documents/Codex/Codex-Us
 
 The workflow's hard-set rules apply here without modification:
 
-- Planning happens in a dedicated `gpt-6.1-sol` thread and ends at handoff. Never begin an edit, test, build, or device operation from a Sol planning thread; execution runs in a fresh or deliberately switched `deepseek/deepseek-flash` thread.
-- Planning protects the Sol budget: heavy read-only context work goes to up to three parallel research agents on `inferx/deepseek-v4.1-flash-1017-basic`, falling back to `gpt-6-luna` when that endpoint fails or the tool loop is long. Each spawn names its model, and Sol synthesizes the plan and hands off.
+- Planning happens in a dedicated `gpt-6.1-sol` thread and ends at handoff. Never begin an edit, test, build, or device operation from a Sol planning thread; execution runs in a fresh or deliberately switched `commandcode/deepseek-deepseek-v4.1-flash` thread.
+- Planning protects the Sol budget: heavy read-only context work goes to up to three parallel `gpt-6-luna` research agents, and main-thread research may use `combo/research` (Luna, then DeepSeek via Command Code). Each spawn names its model, and Sol synthesizes the plan and hands off.
+- InferX is out of every automatic route and stays selectable for manual use. A manual selection makes a live call that can fail while the endpoint returns 429; do not treat that as a routing defect or retry it into a research slice.
 - Keep one writer for execution work. Every substantive subagent call names its model explicitly, and `resume_agent` is not used where the model matters.
-- Do not automatically retry, change model or provider, or escalate reasoning effort. The permitted substitutions are the workflow's peak-aware gate and its two route-scoped combos: inside an approved off-peak window a hard-locked `gpt-6.1-sol` or `gpt-6-luna` request may continue on `deepseek/deepseek-flash`, and only `combo/cheap-first` and `combo/research` may fail over inside their own threads. During peak every other scope fails closed.
+- Do not automatically retry, change model or provider, or escalate reasoning effort. The permitted substitutions are the workflow's peak-aware gate and `combo/research`: inside an approved off-peak window a hard-locked `gpt-6.1-sol` or `gpt-6-luna` request may continue on `commandcode/deepseek-deepseek-v4.1-flash`, and only `combo/research` may fail over inside its own thread. During peak every other scope fails closed.
+- Provider and model changes are local until a probe. Verify them from saved configuration, the model catalog, and the route tables. `ocx provider test`, discovery refreshes, `--live` catalog writes, and completion smoke tests are real upstream calls and need separate owner authorization.
 - Owner approval gates in this file remain in force on top of the workflow: merge, publication, hardware mutation, signing changes, and any implementation beyond the current explicit request.
 - Results are reported as DEMONSTRATED, CONFIGURED, NOT EXERCISED, INSPECTION-ONLY, or UNSUPPORTED with their limits, even when the surrounding task seems obvious.
 
