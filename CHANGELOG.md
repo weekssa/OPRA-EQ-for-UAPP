@@ -8,7 +8,9 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ### 0.9.0-beta.2 recovery candidate
 
-- Save any JA11 built-in program and device volume natively: runtime program/volume writes, fresh exact five-band/global-gain restaging, one Apply, volatile verification, one Save(3), and final verification with one bounded re-enumeration. No microphone, UAC, helper-program or flat-curve write, and no retry or replay.
+Physical result (2026-11-01, J034): the native all-program save is **unsafe**. User 1 + volume survived a genuine power removal, but saving with a built-in program active did not persist that program and committed the working curve into the stored User 1 bank. The app reported the failure truthfully; the captured bank was restored exactly and verified. Native Set as Default must remain User 1-only.
+
+- Native JA11 program persistence was implemented for all programs and then constrained to **User 1 only** after the 2026-11-01 physical session (J034): built-in saves do not persist the program and overwrite the stored User 1 bank. The retained transaction uses runtime writes, fresh exact five-band/global-gain restaging, one Apply, volatile verification, one Save(3), and final verification with one bounded re-enumeration, with no microphone/UAC write and no retry or replay.
 - Add one **Digital filter** selector (FAST-LL, FAST-PC, Slow-LL, Slow-PC, NON-OS) directly below EQ program. It is enabled only after a strictly parsed `0x11` device reply; otherwise the row explains that JA11 reported no filter and sends nothing.
 - Apply the approved save policy: a program/volume edit commits at runtime, then **Set as Default…** saves the current pair and discloses the brief disconnect. Runtime, saved-startup and unknown states stay separate and are never replayed after a reconnect.
 - Add the separate private beta identity **EQ Library 0.9 Beta** (`com.weekssa.opraeqforuapp.v090beta`, `0.9.0-beta.2`/16, minified, local test signer, update checks off).

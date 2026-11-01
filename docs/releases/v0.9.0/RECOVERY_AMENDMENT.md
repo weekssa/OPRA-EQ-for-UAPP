@@ -189,15 +189,15 @@ Statuses: PENDING / IN PROGRESS / PASS / FAIL / DEFERRED / NOT RUN. Evidence lan
 |---|---|---|---|
 | RC-01 | This amendment recorded durably before feature edits, linked to both chats; sealed plan untouched | This file + hash check of PLAN/SEAL | PASS |
 | RC-02 | Isolated recovery worktree, no shared-checkout edits | worktree list, branch, clean status | PASS |
-| RC-03 | Native program/volume save for all five programs, no mic writes | Stateful-fake defaults suite (16 tests) | PASS software |
-| RC-04 | Exact staging of fresh five bands + global gain, one Apply, one Save(3), counts/order | deterministic stateful fake | PASS software |
-| RC-05 | Changed-EQ and companion mismatch detected, truthful failure, no replay | negative tests | PASS software |
+| RC-03 | Native program/volume save for all five programs, no mic writes | Stateful-fake defaults suite (16 tests) | FAIL on hardware (J034) |
+| RC-04 | Exact staging of fresh five bands + global gain, one Apply, one Save(3), counts/order | deterministic stateful fake | FAIL on hardware (J034) |
+| RC-05 | Changed-EQ and companion mismatch detected, truthful failure, no replay | negative tests | FAIL on hardware (J034) |
 | RC-06 | Runtime change then explicit Set as Default with disconnect disclosure | Compose DEVICE tests (API 35) | PASS |
 | RC-07 | Intermediate volume staging local; cancel sends no command | Compose + state tests | PASS |
-| RC-08 | Digital filter single selector below EQ program; 5 mutually exclusive modes | protocol + Compose tests | PASS software |
-| RC-09 | Filter availability requires validated device reply; unsupported sends no write | protocol/negative tests | PASS software |
-| RC-10 | Manual microphone control unchanged; no automatic mic cycle in native path | repository invariants + UI | PASS software |
-| RC-11 | Session/lifecycle: stale, replacement, detach, timeout, cancellation, no replay | JVM + instrumentation | PASS software |
+| RC-08 | Digital filter single selector below EQ program; 5 mutually exclusive modes | protocol + Compose tests | FAIL on hardware (J034) |
+| RC-09 | Filter availability requires validated device reply; unsupported sends no write | protocol/negative tests | FAIL on hardware (J034) |
+| RC-10 | Manual microphone control unchanged; no automatic mic cycle in native path | repository invariants + UI | FAIL on hardware (J034) |
+| RC-11 | Session/lifecycle: stale, replacement, detach, timeout, cancellation, no replay | JVM + instrumentation | FAIL on hardware (J034) |
 | RC-12 | Full regression coverage (catalog, My EQs, Personal EQ, import/export, settings, other DACs) | 830 JVM + 306 Python + 78/78 x2 instrumentation | PASS |
 | RC-13 | JVM/lint debug+release+beta, R8 mapping, repository/Python/contract checks | Gradle + tools | PASS |
 | RC-14 | API 26/35/36 emulator gates on this Mac | emulator runs | PASS |
@@ -212,6 +212,7 @@ Statuses: PENDING / IN PROGRESS / PASS / FAIL / DEFERRED / NOT RUN. Evidence lan
 - 2026-11-01 03:43Z — execution context verified (`deepseek/deepseek-flash`); remote/preflight state
   captured above; worktree created; no source edits yet.
 - 2026-11-01 03:5xZ — this amendment written; PLAN.md and SEAL.sha256 unmodified.
+- 2026-11-01 06:20Z - Physical session J034: Pixel 9/Android 17, JA11 fw 2.20. User 1 + volume 40 persisted across genuine power removal with 5 band + 1 gain + 1 Apply + 1 Save and zero mic/UAC writes. Classic + volume 35 FAILED: program did not persist and Save(3) committed the Classic working curve into the User 1 bank. Bank restored exactly through the editor and verified across another power cycle; stored pair returned to User 1/60, runtime Off/60. Digital filter not reported by the unit. Candidate A does not deliver built-in program persistence.
 - 2026-11-01 05:10Z - implementation fd63a81e complete: 830 JVM, 306 Python/contract, lint/build/R8, API 35 and API 36 instrumentation 78/78 each, API 26 minified install/launch, API 36 lifecycle/font checks. Private beta com.weekssa.opraeqforuapp.v090beta 0.9.0-beta.2/16, APK 35bad66c...3a1 (final artifact, supersedes the intermediate 03e797c1 build), local test signer 0f89797b...869f. Minified-app instrumentation diagnosed as an AGP classpath limitation (RC-16 PARTIAL). Physical session not started.
 
 ## Appendix A — owner-approved contract text (verbatim, execution-chat input)

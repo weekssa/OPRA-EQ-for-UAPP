@@ -15,9 +15,12 @@ evidence rather than a superseded claim.
 The recovery extends native program/volume persistence from User 1 to all five JA11 programs with no
 microphone writes, adds the digital reconstruction-filter selector below EQ program, and applies the
 runtime-then-Set-as-Default save policy with separate runtime, saved and unknown startup states.
-Computer evidence is recorded in [the recovery report](releases/v0.9.0/RECOVERY_REPORT.md). Physical
-persistence, exact restoration, merge, official signing and publication remain NOT RUN or
-owner-gated; nothing here is a hardware-support claim.
+Computer evidence and the 2026-11-01 physical session are recorded in
+[the recovery report](releases/v0.9.0/RECOVERY_REPORT.md) and J034 of the JA11 ledger. Physical
+result: User 1 + volume survived genuine power removal; **built-in program persistence failed** and
+Save(3) rewrote the stored User 1 bank, which was then restored exactly and verified. The native
+all-program path is unsafe; the beta.1 User 1-only restriction was correct. Merge, official signing
+and publication remain owner-gated.
 
 ## v0.9.0-beta.1 workstream (2026-10-30)
 

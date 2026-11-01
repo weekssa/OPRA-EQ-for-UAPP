@@ -1,6 +1,9 @@
 # v0.9.0-beta.2 owner readiness packet
 
-Status: **READY FOR THE OWNER PHONE SESSION — nothing has been installed or mutated on the phone.**
+Status: **SESSION COMPLETE (2026-11-01) — see J034 and RECOVERY_REPORT.md.** This packet is retained as
+the pre-session readiness record: User 1 + volume persisted, built-in program persistence failed and
+the User 1 bank (damaged by the attempt) was restored exactly. Retained here for provenance; do not
+re-run the built-in native save from this packet.
 This packet is the first planned owner checkpoint. It exists so the physical session is one
 controlled pass over frozen software, with every possible result interpreted in advance.
 

@@ -43,6 +43,21 @@ The minified artifact is therefore verified by exact install/identity/launch/lif
 the full suite runs on the debug variant. Physical Pixel 9/JA11 persistence, filter behavior and
 exact restoration remain NOT RUN and owner-gated; publication is not authorized.
 
+## 2026-11-01 physical session J034 — native built-in persistence fails
+
+The frozen beta.2 candidate was installed on the owner Pixel 9 (Android 17) with the JA11 at
+firmware 2.20 and run against the real device. User 1 + volume 40 survived a genuine power removal
+with five band writes, one gain, one Apply, one Save and zero microphone/UAC writes; the bank was
+unchanged. **Classic + volume 35 failed:** the program did not persist, and Save(3) committed the
+working curve into the stored User 1 bank. The app reported the mismatch as a failure.
+
+Conclusion: `0x19` Save(3) writes the working EQ area to User 1 and does not persist a built-in
+program selection. Native Set as Default must stay User 1-only; the all-program extension is unsafe.
+The captured User 1 bank was restored through the editor (matching final readback) and verified across
+another power cycle. The digital filter row stayed disabled because the unit returned no `0x11` reply.
+Full record: `docs/FIIO_JA11_VALIDATION_LEDGER.md` J034. Candidate B (explicit microphone round trip)
+is now evidence-justified but has not been built or qualified.
+
 ## 1. Mandatory reading
 
 Before substantive work, read this file and the current documents relevant to the task:

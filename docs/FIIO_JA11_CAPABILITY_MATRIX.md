@@ -18,10 +18,13 @@ writes the requested program and volume at runtime, reads the active five bands 
 fresh, restages those exact values, applies once, verifies, sends one Save(3), and verifies the final
 state while tolerating one bounded re-enumeration. Microphone and UAC writes are zero.
 
-Evidence boundary: this is **software implementation plus simulation**, not native persistence.
-Whether Save(3) commits the program/volume selection for built-in programs, and whether the
-round-tripped built-in coefficients are the active program's own, remains exactly the hardware
-question the owner session answers. The stored User 1 bank must be captured before mutations.
+**Physical result (2026-11-01, J034):** the all-program native path **failed for built-in programs and
+is unsafe.** On the tested unit `0x19` Save(3) commits the working five-band area into the stored
+User 1 bank and does **not** persist an active built-in program selection; saving while Classic was
+active replaced the user's User 1 bank. The app reported the failure truthfully. User 1 + volume
+survived a genuine power removal, so the User 1-only native path remains the qualified native use.
+Do not extend native Set as Default to Vocal, Classic, Bass or Off without new evidence and a
+different transaction.
 
 The digital filter row exists in DEVICE below EQ program with five mutually exclusive values. It is
 enabled only when a strictly parsed `0x11` read reply returns 1..5; otherwise it reads "Not
@@ -30,7 +33,7 @@ persistence is not claimed.
 
 | Optional mode | Reference `0x11` value | Candidate disposition |
 | --- | --- | --- |
-| FAST-LL | 1 | Selectable only after a validated device reply; applicability and persistence unproven |
+| FAST-LL | 1 | Tested unit returned no valid reply; row disabled, no write sent. Applicability still unproven |
 | FAST-PC | 2 | Same |
 | Slow-LL | 3 | Same |
 | Slow-PC | 4 | Same |

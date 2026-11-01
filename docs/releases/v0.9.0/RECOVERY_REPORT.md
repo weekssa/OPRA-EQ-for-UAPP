@@ -1,7 +1,8 @@
 # v0.9.0-beta.2 recovery execution report
 
-Status: **INDEPENDENT SOFTWARE WORK COMPLETE — private beta candidate ready for the owner's
-phone-readiness review. Physical persistence NOT RUN; nothing here is a hardware claim.**
+Status: **PHYSICAL SESSION RUN (2026-11-01) — the native all-program path FAILED for built-in
+programs and damaged the stored User 1 bank, which has been fully restored. The User 1 + volume path
+passed a genuine power cycle. Candidate A does not deliver built-in program persistence.**
 This report covers only the recovery workstream defined by
 [RECOVERY_AMENDMENT.md](RECOVERY_AMENDMENT.md). The sealed [PLAN.md](PLAN.md) and
 [SEAL.sha256](SEAL.sha256) remain unmodified at
@@ -119,6 +120,39 @@ tooling gap.
 
 No mandatory gate was abandoned, and no failure counter was reset by renaming a branch, agent or candidate.
 
+
+## Physical session (2026-11-01) — J034
+
+Pixel 9, Android 17, wireless ADB; JA11 firmware 2.20, USB 2972:0102, sole supported DAC. Exactly the
+frozen APK above (local test signer). Full record: `docs/FIIO_JA11_VALIDATION_LEDGER.md` J034.
+
+Baseline (read-only): Off / volume 60 / mic On / UAC 2.0 / 384 kHz; digital filter **not reported by
+the unit**, so the row stayed disabled and no filter command was sent. Stored User 1 bank captured
+(gain -3.70; 76 Hz LS +4.0 Q0.38; 3800 +3.0 Q0.38; 1500 -1.5 Q1.0; 2700 +1.0 Q2.67; 200 -1.0 Q1.73).
+
+1. **User 1 + volume 40 → PASS.** Set as Default completed (5 band writes, 1 gain, 1 Apply, 1 Save,
+   0 mic/UAC) and, after genuine power removal, the unit read User 1 / 40 with the bank unchanged and
+   mic/UAC intact. No cached claim was replayed.
+2. **Classic + volume 35 → FAIL.** The runtime change verified, but after Save the unit read
+   **User 1 / 35**: the built-in program selection did not persist, and the working coefficients staged
+   while Classic was active were committed into the **User 1 bank** (bank replaced by five PEAK bands).
+   The app reported this as a failure (`The requested EQ program was not active during verification`),
+   not as success.
+
+Conclusion: on this unit `0x19` Save(3) commits the working EQ area to User 1 and does not persist a
+built-in program selection. Restaging a built-in program therefore overwrites User 1. The all-program
+native path is unsafe; the beta.1 User 1-only restriction was correct. Volume writes did survive the
+observed reconnects.
+
+**Restoration completed:** the captured User 1 bank was re-entered through the app editor (15 value
+changes), applied to the DAC with a matching final readback, and verified across a further genuine
+power removal. The stored pair was returned to User 1 / 60 with a User 1 save (bank verified unchanged),
+and the runtime program set back to Off / 60 to match the observed start. The pre-session *stored*
+program was never observed; after the first save the unit boots User 1.
+
+Next: Candidate A cannot meet the stated goal for built-in programs. Candidate B (explicit microphone
+round trip, already present behind an off switch) is now evidence-justified and needs its own identity,
+UI exposure and affected gates before any further phone session.
 ## Not run / open
 
 - Physical Pixel 9 + JA11 persistence, filter behavior, restoration and go/no-go (owner-gated).

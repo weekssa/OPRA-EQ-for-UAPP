@@ -6,6 +6,12 @@ Status: **Model D makes serial optional continuity evidence while retaining exac
 ## v0.9.0-beta.2 native defaults and filter recovery (2026-11-01)
 
 The recovery candidate generalizes the native defaults transaction to every program. Sequence:
+
+**Physical result (2026-11-01, J034):** the generalization to every program is **unsafe**. `0x19`
+Save(3) commits the working five-band area into the stored User 1 bank and does not persist an active
+built-in program selection; saving with Classic active replaced the user's User 1 bank (the app
+reported the mismatch as a failure). User 1 + volume did survive a genuine power removal. Keep the
+native path to User 1 only.
 write the requested program `0x16/[code]` and volume `0x02/[level]` at runtime and verify them;
 read bands `0x15` (5) and global gain `0x17` fresh for the now-active program; reject inexact or
 missing values; restage identical bands and gain; Apply `0x18/01`; verify bands/gain/program/
