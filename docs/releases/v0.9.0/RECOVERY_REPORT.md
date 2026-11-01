@@ -109,7 +109,21 @@ background/foreground, force-stop/relaunch and large-font checks on API 26, 35 a
 **recorded limitation**, not a silent substitution: minified-app instrumentation remains an open
 tooling gap.
 
+## Correction ledger
+
+| Failing gate | Diagnosed cycles | Result |
+|---|---:|---|
+| Minified private-beta instrumentation | 3 diagnosed + 1 test assertion fix | Root cause identified (the androidTest APK borrows app-provided classes that R8 removes). Full minification kept for the installable artifact; instrumentation runs on the debug variant. RC-16 remains PARTIAL and recorded. |
+| FiioJa11 DEVICE filter test ambiguity | 1 | Query changed to presence over all nodes; the 15 DEVICE tests pass. |
+| Independent-review findings (4 medium) | 1 | Stale startup claim cleared on session change (with regression test), checklist text repaired, runbook section marked historical, filter cache extracted and unit-tested. Affected gates rerun. |
+
+No mandatory gate was abandoned, and no failure counter was reset by renaming a branch, agent or candidate.
+
 ## Not run / open
+
+- Physical Pixel 9 + JA11 persistence, filter behavior, restoration and go/no-go (owner-gated).
+- Official merge, main-only signing, publication (separately owner-gated; not inferred).
+- Hosted GitHub CI for this branch (no push performed).
 
 ## Independent review
 
@@ -125,10 +139,6 @@ medium items, all corrected in this candidate:
 
 The reviewer did not run builds or tests; its findings were re-verified here by rerunning the affected
 gates (830 JVM tests, both instrumentation targets, builds, lint, R8).
-
-- Physical Pixel 9 + JA11 persistence, filter behavior, restoration and go/no-go (owner-gated).
-- Official merge, main-only signing, publication (separately owner-gated; not inferred).
-- Hosted GitHub CI for this branch (no push performed).
 
 ## Next authorized action
 
