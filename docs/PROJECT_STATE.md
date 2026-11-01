@@ -6,6 +6,12 @@ Workstream last verified: 2026-10-30. Public/installed tuples below retain their
 
 - Candidate build: **v0.9.0-beta.3**, versionCode `17`
 
+Candidate B (`0.9.0-beta.3`/code 17) corrects the two defects the official FiiO command table
+exposed: the `0x19` payload is the selected preset (not constant 3), and the filter command is `0x04`
+with values 0..4 (not `0x11`). Both goals await the minimal physical validation in
+[CANDIDATE_B_INVESTIGATION.md](releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md); no mic or UAC workaround
+is enabled and no Candidate B hardware write has occurred.
+
 The owner-approved [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) supersedes only the
 beta.1 release *ordering* for this workstream: a private, locally test-signed beta (package
 `com.weekssa.opraeqforuapp.v090beta`) is prepared and qualified before merge or official signing.

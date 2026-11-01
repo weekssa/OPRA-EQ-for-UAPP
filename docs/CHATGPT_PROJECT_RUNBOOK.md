@@ -58,6 +58,19 @@ another power cycle. The digital filter row stayed disabled because the unit ret
 Full record: `docs/FIIO_JA11_VALIDATION_LEDGER.md` J034. Candidate B (explicit microphone round trip)
 is now evidence-justified but has not been built or qualified.
 
+## 2026-11-01 Candidate B — vendor command semantics correct both root causes
+
+The official FiiO Control bundle (`index-7hb30NUo.js`, SHA-256 `4bc62044…`) shows that `0x19` takes
+the **selected preset** as its payload (Vocal 0 … Off 4). Our constant 3 wrote the active working
+curve into User 1 and left the startup preset at 3 — the J034 failure. The same source shows the
+reconstruction filter uses **`0x04`** (read `BB 0B 04`, write `AA 0A 04 value`) with values 0..4;
+`0x11` is a Savitech lineage command and was the wrong probe.
+
+Candidate `0.9.0-beta.3`/code 17 implements both corrections (830 JVM tests, lint/build/R8, 16/16
+FiioJa11 UI tests). Both goals remain **BLOCKED** on the minimal physical validation in
+`docs/releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md`; no microphone or UAC workaround is enabled and no
+Candidate B hardware write has occurred.
+
 ## 1. Mandatory reading
 
 Before substantive work, read this file and the current documents relevant to the task:

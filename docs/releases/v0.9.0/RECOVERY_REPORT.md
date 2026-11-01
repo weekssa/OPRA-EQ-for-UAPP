@@ -155,6 +155,15 @@ round trip, already present behind an off switch) is now evidence-justified and 
 UI exposure and affected gates before any further phone session.
 ## Not run / open
 
+### Candidate B correction (2026-11-01, after J034)
+
+The official FiiO Control bundle resolves both J034 questions: `0x19` carries the **selected preset**
+as its payload (our constant 3 wrote into User 1 while Classic was active), and the reconstruction
+filter uses **`0x04`** with values 0..4 (not the Savitech-derived `0x11`). Candidate `0.9.0-beta.3`
+(code 17, APK `f522c944…`) sends the requested preset and probes `0x04`; phase 7 of
+[CANDIDATE_B_INVESTIGATION.md](CANDIDATE_B_INVESTIGATION.md) is the minimal physical validation. No
+microphone/UAC workaround is enabled and no Candidate B hardware write has occurred.
+
 - Physical Pixel 9 + JA11 persistence, filter behavior, restoration and go/no-go (owner-gated).
 - Official merge, main-only signing, publication (separately owner-gated; not inferred).
 - Hosted GitHub CI for this branch (no push performed).

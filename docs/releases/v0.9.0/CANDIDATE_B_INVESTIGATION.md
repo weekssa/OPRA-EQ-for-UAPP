@@ -163,3 +163,28 @@ hash. Steps 1–3 are read-only. Abort on any mismatch.
 Stop conditions: any unexpected bank change, any program/volume mismatch after a save, any filter
 write with an invalid reply, or uncertain restoration. The vendor factory-reset command (`0x21`) is
 recorded as a recovery option but is not authorized for use without explicit approval.
+
+## Candidate B artifact and final assessment (2026-11-01)
+
+| Item | Value |
+|---|---|
+| Candidate | `0.9.0-beta.3` / code `17` |
+| Package | `com.weekssa.opraeqforuapp.v090beta` |
+| APK SHA-256 | `f522c9448b4925164422daaca9ebb203af1db89108e3c3c5cdbcfe0ac29be6a4` |
+| Source | `db35f4290ae40f4e19720e99497951ab5c3a9bf2` |
+| Signer | local test `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f` |
+| Gates | 830 JVM, lint debug/release/privateBeta, debug/release/privateBeta/androidTest builds, R8 mapping, 16/16 FiioJa11 DEVICE UI tests on API 35 |
+
+**Goal A — genuine built-in EQ program and volume persistence without mic/UAC/reconnect:**
+`BLOCKED` on physical validation. The root cause is identified and corrected (save payload must be the
+selected preset; it was constant 3), and the transaction is unit-tested for all five programs. It is
+not yet demonstrated that `Save(preset)` persists the startup preset or that volume persists without
+a save. The minimal discriminating test is Phase 7 steps 3–5.
+
+**Goal B — digital filters:** `BLOCKED` on physical validation, with the discovery defect corrected.
+The vendor uses `0x04` with values 0..4; the app previously probed the Savitech-derived `0x11`. A
+single read-only `0x04` read on the unit will establish whether the capability exists; no write is
+sent until that reply is validated.
+
+Neither goal is declared supported. No microphone or UAC workaround is enabled. No hardware write
+has been performed under Candidate B.
