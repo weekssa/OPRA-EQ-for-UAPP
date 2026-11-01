@@ -58,7 +58,6 @@ internal fun CapabilityDrivenDeviceStatus(
     onReadFiioJa11DeviceControls: () -> Unit = {},
     onSetFiioJa11OutputVolume: (Int) -> Unit = {},
     onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
-    onSetFiioJa11DigitalFilterMode: (FiioJa11Protocol.DigitalFilterMode) -> Unit = {},
     onSetFiioJa11Defaults: (FiioJa11DefaultsRequest) -> Unit = {},
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit = {},
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
@@ -77,7 +76,6 @@ internal fun CapabilityDrivenDeviceStatus(
             onRead = onReadFiioJa11DeviceControls,
             onSetVolume = onSetFiioJa11OutputVolume,
             onSetEqProgram = onSetFiioJa11EqProgram,
-            onSetDigitalFilterMode = onSetFiioJa11DigitalFilterMode,
             onSetDefaults = onSetFiioJa11Defaults,
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
@@ -149,7 +147,6 @@ private fun FiioJa11DeviceStatus(
     onRead: () -> Unit,
     onSetVolume: (Int) -> Unit,
     onSetEqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
-    onSetDigitalFilterMode: (FiioJa11Protocol.DigitalFilterMode) -> Unit,
     onSetDefaults: (FiioJa11DefaultsRequest) -> Unit,
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
@@ -158,8 +155,6 @@ private fun FiioJa11DeviceStatus(
     var stagedVolume by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingEqProgram by rememberSaveable { mutableStateOf(false) }
     var stagedEqProgramName by rememberSaveable { mutableStateOf<String?>(null) }
-    var choosingDigitalFilter by rememberSaveable { mutableStateOf(false) }
-    var stagedFilterName by rememberSaveable { mutableStateOf<String?>(null) }
     var defaultsReview by remember { mutableStateOf<FiioJa11DefaultsRequest?>(null) }
     var pendingHeadsetValue by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var choosingUacMode by rememberSaveable { mutableStateOf(false) }
@@ -169,9 +164,6 @@ private fun FiioJa11DeviceStatus(
     val stagedProgram = stagedEqProgramName?.let { name ->
         FiioJa11Protocol.EqProgram.entries.firstOrNull { it.name == name }
     } ?: snapshot?.eqProgram
-    val stagedFilter = stagedFilterName?.let { name ->
-        FiioJa11Protocol.DigitalFilterMode.entries.firstOrNull { it.name == name }
-    } ?: snapshot?.digitalFilterMode
     val controlsEnabled = connected &&
         state.isCurrentSession &&
         !state.isBusy &&
@@ -248,22 +240,6 @@ private fun FiioJa11DeviceStatus(
         enabled = controlsEnabled,
         onClick = { choosingEqProgram = true },
     )
-    val digitalFilter = snapshot.digitalFilterMode
-    SimpleDeviceSettingRow(
-        label = "Digital filter",
-        value = digitalFilter?.technicalLabel ?: "Not available on this JA11",
-        enabled = controlsEnabled && digitalFilter != null,
-        onClick = { choosingDigitalFilter = true },
-    )
-    if (digitalFilter == null) {
-        Text(
-            text = "JA11 did not report a filter setting, so EQ Library sent no filter command.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-
     Text(
         text = "Startup defaults",
         style = MaterialTheme.typography.labelLarge,
@@ -453,45 +429,6 @@ private fun FiioJa11DeviceStatus(
         )
     }
 
-    if (choosingDigitalFilter && defaultsReview == null) {
-        AlertDialog(
-            onDismissRequest = { choosingDigitalFilter = false; stagedFilterName = null },
-            title = { Text("Digital filter") },
-            text = {
-                Column {
-                    FiioJa11Protocol.DigitalFilterMode.entries.forEach { mode ->
-                        val current = mode == digitalFilter
-                        val selected = mode == stagedFilter
-                        TextButton(
-                            onClick = { stagedFilterName = mode.name },
-                            enabled = controlsEnabled,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(buildString {
-                                append(if (selected) "● " else "○ ")
-                                append(mode.technicalLabel)
-                                if (current) append(" · Current")
-                            })
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        choosingDigitalFilter = false
-                        stagedFilter?.let(onSetDigitalFilterMode)
-                        stagedFilterName = null
-                    },
-                    enabled = controlsEnabled && stagedFilter != null && stagedFilter != digitalFilter,
-                ) { Text("Apply") }
-            },
-            dismissButton = {
-                TextButton(onClick = { choosingDigitalFilter = false; stagedFilterName = null }) { Text("Cancel") }
-            },
-        )
-    }
-
     defaultsReview?.let { request ->
         AlertDialog(
             onDismissRequest = { defaultsReview = null },
@@ -504,8 +441,6 @@ private fun FiioJa11DeviceStatus(
                         stagedVolume = null
                         choosingEqProgram = false
                         stagedEqProgramName = null
-                        choosingDigitalFilter = false
-                        stagedFilterName = null
                         onSetDefaults(request)
                     },
                     enabled = controlsEnabled,
@@ -575,7 +510,6 @@ private fun FiioJa11DeviceStatus(
 private fun fiioControlName(controlId: DacControlId): String = when (controlId) {
     FiioJa11DeviceControls.OUTPUT_VOLUME -> "volume"
     FiioJa11DeviceControls.EQ_PROGRAM -> "EQ program"
-    FiioJa11DeviceControls.DIGITAL_FILTER -> "digital filter"
     FiioJa11DeviceControls.HEADSET_CONTROL -> "headset / mic remote"
     FiioJa11DeviceControls.UAC_MODE -> "USB Audio Class"
     else -> "device setting"

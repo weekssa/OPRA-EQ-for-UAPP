@@ -246,7 +246,6 @@ fun EqLibraryApp(
     val onReadFiioJa11DeviceControls = actions.onReadFiioJa11DeviceControls
     val onSetFiioJa11OutputVolume = actions.onSetFiioJa11OutputVolume
     val onSetFiioJa11EqProgram = actions.onSetFiioJa11EqProgram
-    val onSetFiioJa11DigitalFilterMode = actions.onSetFiioJa11DigitalFilterMode
     val onSetFiioJa11Defaults = actions.onSetFiioJa11Defaults
     val onSetFiioJa11HeadsetControl = actions.onSetFiioJa11HeadsetControl
     val onSetFiioJa11UacMode = actions.onSetFiioJa11UacMode
@@ -1172,7 +1171,6 @@ fun EqLibraryApp(
                             onReadFiioJa11DeviceControls = onReadFiioJa11DeviceControls,
                             onSetFiioJa11OutputVolume = onSetFiioJa11OutputVolume,
                             onSetFiioJa11EqProgram = onSetFiioJa11EqProgram,
-                            onSetFiioJa11DigitalFilterMode = onSetFiioJa11DigitalFilterMode,
                             onSetFiioJa11Defaults = onSetFiioJa11Defaults,
                             onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
                             onSetFiioJa11UacMode = onSetFiioJa11UacMode,

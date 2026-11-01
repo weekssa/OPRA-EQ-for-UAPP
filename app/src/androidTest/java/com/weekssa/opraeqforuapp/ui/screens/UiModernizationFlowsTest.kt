@@ -2881,7 +2881,6 @@ private fun noOpEqLibraryActions(
         onReadFiioJa11DeviceControls = {},
         onSetFiioJa11OutputVolume = {},
         onSetFiioJa11EqProgram = {},
-        onSetFiioJa11DigitalFilterMode = {},
         onSetFiioJa11Defaults = {},
         onSetFiioJa11HeadsetControl = {},
         onSetFiioJa11UacMode = {},

@@ -167,6 +167,15 @@ class FiioJa11MyDacContentTest {
         }
     }
     @Test
+    fun digitalFilterRowIsAbsentForTheDeferredJa11Configuration() {
+        setContentForTrace(editorApplyTrace())
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onAllNodesWithText("Digital filter", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText("Device volume", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("EQ program", substring = true).assertIsDisplayed()
+    }
+
+    @Test
     fun savedStatusReportsReadbackVerificationAndDropsTheAction() {
         setContentForTrace(
             editorApplyTrace(),
@@ -175,49 +184,6 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText("DEVICE").performClick()
         composeRule.onNodeWithText("Saved for startup and verified by readback.").assertIsDisplayed()
         composeRule.onAllNodesWithText("Set as Default", substring = true).assertCountEquals(0)
-    }
-
-    @Test
-    fun digitalFilterSelectorOffersFiveModesAndAppliesOnlyTheChosenOne() {
-        val filters = mutableListOf<FiioJa11Protocol.DigitalFilterMode>()
-        setContentForTrace(editorApplyTrace(), onFilter = { filters += it })
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Digital filter").performClick()
-        FiioJa11Protocol.DigitalFilterMode.entries.forEach { mode ->
-            assertTrue(
-                "filter option ${mode.technicalLabel} is missing",
-                composeRule.onAllNodesWithText(mode.technicalLabel, substring = true)
-                    .fetchSemanticsNodes().isNotEmpty(),
-            )
-        }
-        composeRule.onNodeWithText("Slow-PC", substring = true).performClick()
-        composeRule.onNodeWithText("Cancel").performClick()
-        composeRule.runOnIdle {
-            assertEquals(emptyList<FiioJa11Protocol.DigitalFilterMode>(), filters)
-        }
-
-        composeRule.onNodeWithText("Digital filter").performClick()
-        composeRule.onNodeWithText("NON-OS", substring = true).performClick()
-        composeRule.onNodeWithText("Apply").performClick()
-        composeRule.runOnIdle {
-            assertEquals(listOf(FiioJa11Protocol.DigitalFilterMode.NON_OS), filters)
-        }
-    }
-
-    @Test
-    fun unsupportedDigitalFilterRowIsDisabledAndSendsNoCommand() {
-        var filterCalls = 0
-        setContentForTrace(
-            editorApplyTrace(),
-            onFilter = { filterCalls += 1 },
-            digitalFilterMode = null,
-        )
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Not available on this JA11").assertIsDisplayed()
-        composeRule.onNodeWithText("JA11 did not report a filter setting", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Digital filter").performClick()
-        composeRule.onAllNodesWithText("FAST-LL", substring = true).assertCountEquals(0)
-        composeRule.runOnIdle { assertEquals(0, filterCalls) }
     }
 
     @Test
@@ -307,7 +273,6 @@ class FiioJa11MyDacContentTest {
         onApply: () -> Unit = {},
         onVolume: (Int) -> Unit = {},
         onProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
-        onFilter: (FiioJa11Protocol.DigitalFilterMode) -> Unit = {},
         onDefaults: (FiioJa11DefaultsRequest) -> Unit = {},
         deviceEqProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
         digitalFilterMode: FiioJa11Protocol.DigitalFilterMode? = FiioJa11Protocol.DigitalFilterMode.FAST_LL,
@@ -343,7 +308,6 @@ class FiioJa11MyDacContentTest {
                 onReadDeviceControls = {},
                 onSetOutputVolume = onVolume,
                 onSetEqProgram = onProgram,
-                onSetDigitalFilterMode = onFilter,
                 onSetDefaults = onDefaults,
                 onSetHeadsetControl = {},
                 onSetUacMode = {},

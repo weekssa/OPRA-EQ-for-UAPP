@@ -30,8 +30,8 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
-        versionName = "0.9.0-beta.4"
+        versionCode = 19
+        versionName = "0.9.0-beta.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -41,6 +41,9 @@ android {
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "true")
+        // v0.9.0 defers the JA11 digital-filter control: the vendor does not expose it for firmware
+        // 2.20. The codec and repository path remain for a future, evidence-backed candidate.
+        buildConfigField("boolean", "JA11_FILTER_CONTROL_ENABLED", "false")
     }
 
     buildTypes {

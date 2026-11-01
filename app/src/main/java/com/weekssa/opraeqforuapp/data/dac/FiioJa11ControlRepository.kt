@@ -205,6 +205,11 @@ class FiioJa11ControlRepository(
     private val source: FiioJa11DeviceControlSource,
     private val operationGate: DacOperationGate = MutexDacOperationGate(),
     /**
+     * v0.9.0 ships with the JA11 digital-filter control dormant: the vendor exposes no filter
+     * control for firmware 2.20, so no probe or write may occur in ordinary workflows.
+     */
+    private val filterControlEnabled: Boolean = false,
+    /**
      * Candidate B switch. The shipped candidate always uses the native path; the explicit
      * microphone round trip is a separately identified fallback that is never selected at runtime.
      */
@@ -790,6 +795,9 @@ class FiioJa11ControlRepository(
             if (intent.controlId !in FiioJa11DeviceControls.softwareImplementedWriteControlIds) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
             }
+            if (intent.controlId == FiioJa11DeviceControls.DIGITAL_FILTER && !filterControlEnabled) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
+            }
             val validation = descriptor.validateForWrite(intent.requestedValue)
             if (validation !is DacControlValidation.Valid) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, validation)
@@ -974,7 +982,7 @@ class FiioJa11ControlRepository(
             ?: return failedOrChanged(generation, "EQ program")
         // Optional capability probe: a missing or unparsable `0x04` reply disables the control
         // instead of failing the snapshot, because no JA11 filter value is assumed.
-        val digitalFilter = if (source.isSessionCurrent(generation)) {
+        val digitalFilter = if (filterControlEnabled && source.isSessionCurrent(generation)) {
             source.readDigitalFilterMode()
         } else {
             null

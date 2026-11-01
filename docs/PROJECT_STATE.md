@@ -2,9 +2,16 @@
 
 Workstream last verified: 2026-10-30. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.9.0-beta.4 Candidate B workstream (2026-11-01, in progress)
+## v0.9.0-beta.5 release-candidate workstream (2026-11-01, in progress)
 
-- Candidate build: **v0.9.0-beta.4**, versionCode `18`
+- Candidate build: **v0.9.0-beta.5**, versionCode `19`
+
+The v0.9.0 release scope is now final: **Goal A complete and physically verified** (J035), **Goal B
+deferred** as a vendor-exposed limitation on JA11 firmware 2.20. The final private candidate is
+`0.9.0-beta.5`/code 19 with the digital-filter row removed and the probe/write paths dormant behind
+`JA11_FILTER_CONTROL_ENABLED = false`. Research is preserved in
+`docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`. Merge, official signing and publication
+await the owner GO.
 
 Candidate B (`0.9.0-beta.3`/code 17) corrects the two defects the official FiiO command table
 exposed: the `0x19` payload is the selected preset (not constant 3), and the filter command is `0x04`

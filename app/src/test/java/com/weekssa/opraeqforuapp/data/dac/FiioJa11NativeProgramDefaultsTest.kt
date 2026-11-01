@@ -312,7 +312,7 @@ class FiioJa11NativeProgramDefaultsTest {
     @Test
     fun supportedDigitalFilterWriteIsVerified() = runBlocking {
         val source = StatefulJa11Source()
-        val repository = FiioJa11ControlRepository(source)
+        val repository = FiioJa11ControlRepository(source, filterControlEnabled = true)
         val snapshot = (repository.readSnapshot() as FiioJa11ControlReadResult.Success).snapshot
         assertThat(snapshot.digitalFilterMode).isEqualTo(FiioJa11Protocol.DigitalFilterMode.FAST_LL)
 
@@ -353,7 +353,7 @@ class FiioJa11NativeProgramDefaultsTest {
     @Test
     fun ignoredDigitalFilterWriteIsNeverReportedAsVerified() = runBlocking {
         val source = StatefulJa11Source().apply { ignoreFilterWrite = true }
-        val repository = FiioJa11ControlRepository(source)
+        val repository = FiioJa11ControlRepository(source, filterControlEnabled = true)
         val snapshot = (repository.readSnapshot() as FiioJa11ControlReadResult.Success).snapshot
 
         val result = repository.writeControl(
@@ -365,6 +365,25 @@ class FiioJa11NativeProgramDefaultsTest {
         )
 
         assertThat(result).isInstanceOf(FiioJa11ControlWriteResult.ReadbackMismatch::class.java)
+    }
+
+    @Test
+    fun deferredFilterControlRejectsWritesAndSkipsTheProbe() = runBlocking {
+        val source = StatefulJa11Source()
+        val repository = FiioJa11ControlRepository(source)
+        val snapshot = (repository.readSnapshot() as FiioJa11ControlReadResult.Success).snapshot
+
+        assertThat(snapshot.digitalFilterMode).isNull()
+        assertThat(source.filterProbeReads).isEqualTo(0)
+        val result = repository.writeControl(
+            DacWriteIntent(
+                FiioJa11DeviceControls.DIGITAL_FILTER,
+                DacControlValue.Discrete("non_os"),
+                snapshot.sessionGeneration,
+            ),
+        )
+        assertThat(result).isInstanceOf(FiioJa11ControlWriteResult.InvalidRequest::class.java)
+        assertThat(source.filterWrites).isEmpty()
     }
 
     private class StatefulJa11Source(
@@ -457,7 +476,12 @@ class FiioJa11NativeProgramDefaultsTest {
         override suspend fun readEqBand(index: Int): FiioJa11Protocol.Band? =
             if (failBandReadAt == index) null else runtimeBands[index]
         override suspend fun readEqGlobalGainDb(): Double? = runtimeGain
-        override suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? = runtimeFilter
+        var filterProbeReads = 0
+
+        override suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? {
+            filterProbeReads += 1
+            return runtimeFilter
+        }
         override suspend fun readUacMode(): FiioJa11Protocol.UacMode? = uacMode
 
         override suspend fun writeOutputVolume(level: Int): Boolean {
