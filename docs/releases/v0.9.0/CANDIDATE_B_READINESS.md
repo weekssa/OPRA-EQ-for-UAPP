@@ -153,3 +153,29 @@ Private beta artifact re-verified from the actual bytes: SHA-256
 `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`, zipalign OK, embedded source
 `655810c7…` (4 occurrences), and `git diff 655810c7..HEAD -- app/src/main` empty. The private beta is
 locally test-signed and is not the official release artifact.
+
+## Integration result and signing blocker (2026-11-01)
+
+PR #124 merged normally as **`1eebfda363a580591abdb3b109b8af5df5b82a90`**. `main` now carries
+`0.9.0` / code 20, the removed filter UI, the dormant filter flag, the research handoff and the
+release notes. Exact-main checks on the merge commit: build, emulator-ui-test, min-api-smoke,
+Analyze Kotlin, dependency-submission and submit-gradle all **success**.
+
+**BLOCKED before signing:** this execution environment has no workflow-dispatch capability — no `gh`
+CLI, no GitHub token, and the connected GitHub app exposes no dispatch tool. The main-only
+`Signed Release Candidate` and `Promote Signed Release Candidate` workflows are `workflow_dispatch`
+only, so the official signed artifact cannot be produced here.
+
+Owner actions required to complete the release:
+
+1. Actions → **Signed Release Candidate** → Run workflow on `main` with tag `v0.9.0`; it builds and
+   signs `com.weekssa.opraeqforuapp` `0.9.0`/20 with the pinned certificate and uploads
+   `EQ-Library-v0.9.0-signed-<main-sha>` (APK, checksums, R8 mapping).
+2. Record that run ID and the artifact ID; verify the printed APK SHA-256 and signer.
+3. Actions → **Promote Signed Release Candidate** → Run workflow with tag `v0.9.0`, the candidate run
+   ID and artifact ID. It re-verifies, runs the signed clean-install and v0.8.3 upgrade tests, creates
+   the annotated tag and publishes the exact artifact without rebuilding.
+4. Verify the public release, assets and `/releases/latest`, then complete the publication records.
+
+No signed stable artifact, tag or public release exists yet. The private beta.5 candidate remains
+uninstalled; beta.3 stays installed on the phone.
