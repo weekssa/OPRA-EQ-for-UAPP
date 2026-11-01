@@ -2,9 +2,9 @@
 
 Workstream last verified: 2026-10-30. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.9.0-beta.5 release-candidate workstream (2026-11-01, in progress)
+## v0.9.0 release workstream (2026-11-01, in progress)
 
-- Candidate build: **v0.9.0-beta.5**, versionCode `19`
+- Candidate build: **v0.9.0**, versionCode `20`
 
 The v0.9.0 release scope is now final: **Goal A complete and physically verified** (J035), **Goal B
 deferred** as a vendor-exposed limitation on JA11 firmware 2.20. The final private candidate is

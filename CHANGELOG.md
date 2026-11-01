@@ -4,6 +4,17 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version without a prerelease suffix, such as `0.8.0`, is a stable public release.
 
+## [0.9.0] - 2026-11-01
+
+### FiiO JA11 saved settings
+
+- Native Set as Default saves the selected built-in EQ program (Vocal, Classic, Bass, User 1, Off) and the device volume as JA11 startup defaults, verified across genuine power removal. The transaction keeps the active EQ and microphone setting intact and makes no microphone or UAC writes.
+- Runtime edits apply immediately and stay labelled session-only until saved; a verified save is labelled as saved for startup.
+
+### Deferred
+
+- JA11 digital reconstruction filters are not exposed by the official vendor implementation for firmware 2.20, so the control is absent from this release. The complete investigation and reopening criteria are preserved in `docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`.
+
 ## [Unreleased]
 
 

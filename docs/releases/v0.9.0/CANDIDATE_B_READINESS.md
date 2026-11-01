@@ -137,3 +137,19 @@ filter row is absent, the probe is dormant and filter writes are rejected when t
 8. Download and verify all public assets, checksums and `/releases/latest`; complete publication records.
 
 Any failed post-GO gate stops before publication.
+
+### Hosted verification and artifact integrity (recorded 2026-11-01)
+
+PR #124 candidate head `197945a32d3cd80062b42bd02a6312a6a19893b8`: build, emulator-ui-test,
+min-api-smoke, Analyze Kotlin, validate, validate-priority-community and submit-gradle all **success**.
+CodeQL is **neutral** because the `exact-head` code-scanning configuration used by the manual
+exact-head workflow is not present on `main`; the real analysis job `Analyze Kotlin` from
+`codeql.yml` succeeded on the same head. Neutral is therefore a results-comparison artifact, not a
+skipped or failed scan.
+
+Private beta artifact re-verified from the actual bytes: SHA-256
+`9f1c9c0e1a300ab021bc051abe8f685ebfde060bdda0d18b4358fe5e406c0ca6`, package
+`com.weekssa.opraeqforuapp.v090beta`, version `0.9.0-beta.5` / code 19, signer
+`0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`, zipalign OK, embedded source
+`655810c7…` (4 occurrences), and `git diff 655810c7..HEAD -- app/src/main` empty. The private beta is
+locally test-signed and is not the official release artifact.
