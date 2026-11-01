@@ -14,6 +14,7 @@ Workstream last verified: 2026-11-01. Public/installed tuples below retain their
 - **Goal A delivered:** all five JA11 EQ programs and saved volume passed the exact J035 physical qualification across genuine power removal; the User 1 bank remained intact and no microphone/UAC writes occurred. Evidence remains specific to one Pixel 9, one JA11 at firmware 2.20 and the tested transaction.
 - **Goal B deferred:** digital reconstruction filters were not delivered. The JA11 vendor path did not expose the control on the tested firmware; the complete research handoff remains at `docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`.
 - No physical qualification entries J034/J035 or the digital-filter research handoff were changed during release closeout.
+- **v0.9.0 release workstream complete:** documentation closeout PR #125 merged normally on 2026-11-01 as merge commit `47508adc08133c3d4ed00a6efc1c58f63a0c3d53` after its applicable exact-head checks passed. The immutable release tag and APK remain unchanged.
 
 ## v0.9.0-beta.1 workstream (2026-10-30)
 
