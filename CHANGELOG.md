@@ -6,6 +6,14 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### 0.9.0-beta.2 recovery candidate
+
+- Save any JA11 built-in program and device volume natively: runtime program/volume writes, fresh exact five-band/global-gain restaging, one Apply, volatile verification, one Save(3), and final verification with one bounded re-enumeration. No microphone, UAC, helper-program or flat-curve write, and no retry or replay.
+- Add one **Digital filter** selector (FAST-LL, FAST-PC, Slow-LL, Slow-PC, NON-OS) directly below EQ program. It is enabled only after a strictly parsed `0x11` device reply; otherwise the row explains that JA11 reported no filter and sends nothing.
+- Apply the approved save policy: a program/volume edit commits at runtime, then **Set as Default…** saves the current pair and discloses the brief disconnect. Runtime, saved-startup and unknown states stay separate and are never replayed after a reconnect.
+- Add the separate private beta identity **EQ Library 0.9 Beta** (`com.weekssa.opraeqforuapp.v090beta`, `0.9.0-beta.2`/16, minified, local test signer, update checks off).
+- Software evidence only: 824 JVM tests, 306 Python/repository contract tests, API 35 and API 36 instrumentation (78/78 each), API 26 minified install/launch, API 36 lifecycle and large-font checks, R8 mapping. Physical JA11 persistence and restoration remain NOT RUN; minified-app instrumentation remains a diagnosed open tooling gap.
+
 ### 0.9.0-beta.1 candidate
 
 - Add User1-native Set as Default using exact fresh unchanged five-band/global-gain staging, Apply, one Save and fresh final verification, without microphone writes. Physical persistence qualification is pending; other programs retain the explicit microphone round trip.

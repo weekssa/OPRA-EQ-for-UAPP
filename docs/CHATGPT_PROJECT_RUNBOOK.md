@@ -12,6 +12,34 @@ User1-native defaults is a candidate transaction preserving exact fresh bank/glo
 
 The current authorized destination is computer verification plus independent review and an exact draft PR for merge approval. Main-only official signing follows approved merge; physical Pixel/JA11 testing occurs only after candidate freeze and off-device gates; publication requires separate approval. Do not initiate earlier pairing, reuse historical hardware mutations, or promote another artifact.
 
+## 2026-11-01 v0.9.0-beta.2 JA11 recovery (program/volume persistence, digital filter)
+
+The owner locked a [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) over the beta.1
+workstream. It supersedes only the beta.1 release ordering: a private, locally test-signed
+**EQ Library 0.9 Beta** (`com.weekssa.opraeqforuapp.v090beta`, `0.9.0-beta.2`/16) is qualified
+before merge or official signing. The sealed plan and seal remain unmodified. Public stable remains
+v0.8.3/code14.
+
+Implemented on branch `codex/v0.9.0-recovery` (base `8233d87b`, implementation source
+`48b99d70`): native program/volume persistence for all five programs with no microphone cycle
+(runtime program/volume, fresh exact five-band/global-gain restaging, one Apply, volatile verification,
+one Save(3), final verification with one bounded re-enumeration); one Digital filter selector under
+EQ program, enabled only by a strictly parsed `0x11` reply; runtime-then-Set-as-Default save policy
+with separate runtime/saved/unknown startup states; and the private beta identity.
+
+Computer evidence: 824 JVM tests, 306 Python/contract tests, `lintDebug`, `lintRelease`, `lintPrivateBeta`, debug/release/privateBeta/androidTest builds, R8 mapping, API 35 and API 36
+instrumentation 78/78 each, API 26 minified install/launch, API 36 background/force-stop/relaunch and
+font-scale 1.5/density 480 checks. Private beta APK
+`59863fc260ac75685542ccffb06e9ce9b3683794dd63f25d2e613a9c00e63ce6`, local test signer
+`0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`.
+
+Recorded limitation: instrumentation against the R8-minified app is not achievable with this suite.
+AGP does not package app dependencies into the androidTest APK, so shrinking/inlining removes classes
+and members the tests call; `-dontshrink`/`-dontoptimize` make R8 fail on `androidx.core` lambdas.
+The minified artifact is therefore verified by exact install/identity/launch/lifecycle checks, and
+the full suite runs on the debug variant. Physical Pixel 9/JA11 persistence, filter behavior and
+exact restoration remain NOT RUN and owner-gated; publication is not authorized.
+
 ## 1. Mandatory reading
 
 Before substantive work, read this file and the current documents relevant to the task:

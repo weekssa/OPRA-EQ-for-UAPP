@@ -10,6 +10,32 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
+## v0.9.0-beta.2 recovery boundary (2026-11-01)
+
+The [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) extends native defaults from User 1
+to **all five programs** and adds the digital-filter selector. In this candidate the transaction
+writes the requested program and volume at runtime, reads the active five bands and global gain
+fresh, restages those exact values, applies once, verifies, sends one Save(3), and verifies the final
+state while tolerating one bounded re-enumeration. Microphone and UAC writes are zero.
+
+Evidence boundary: this is **software implementation plus simulation**, not native persistence.
+Whether Save(3) commits the program/volume selection for built-in programs, and whether the
+round-tripped built-in coefficients are the active program's own, remains exactly the hardware
+question the owner session answers. The stored User 1 bank must be captured before mutations.
+
+The digital filter row exists in DEVICE below EQ program with five mutually exclusive values. It is
+enabled only when a strictly parsed `0x11` read reply returns 1..5; otherwise it reads "Not
+available on this JA11" and no filter command is sent. Filter write readback is verified; filter
+persistence is not claimed.
+
+| Optional mode | Reference `0x11` value | Candidate disposition |
+| --- | --- | --- |
+| FAST-LL | 1 | Selectable only after a validated device reply; applicability and persistence unproven |
+| FAST-PC | 2 | Same |
+| Slow-LL | 3 | Same |
+| Slow-PC | 4 | Same |
+| NON-OS | 5 | Same |
+
 ## v0.9.0-beta.1 candidate boundary (2026-10-30)
 
 The approved [sealed plan](releases/v0.9.0/PLAN.md) supersedes historical no-native-investigation wording for this workstream only. The in-development Set as Default path for an explicitly requested User 1 target uses fresh exact unchanged five-band/global-gain staging, Apply, volatile verification, one Save(3), and final readback without mic writes. Other programs retain the explicitly confirmed microphone round trip. This candidate has **no new physical persistence qualification**; J029 and J032/J033 remain bounded to their exact historical tuples. Neither success simulation nor prior Flash evidence proves native volume persistence for this candidate. Runtime Apply is separate from Set as Default.

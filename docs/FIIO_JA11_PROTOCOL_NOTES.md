@@ -3,6 +3,26 @@
 Status: **Model D makes serial optional continuity evidence while retaining exact candidate/session/cardinality, expected-reset, authoritative-readback, and no-replay gates. The clean branch `codex/ja11-v0.8.1-minimal` is based on `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`, with frozen production source `9493cf030acb440f92e547fc667f6a5399616045`. Local G1-G7 pass, including 768 JVM tests and seven production Android USB-session Robolectric tests. Fresh independent review and exact-head CI for the revised PR #81 head remain pending. The host-verified diagnostic APK is `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`; it embeds the source SHA, verifies with v2, is aligned, and previously cold-launched on an isolated API 35 emulator. J027 is a partial physical session on this exact source/APK and prior PR #81 head `2e81dc99...`; it remains partial and is not relabelled to the revised head. The owner reported the phone window ready; do not begin physical acceptance until the final off-phone gates and exact tuple are reported.**
 
 
+## v0.9.0-beta.2 native defaults and filter recovery (2026-11-01)
+
+The recovery candidate generalizes the native defaults transaction to every program. Sequence:
+write the requested program `0x16/[code]` and volume `0x02/[level]` at runtime and verify them;
+read bands `0x15` (5) and global gain `0x17` fresh for the now-active program; reject inexact or
+missing values; restage identical bands and gain; Apply `0x18/01`; verify bands/gain/program/
+volume/mic/UAC in the same session; Save `0x19/03` once; verify a fresh final state, accepting one
+bounded re-enumeration. No microphone (`0x12`), UAC (`0x20`) or helper-program write occurs. The
+acoustic meaning of a built-in program's coefficient set is not claimed; only exact round-tripping is.
+
+Digital filter: read `02 BB 0B 00 00 11 00 00 EE`; write `02 AA 0A 00 00 11 01 vv 00 EE` with
+`vv` 1..5. The parser requires the command byte and a value in 1..5; anything else disables the
+control. Names (FAST-LL, FAST-PC, Slow-LL, Slow-PC, NON-OS) remain the pinned reference author's
+claims, not independently confirmed JA11 behavior. Persistence of a filter selection is unproven.
+
+Save restarts: the transport already tolerates a post-Save detach, so the approved UX applies the
+edit at runtime first and then offers Set as Default with the interruption disclosed. Runtime,
+saved-startup and unknown states are separate; reconnect never replays a cached claim. All of this is
+software evidence; the physical power-removal test is the only persistence proof.
+
 ## v0.9.0-beta.1 native defaults candidate (2026-10-30)
 
 Current development follows the [sealed reference-first plan](releases/v0.9.0/PLAN.md). The pinned configuration tool was compiled in isolation and its original source executed through intercepted HID writes with no device access. The reference Save path is five bands (25 ms each), 10 ms, Apply `0x18/01`, 50 ms, Save `0x19/03`. The Android path retains its qualified slower transport spacing and signed BE/tenths gain codec; reference LE/2560 arithmetic conflicts with accepted official evidence and is not copied.

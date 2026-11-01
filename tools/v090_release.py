@@ -3,6 +3,12 @@
 
 This module owns only the v0.9.0-beta.1 release identity and candidate metadata
 contract. It does not build, sign, dispatch workflows, or publish releases.
+
+The pinned release profile stays frozen at v0.9.0-beta.1 while a recovery candidate
+advances the Android version for private testing. Such a candidate is accepted only
+when it is declared verbatim in docs/PROJECT_STATE.md, advances the versionCode, and
+stays inside the 0.9.0 beta line. The publisher still accepts only the pinned beta
+tag, so an advancing candidate is not publishable.
 """
 
 from __future__ import annotations
@@ -33,6 +39,8 @@ PUBLISHER_WORKFLOW_PATH = ".github/workflows/publish-beta-prerelease.yml"
 LEGACY_PUBLISHER_PATH = "tools/publish_beta_prerelease.py"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 SOURCE_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+CANDIDATE_STATE_RE = re.compile(r"Candidate build: \*\*v([^*]+)\*\*, versionCode \x60([0-9]+)\x60")
+RECOVERY_VERSION_RE = re.compile(r"0\.9\.0-beta\.[0-9]+")
 
 
 class V090ReleaseError(RuntimeError):
@@ -88,10 +96,32 @@ def parse_android_version(project_root: Path) -> tuple[str, int]:
 
 def validate_version(project_root: Path, profile: BetaProfile = PROFILE) -> None:
     version_name, version_code = parse_android_version(project_root)
-    require(version_name == profile.version_name,
-            f"Android versionName must be {profile.version_name}, found {version_name}")
-    require(version_code == profile.version_code,
-            f"Android versionCode must be {profile.version_code}, found {version_code}")
+    if version_name == profile.version_name and version_code == profile.version_code:
+        return
+    declared = declared_candidate(project_root)
+    if declared is not None and declared == (version_name, version_code):
+        require(version_code > profile.version_code,
+                f"recovery candidate versionCode must advance {profile.version_code}, found {version_code}")
+        require(RECOVERY_VERSION_RE.fullmatch(version_name) is not None,
+                f"recovery candidate versionName must stay in the 0.9.0 beta line, found {version_name}")
+        return
+    if version_name == profile.version_name:
+        raise V090ReleaseError(f"Android versionCode must be {profile.version_code}, found {version_code}")
+    raise V090ReleaseError(
+        f"Android versionName must be {profile.version_name} or an advancing recovery candidate "
+        f"declared in Project State, found {version_name}",
+    )
+
+
+def declared_candidate(project_root: Path) -> tuple[str, int] | None:
+    """The candidate identity maintained in Project State, when present."""
+    state_path = project_root / "docs/PROJECT_STATE.md"
+    if not state_path.is_file():
+        return None
+    match = CANDIDATE_STATE_RE.search(state_path.read_text(encoding="utf-8"))
+    if match is None:
+        return None
+    return match.group(1), int(match.group(2))
 
 
 def validate_candidate_tag(tag: str, profile: BetaProfile = PROFILE) -> None:

@@ -744,6 +744,37 @@ These records split compound source clauses into independently checkable evidenc
 | H14 | SRC-L451; APP-L293 | Force-stop and relaunch the application, reconnect as necessary, and verify that displayed values come from the fresh device state rather than a stale local cache. | HARDWARE_CHECKLIST.md step 14; exact frozen artifact/device ledger and per-field authoritative readback | NOT RUN; final physical stage only |
 | H15 | SRC-L452; APP-L294 | Verify microphone preservation. | HARDWARE_CHECKLIST.md step 15; exact frozen artifact/device ledger and per-field authoritative readback | NOT RUN; final physical stage only |
 | H16 | SRC-L453; APP-L295 | Run the established EQ Flash/editor and Reset regressions under the approved safe test procedure. | HARDWARE_CHECKLIST.md step 16; exact frozen artifact/device ledger and per-field authoritative readback | NOT RUN; final physical stage only |
-| H17 | SRC-L454; APP-L296 | Verify any newly enabled digital-filter controls and readback where supported. | HARDWARE_CHECKLIST.md step 17; exact frozen artifact/device ledger and per-field authoritative readback | NOT APPLICABLE to current candidate: no newly enabled filters; D01–D05 investigations PASS, optional controls DEFERRED |
+| H17 | SRC-L454; APP-L296 | Verify any newly enabled digital-filter controls and readback where supported. | HARDWARE_CHECKLIST.md step 17; exact frozen artifact/device ledger and per-field authoritative readback | NOT RUN (recovery candidate): the selector exists and is enabled only after a validated `0x11` reply; record the device-reported mode, each chosen mode's readback, and stop on any bad response. Persistence unclaimed. |
 | H18 | SRC-L455; APP-L297 | Restore the original user configuration. | HARDWARE_CHECKLIST.md step 18; exact frozen artifact/device ledger and per-field authoritative readback | NOT RUN; final physical stage only |
 | H19 | SRC-L456; APP-L298 | Perform a final authoritative readback confirming restoration. | HARDWARE_CHECKLIST.md step 19; exact frozen artifact/device ledger and per-field authoritative readback | NOT RUN; final physical stage only |
+
+### Recovery component records (2026-11-01, v0.9.0-beta.2)
+
+These rows reconcile the [recovery amendment](RECOVERY_AMENDMENT.md) with the beta.1 records above.
+NaN
+ the RC row below carries the current disposition. Source: implementation `48b99d70`; evidence in
+ [RECOVERY_REPORT.md](RECOVERY_REPORT.md).
+
+| ID | Obligation | Verification | Status and evidence |
+|---|---|---|---|
+| RC-01 | Amendment recorded before feature edits; sealed plan untouched | File + hash check | **PASS**; PLAN `a108a218…`, SEAL `b258bc43…` unchanged |
+| RC-02 | Isolated recovery worktree | worktree/branch/status | **PASS**; `codex/v0.9.0-recovery` from `8233d87b` |
+| RC-03 | Native program/volume save for all five programs, zero mic writes | `FiioJa11NativeProgramDefaultsTest` (5 programs × 3 volumes × 2 mic states) | **PASS software**; 16 tests |
+| RC-04 | Exact fresh band/gain staging, one Apply, one Save(3), counts and order | deterministic repository fake | **PASS software**; order asserted `program?`, `volume?`, `band0..4`, `gain`, `apply`, `save` |
+| RC-05 | Changed EQ/companion detected; truthful failure; no replay | negative tests | **PASS software**; changed bank after Apply and at final readback, mic/UAC drift |
+| RC-06 | Runtime edit then explicit Set as Default with disconnect disclosure | Compose DEVICE tests | **PASS**; 15 FiioJa11 DEVICE tests on API 35 |
+| RC-07 | Staging local; Cancel sends nothing | Compose + ViewModel tests | **PASS** |
+| RC-08 | One Digital filter selector below EQ program; five modes | protocol + Compose tests | **PASS software** |
+| RC-09 | Filter enabled only by validated reply; unsupported sends no write | protocol/repository tests | **PASS software** |
+| RC-10 | Manual mic retained; no automatic mic cycle | repository invariants + UI | **PASS software** |
+| RC-11 | Stale/replacement/detach/timeout/cancellation/no replay | JVM + instrumentation | **PASS software** |
+| RC-12 | Regression coverage across app areas | full JVM 824, Python 306, instrumentation 78/78 ×2 | **PASS** |
+| RC-13 | lint debug/release/privateBeta, builds, R8, repository contracts | Gradle + tools | **PASS** |
+| RC-14 | API 26/35/36 emulator gates on this Mac | emulator runs | **PASS**; API26 minified install/launch; API35/36 instrumentation 78/78; API36 lifecycle + font 1.5/density 480 |
+| RC-15 | Private beta identity and provenance | aapt2/apksigner/sha256 | **PASS**; `com.weekssa.opraeqforuapp.v090beta` 0.9.0-beta.2/16, SHA-256 `59863fc2…3ce6`, signer `0f89797b…869f` |
+| RC-16 | Minified private beta install, coexistence, instrumentation | emulator + Gradle | **PARTIAL**; install/identity/lifecycle PASS on API 26/35/36; minified-app instrumentation **NOT ACHIEVED** with precise AGP/R8 diagnosis in the recovery report |
+| RC-17 | Candidate B prepared only if justified | decision record | **DEFERRED**; mic path retained behind an off switch for an evidence-driven fallback after the phone session |
+| RC-18 | Owner readiness packet and troubleshooting table | handoff document | **PASS**; `docs/releases/v0.9.0/RECOVERY_READINESS.md` |
+| RC-19 | Maintained requirement/runbook/capability/ledger/state updates | docs diff | **PASS**; PROJECT_STATE, runbook, protocol notes, capability matrix, changelog, checklist |
+
+Hardware rows H01–H19 remain `NOT RUN`; RC-14 through RC-16 say nothing about physical persistence.

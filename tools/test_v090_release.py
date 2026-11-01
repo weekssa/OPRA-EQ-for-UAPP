@@ -58,6 +58,35 @@ class V090ReleaseTest(unittest.TestCase):
         with self.assertRaisesRegex(release.V090ReleaseError, "versionCode"):
             release.validate_version(self.root)
 
+    def test_advancing_recovery_candidate_must_be_declared_and_advance(self):
+        (self.root / "docs").mkdir()
+        state = self.root / "docs/PROJECT_STATE.md"
+        self.write_version("0.9.0-beta.2", 16)
+
+        # Not declared: the pinned beta contract still governs.
+        with self.assertRaisesRegex(release.V090ReleaseError, "versionName"):
+            release.validate_version(self.root)
+
+        # Declared identity must match Gradle exactly.
+        state.write_text("- Candidate build: **v0.9.0-beta.3**, versionCode `16`\n", encoding="utf-8")
+        with self.assertRaisesRegex(release.V090ReleaseError, "versionName"):
+            release.validate_version(self.root)
+
+        state.write_text("- Candidate build: **v0.9.0-beta.2**, versionCode `16`\n", encoding="utf-8")
+        release.validate_version(self.root)
+
+        # A recovery candidate must advance the pinned versionCode.
+        self.write_version("0.9.0-beta.2", 15)
+        state.write_text("- Candidate build: **v0.9.0-beta.2**, versionCode `15`\n", encoding="utf-8")
+        with self.assertRaisesRegex(release.V090ReleaseError, "advance"):
+            release.validate_version(self.root)
+
+        # It must also stay inside the 0.9.0 beta line.
+        self.write_version("0.9.1-beta.2", 17)
+        state.write_text("- Candidate build: **v0.9.1-beta.2**, versionCode `17`\n", encoding="utf-8")
+        with self.assertRaisesRegex(release.V090ReleaseError, "0.9.0 beta line"):
+            release.validate_version(self.root)
+
     def test_candidate_metadata_is_beta_prerelease_and_nonlatest(self):
         metadata = release.candidate_metadata(SOURCE)
         self.assertEqual("beta", metadata["releaseChannel"])

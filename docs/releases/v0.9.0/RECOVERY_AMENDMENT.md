@@ -189,29 +189,30 @@ Statuses: PENDING / IN PROGRESS / PASS / FAIL / DEFERRED / NOT RUN. Evidence lan
 |---|---|---|---|
 | RC-01 | This amendment recorded durably before feature edits, linked to both chats; sealed plan untouched | This file + hash check of PLAN/SEAL | PASS |
 | RC-02 | Isolated recovery worktree, no shared-checkout edits | worktree list, branch, clean status | PASS |
-| RC-03 | Native program/volume save for all five programs, no mic writes | repository transaction tests, command traces | PENDING |
-| RC-04 | Exact staging of fresh five bands + global gain, one Apply, one Save(3), counts/order | deterministic transport tests | PENDING |
-| RC-05 | Changed-EQ and non-flat→flat mismatch detected, truthful failure, no replay | negative tests | PENDING |
-| RC-06 | Runtime change then explicit Set as Default with disconnect disclosure | Compose UI tests | PENDING |
-| RC-07 | Intermediate volume staging local; cancel sends no command | UI state + ViewModel tests | PENDING |
-| RC-08 | Digital filter single selector below EQ program; 5 mutually exclusive modes | protocol + UI tests | PENDING |
-| RC-09 | Filter availability requires validated device reply; unsupported sends no write | protocol/negative tests | PENDING |
-| RC-10 | Manual microphone control unchanged; no automatic mic cycle in native path | repository/UI tests | PENDING |
-| RC-11 | Session/lifecycle: stale, replacement, detach, timeout, cancellation, no replay | JVM + instrumentation tests | PENDING |
-| RC-12 | Full regression coverage (catalog, My EQs, Personal EQ, import/export, settings, other DACs) | full suite | PENDING |
-| RC-13 | JVM/lint debug+release+beta, R8 mapping, repository/Python/contract checks | Gradle + tools | PENDING |
-| RC-14 | API 26/35/36 emulator gates on this Mac | instrumentation runs | PENDING |
-| RC-15 | Private beta identity, minified build, provenance, signature/package/version/hash | artifact record | PENDING |
-| RC-16 | Minified private-beta install + coexistence with stable/older beta | emulator evidence | PENDING |
-| RC-17 | Candidate B decision documented (prepared only if justified) | report | PENDING |
-| RC-18 | Owner readiness packet and troubleshooting table | handoff | PENDING |
-| RC-19 | Maintained requirement/runbook/capability/ledger/state updates | docs diff | PENDING |
+| RC-03 | Native program/volume save for all five programs, no mic writes | Stateful-fake defaults suite (16 tests) | PASS software |
+| RC-04 | Exact staging of fresh five bands + global gain, one Apply, one Save(3), counts/order | deterministic stateful fake | PASS software |
+| RC-05 | Changed-EQ and companion mismatch detected, truthful failure, no replay | negative tests | PASS software |
+| RC-06 | Runtime change then explicit Set as Default with disconnect disclosure | Compose DEVICE tests (API 35) | PASS |
+| RC-07 | Intermediate volume staging local; cancel sends no command | Compose + state tests | PASS |
+| RC-08 | Digital filter single selector below EQ program; 5 mutually exclusive modes | protocol + Compose tests | PASS software |
+| RC-09 | Filter availability requires validated device reply; unsupported sends no write | protocol/negative tests | PASS software |
+| RC-10 | Manual microphone control unchanged; no automatic mic cycle in native path | repository invariants + UI | PASS software |
+| RC-11 | Session/lifecycle: stale, replacement, detach, timeout, cancellation, no replay | JVM + instrumentation | PASS software |
+| RC-12 | Full regression coverage (catalog, My EQs, Personal EQ, import/export, settings, other DACs) | 824 JVM + 306 Python + 78/78 x2 instrumentation | PASS |
+| RC-13 | JVM/lint debug+release+beta, R8 mapping, repository/Python/contract checks | Gradle + tools | PASS |
+| RC-14 | API 26/35/36 emulator gates on this Mac | emulator runs | PASS |
+| RC-15 | Private beta identity, minified build, provenance, signature/package/version/hash | artifact record | PASS |
+| RC-16 | Minified private-beta install + coexistence with stable/older beta | emulator evidence | PARTIAL - install/identity/lifecycle PASS on API 26/35/36; minified-app instrumentation not achievable (diagnosed) |
+| RC-17 | Candidate B decision documented (prepared only if justified) | report | DEFERRED until the phone session decides |
+| RC-18 | Owner readiness packet and troubleshooting table | RECOVERY_READINESS.md | PASS |
+| RC-19 | Maintained requirement/runbook/capability/ledger/state updates | docs diff | PASS |
 
 ## 7. Evidence log (append-only)
 
 - 2026-11-01 03:43Z — execution context verified (`deepseek/deepseek-flash`); remote/preflight state
   captured above; worktree created; no source edits yet.
 - 2026-11-01 03:5xZ — this amendment written; PLAN.md and SEAL.sha256 unmodified.
+- 2026-11-01 05:10Z - implementation 48b99d70 complete: 824 JVM, 306 Python/contract, lint/build/R8, API 35 and API 36 instrumentation 78/78 each, API 26 minified install/launch, API 36 lifecycle/font checks. Private beta com.weekssa.opraeqforuapp.v090beta 0.9.0-beta.2/16, APK 35bad66c...3a1 (final artifact, supersedes the intermediate 03e797c1 build), local test signer 0f89797b...869f. Minified-app instrumentation diagnosed as an AGP classpath limitation (RC-16 PARTIAL). Physical session not started.
 
 ## Appendix A — owner-approved contract text (verbatim, execution-chat input)
 
