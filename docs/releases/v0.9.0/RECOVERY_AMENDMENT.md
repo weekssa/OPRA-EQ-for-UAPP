@@ -198,7 +198,7 @@ Statuses: PENDING / IN PROGRESS / PASS / FAIL / DEFERRED / NOT RUN. Evidence lan
 | RC-09 | Filter availability requires validated device reply; unsupported sends no write | protocol/negative tests | PASS software |
 | RC-10 | Manual microphone control unchanged; no automatic mic cycle in native path | repository invariants + UI | PASS software |
 | RC-11 | Session/lifecycle: stale, replacement, detach, timeout, cancellation, no replay | JVM + instrumentation | PASS software |
-| RC-12 | Full regression coverage (catalog, My EQs, Personal EQ, import/export, settings, other DACs) | 824 JVM + 306 Python + 78/78 x2 instrumentation | PASS |
+| RC-12 | Full regression coverage (catalog, My EQs, Personal EQ, import/export, settings, other DACs) | 830 JVM + 306 Python + 78/78 x2 instrumentation | PASS |
 | RC-13 | JVM/lint debug+release+beta, R8 mapping, repository/Python/contract checks | Gradle + tools | PASS |
 | RC-14 | API 26/35/36 emulator gates on this Mac | emulator runs | PASS |
 | RC-15 | Private beta identity, minified build, provenance, signature/package/version/hash | artifact record | PASS |
@@ -212,7 +212,7 @@ Statuses: PENDING / IN PROGRESS / PASS / FAIL / DEFERRED / NOT RUN. Evidence lan
 - 2026-11-01 03:43Z — execution context verified (`deepseek/deepseek-flash`); remote/preflight state
   captured above; worktree created; no source edits yet.
 - 2026-11-01 03:5xZ — this amendment written; PLAN.md and SEAL.sha256 unmodified.
-- 2026-11-01 05:10Z - implementation 48b99d70 complete: 824 JVM, 306 Python/contract, lint/build/R8, API 35 and API 36 instrumentation 78/78 each, API 26 minified install/launch, API 36 lifecycle/font checks. Private beta com.weekssa.opraeqforuapp.v090beta 0.9.0-beta.2/16, APK 35bad66c...3a1 (final artifact, supersedes the intermediate 03e797c1 build), local test signer 0f89797b...869f. Minified-app instrumentation diagnosed as an AGP classpath limitation (RC-16 PARTIAL). Physical session not started.
+- 2026-11-01 05:10Z - implementation fd63a81e complete: 830 JVM, 306 Python/contract, lint/build/R8, API 35 and API 36 instrumentation 78/78 each, API 26 minified install/launch, API 36 lifecycle/font checks. Private beta com.weekssa.opraeqforuapp.v090beta 0.9.0-beta.2/16, APK 35bad66c...3a1 (final artifact, supersedes the intermediate 03e797c1 build), local test signer 0f89797b...869f. Minified-app instrumentation diagnosed as an AGP classpath limitation (RC-16 PARTIAL). Physical session not started.
 
 ## Appendix A — owner-approved contract text (verbatim, execution-chat input)
 

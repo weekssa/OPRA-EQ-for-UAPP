@@ -4,7 +4,10 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
-## Active v0.9.0-beta.1 execution boundary (2026-10-30)
+## Historical v0.9.0-beta.1 execution boundary (2026-10-30)
+
+This section is superseded by the 2026-11-01 recovery entry below, which is the current boundary. It
+is retained as beta.1 evidence.
 
 The owner-approved [canonical plan](releases/v0.9.0/PLAN.md) preserves the complete upload verbatim and binds every clause through the [requirements checklist](releases/v0.9.0/REQUIREMENTS.md). It fixes baseline `35f0c90a0e55e701d4343ed978a440d34aae13aa` and isolates development on `codex/v0.9.0-ja11-persistence`. The [execution report](releases/v0.9.0/EXECUTION_REPORT.md) records current tests/corrections/outliers and unresolved gates; public stable remains v0.8.3.
 
@@ -21,16 +24,16 @@ before merge or official signing. The sealed plan and seal remain unmodified. Pu
 v0.8.3/code14.
 
 Implemented on branch `codex/v0.9.0-recovery` (base `8233d87b`, implementation source
-`48b99d70`): native program/volume persistence for all five programs with no microphone cycle
+`fd63a81e`): native program/volume persistence for all five programs with no microphone cycle
 (runtime program/volume, fresh exact five-band/global-gain restaging, one Apply, volatile verification,
 one Save(3), final verification with one bounded re-enumeration); one Digital filter selector under
 EQ program, enabled only by a strictly parsed `0x11` reply; runtime-then-Set-as-Default save policy
 with separate runtime/saved/unknown startup states; and the private beta identity.
 
-Computer evidence: 824 JVM tests, 306 Python/contract tests, `lintDebug`, `lintRelease`, `lintPrivateBeta`, debug/release/privateBeta/androidTest builds, R8 mapping, API 35 and API 36
+Computer evidence: 830 JVM tests, 306 Python/contract tests, `lintDebug`, `lintRelease`, `lintPrivateBeta`, debug/release/privateBeta/androidTest builds, R8 mapping, API 35 and API 36
 instrumentation 78/78 each, API 26 minified install/launch, API 36 background/force-stop/relaunch and
 font-scale 1.5/density 480 checks. Private beta APK
-`59863fc260ac75685542ccffb06e9ce9b3683794dd63f25d2e613a9c00e63ce6`, local test signer
+`bbe1c78956737ac94fec0069b8accd4ca9419e8f0806578af3ce2274277c0dd1`, local test signer
 `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f`.
 
 Recorded limitation: instrumentation against the R8-minified app is not achievable with this suite.

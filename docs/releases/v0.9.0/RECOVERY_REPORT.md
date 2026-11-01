@@ -15,12 +15,12 @@ This report covers only the recovery workstream defined by
 | Repository | `weekssa/OPRA-EQ-for-UAPP` |
 | Branch | `codex/v0.9.0-recovery` |
 | Base | `origin/main` `8233d87b1ed7ccb59d6df8bec864da3af761b21b` |
-| Implementation source | `48b99d706584ab736ed5dc6cf36d51278ecee8c8` |
+| Implementation source | `fd63a81e5061959ce44ebb65478b7f582fd307de` |
 | Version | `0.9.0-beta.2` / versionCode `16` |
 | Private beta package | `com.weekssa.opraeqforuapp.v090beta` |
 | Launcher label | **EQ Library 0.9 Beta** |
 | APK | `app/build/outputs/apk/privateBeta/app-privateBeta.apk` |
-| APK SHA-256 | `59863fc260ac75685542ccffb06e9ce9b3683794dd63f25d2e613a9c00e63ce6` |
+| APK SHA-256 | `bbe1c78956737ac94fec0069b8accd4ca9419e8f0806578af3ce2274277c0dd1` |
 | APK size | 2,891,725 bytes |
 | Signer certificate SHA-256 | `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f` (local development test signer; **not** the official release signer) |
 | Public stable | v0.8.3 / code 14 (unchanged) |
@@ -28,7 +28,7 @@ This report covers only the recovery workstream defined by
 Any later source change creates a new candidate identity; the version code advances and the
 affected gates rerun.
 
-The APK embeds `BuildConfig.CANDIDATE_SOURCE_SHA = 48b99d70…`. Commits after that one on this branch
+The APK embeds `BuildConfig.CANDIDATE_SOURCE_SHA = fd63a81e…`. Commits after that one on this branch
 are documentation and release-tooling reconciliation only; they do not change application code.
 An intermediate build (`03e797c1…`) preceded the per-session filter-probe cache and is superseded.
 
@@ -71,7 +71,7 @@ An intermediate build (`03e797c1…`) preceded the per-session filter-probe cach
 
 | Gate | Result and actual evidence |
 |---|---|
-| JVM unit tests | **PASS** 824 tests, 0 failures/errors/skips (`:app:testDebugUnitTest`, source `48b99d70`) |
+| JVM unit tests | **PASS** 830 tests, 0 failures/errors/skips (`:app:testDebugUnitTest`, source `fd63a81e`) |
 | Native-defaults suite | **PASS** 16 tests: all programs × volume 0/60/current × both mic states; runtime-vs-saved power-cycle model; changed bank after Apply; changed bank at final readback; Save failure; incomplete bank read; session change mid-staging; cancellation; mic/UAC drift; bounded reconnect; stale review; filter write/unsupported/ignored-write |
 | Protocol codec | **PASS** `0x11` read/write frames and strict response parsing (short reply, unknown command, out-of-range value rejected) |
 | Lint | **PASS** `lintDebug`, `lintRelease`, `lintPrivateBeta` |
@@ -110,6 +110,21 @@ background/foreground, force-stop/relaunch and large-font checks on API 26, 35 a
 tooling gap.
 
 ## Not run / open
+
+## Independent review
+
+One bounded read-only review (Luna, inspection only) found no release-blocking defect and four
+medium items, all corrected in this candidate:
+
+1. A saved-startup report could remain visible after a reconnect. Session change, stale and failure
+   states now clear both the report and the startup claim; a regression test covers it.
+2. The recovery checklist block initially contained a malformed sentence; corrected.
+3. The runbook's beta.1 section still read as the active boundary; it is now marked historical.
+4. The filter probe cache had no direct test; it is now a small unit-tested type covering per-session
+   reuse, cached unsupported results, write invalidation and the no-session case.
+
+The reviewer did not run builds or tests; its findings were re-verified here by rerunning the affected
+gates (830 JVM tests, both instrumentation targets, builds, lint, R8).
 
 - Physical Pixel 9 + JA11 persistence, filter behavior, restoration and go/no-go (owner-gated).
 - Official merge, main-only signing, publication (separately owner-gated; not inferred).

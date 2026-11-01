@@ -750,10 +750,7 @@ These records split compound source clauses into independently checkable evidenc
 
 ### Recovery component records (2026-11-01, v0.9.0-beta.2)
 
-These rows reconcile the [recovery amendment](RECOVERY_AMENDMENT.md) with the beta.1 records above.
-NaN
- the RC row below carries the current disposition. Source: implementation `48b99d70`; evidence in
- [RECOVERY_REPORT.md](RECOVERY_REPORT.md).
+These rows reconcile the [recovery amendment](RECOVERY_AMENDMENT.md) with the beta.1 records above. Beta.1 rows remain as historical evidence; where their claim changed (V06-V11, V39, V45, V50, D01-D05), the RC row below carries the current disposition. Source: implementation `fd63a81e`; evidence in [RECOVERY_REPORT.md](RECOVERY_REPORT.md).
 
 | ID | Obligation | Verification | Status and evidence |
 |---|---|---|---|
@@ -768,10 +765,10 @@ NaN
 | RC-09 | Filter enabled only by validated reply; unsupported sends no write | protocol/repository tests | **PASS software** |
 | RC-10 | Manual mic retained; no automatic mic cycle | repository invariants + UI | **PASS software** |
 | RC-11 | Stale/replacement/detach/timeout/cancellation/no replay | JVM + instrumentation | **PASS software** |
-| RC-12 | Regression coverage across app areas | full JVM 824, Python 306, instrumentation 78/78 ×2 | **PASS** |
+| RC-12 | Regression coverage across app areas | full JVM 830, Python 306, instrumentation 78/78 ×2 | **PASS** |
 | RC-13 | lint debug/release/privateBeta, builds, R8, repository contracts | Gradle + tools | **PASS** |
 | RC-14 | API 26/35/36 emulator gates on this Mac | emulator runs | **PASS**; API26 minified install/launch; API35/36 instrumentation 78/78; API36 lifecycle + font 1.5/density 480 |
-| RC-15 | Private beta identity and provenance | aapt2/apksigner/sha256 | **PASS**; `com.weekssa.opraeqforuapp.v090beta` 0.9.0-beta.2/16, SHA-256 `59863fc2…3ce6`, signer `0f89797b…869f` |
+| RC-15 | Private beta identity and provenance | aapt2/apksigner/sha256 | **PASS**; `com.weekssa.opraeqforuapp.v090beta` 0.9.0-beta.2/16, SHA-256 `bbe1c789…0dd1`, signer `0f89797b…869f` |
 | RC-16 | Minified private beta install, coexistence, instrumentation | emulator + Gradle | **PARTIAL**; install/identity/lifecycle PASS on API 26/35/36; minified-app instrumentation **NOT ACHIEVED** with precise AGP/R8 diagnosis in the recovery report |
 | RC-17 | Candidate B prepared only if justified | decision record | **DEFERRED**; mic path retained behind an off switch for an evidence-driven fallback after the phone session |
 | RC-18 | Owner readiness packet and troubleshooting table | handoff document | **PASS**; `docs/releases/v0.9.0/RECOVERY_READINESS.md` |

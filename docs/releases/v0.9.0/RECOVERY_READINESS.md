@@ -12,9 +12,9 @@ controlled pass over frozen software, with every possible result interpreted in 
 | Package | `com.weekssa.opraeqforuapp.v090beta` |
 | Version | `0.9.0-beta.2` / code `16` |
 | APK | `app/build/outputs/apk/privateBeta/app-privateBeta.apk` |
-| SHA-256 | `59863fc260ac75685542ccffb06e9ce9b3683794dd63f25d2e613a9c00e63ce6` |
+| SHA-256 | `bbe1c78956737ac94fec0069b8accd4ca9419e8f0806578af3ce2274277c0dd1` |
 | Signer | local test certificate `0f89797ba477006eea3e1ee837eaf654e687a14fc50b5a213b40312cdd1f869f` |
-| Source | `48b99d706584ab736ed5dc6cf36d51278ecee8c8` on `codex/v0.9.0-recovery` |
+| Source | `fd63a81e5061959ce44ebb65478b7f582fd307de` on `codex/v0.9.0-recovery` |
 | Stable / older beta | unaffected; they keep their packages and data |
 
 This is a locally test-signed private beta, not an official release. Installing it does not change the
@@ -22,7 +22,7 @@ public app or its data.
 
 ## What is already demonstrated (off-device)
 
-824 JVM tests; 306 Python/repository/contract tests; lint debug/release/privateBeta; debug, release,
+830 JVM tests; 306 Python/repository/contract tests; lint debug/release/privateBeta; debug, release,
 privateBeta and androidTest builds; R8 mapping; API 35 and API 36 instrumentation 78/78 each; API 26
 minified install/launch; API 36 background/force-stop/relaunch and font-scale 1.5/density 480.
 Full detail and limits: [RECOVERY_REPORT.md](RECOVERY_REPORT.md).
