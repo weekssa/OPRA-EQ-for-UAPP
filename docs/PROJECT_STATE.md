@@ -2,9 +2,9 @@
 
 Workstream last verified: 2026-10-30. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.9.0-beta.3 Candidate B workstream (2026-11-01, in progress)
+## v0.9.0-beta.4 Candidate B workstream (2026-11-01, in progress)
 
-- Candidate build: **v0.9.0-beta.3**, versionCode `17`
+- Candidate build: **v0.9.0-beta.4**, versionCode `18`
 
 Candidate B (`0.9.0-beta.3`/code 17) corrects the two defects the official FiiO command table
 exposed: the `0x19` payload is the selected preset (not constant 3), and the filter command is `0x04`

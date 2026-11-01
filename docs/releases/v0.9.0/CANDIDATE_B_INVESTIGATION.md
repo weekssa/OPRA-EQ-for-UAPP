@@ -115,6 +115,73 @@ resolved.
 | B3 | Parser rejects a valid reply | Possible for other commands, not the filter (wrong command id) |
 | B4 | Firmware lacks filters | Open; a valid `0x04` read would refute it |
 
+
+## Phase 2b — official vendor call path (2026-11-01, lead-agent direct analysis)
+
+Verified identities before use: main bundle `index-7hb30NUo.js` SHA-256
+`4bc6204460a14434d9790fa1b016182fbf28bc2ec35d810f60abf091b9913d1e` (unchanged); the Audio Config
+route chunk `index-C70qb620.js` SHA-256 `c5f3d0bccce5154d745285b328cb5275122402dae003e7dea8f97a6b9a4d4f30`.
+All 42 lazy chunks referenced by the bundle were fetched and searched, plus the main bundle.
+
+Findings:
+
+- `getFilterModeByCtrl` and `setFilterModeByCtrl` each appear **once**, as definitions in the main
+  bundle. No lazy chunk and no template calls them; the `filterMode` state is never read by UI code.
+- The Audio Config page renders only output volume, mic monitor volume, and the mic switch. It has no
+  filter control and no JA11-specific branch.
+- The JA11 configuration in the bundle covers presets (Vocal 0, Classic 1, Bass 2, User 1 3, Off 4),
+  band types (PEAK/LS/HS), gain range (-12..+12), device id 109 — and no filter capability flag.
+- The independent open-source JA11 driver (`adithyasource/fiiocontrol-oss`, pinned) contains no filter
+  command either.
+
+Conclusion: the vendor web app carries shared filter code that this version never exposes, so it
+cannot be cited as evidence that the JA11 supports filters. It also does not prove the firmware lacks
+them.
+
+## Phase 3b — ranked hypothesis matrix for the missing `0x04` reply
+
+| ID | Hypothesis | Evidence for | Evidence against | Confidence | Lowest-risk test |
+|---|---|---|---|---|---|
+| A | Request never transmitted | – | The same transport sends `0x02`, `0x0B`, `0x16`, `0x15`, `0x19` successfully; framing is identical | Low | Raw probe diagnostic (verify request bytes emitted) |
+| B | Transmitted, no response | Vendor command exists; no reply on two commands | Other reads answer | Medium | Raw probe length/timing capture |
+| C | Response consumed elsewhere | Shared reader paths | One reader at a time; queue drained before send | Low | Raw probe with correlation fields |
+| D | Response rejected by parsing | Decoder requires command at offset 4 and value 0..4 | No evidence of a valid-but-mismatched reply yet | Low–medium | Log raw bytes and decode offline |
+| E | Undocumented prerequisite | Filters often need init/mode | Vendor UI never uses the command, so no known prerequisite | Low | Read-only probe after a full successful session read |
+| F | Firmware does not expose it | No vendor UI caller, no OSS JA11 filter code, no firmware-note mention, no reply to two commands | Absence of evidence is not proof | Medium | Same probe; if no reply plus no vendor UI, F becomes the best explanation |
+| G | Insufficient evidence | Current state | – | Current status | Probe, then decide |
+
+Transport audit: the Android path selects one HID interface with one interrupt IN and one interrupt
+OUT endpoint, drains up to eight queued reports, sends the request as an output report, polls with an
+80 ms transfer timeout and 700 ms deadline, and accepts report-ID-prefixed or unprefixed replies.
+The successful `0x02`/`0x0B`/`0x15`/`0x16`/`0x19` exchanges use the same path, framing, and timeout,
+which makes A/C unlikely and leaves B/D/F.
+
+## Phase 5b — Goal A vendor-ordering refinement (decision)
+
+The vendor stages bands only for User 1; for built-ins it sends only `0x19` with the preset. Our
+beta.3 stages the active bank + gain and applies once before saving. Analysis:
+
+- The staged values are the device's own just-read working coefficients, so the extra writes were
+  no-ops; J035 preserved the User 1 bank across four built-in saves.
+- Removing the staging changes a physically qualified transaction. Whether `0x19` alone persists a
+  built-in preset on this firmware has not been demonstrated.
+- Vendor similarity alone is therefore insufficient to alter the working sequence. **Decision: retain
+  the beta.3 transaction**; document the difference and propose a discriminating test (new candidate,
+  built-in save without staging, power cycle, User 1 check).
+
+## Goal B status and next evidence
+
+Classification: **Unresolved** (leaning toward F but not proven). No filter write has been attempted.
+
+A read-only diagnostic was added for the next authorized session: the filter probe now logs the
+request hex, response length and hex, session generation and stability, without user data. Candidate
+`0.9.0-beta.4` / code 18 (APK `0fbd6fb1…`, source pending commit) contains only this diagnostic plus
+the Goal A tests; it is **not installed** over the qualified beta.3.
+
+Next minimal read-only step (requires authorization): launch beta.4, open My DAC, and capture one
+`Ja11FilterProbe` log line plus one successful volume read as a transport control. That distinguishes
+B, D and F without any write. If a valid reply appears, the full filter feature (selection, readback,
+persistence, restoration) follows on a new qualification candidate.
 ## Phase 4 — off-device reproduction
 
 - The stateful fake models runtime versus retained flash state and a simulated power cycle; it
@@ -207,3 +274,15 @@ fixed: a protocol test now encodes `saveToFlashReport(program)` for all five pre
 a future constant-payload regression), and stale `0x11` comments were corrected to `0x04`. The rebuilt
 APK is byte-identical (`f522c944…`), so the physically verified identity remains valid. 831 JVM tests
 pass.
+
+## Current status (2026-11-01, after vendor call-path analysis)
+
+| Goal | Status | Basis |
+|---|---|---|
+| A — EQ persistence | **PASS** on beta.3 (J035) | All five presets and volume persisted across genuine power removal; User 1 untouched; no mic/UAC writes; restoration verified |
+| A — vendor refinement | **Retained as-is** | Removing staging is unverified on this firmware; a discriminating test is proposed |
+| B — digital filters | **Unresolved** | No reply to `0x11` or `0x04`; vendor web app defines but never calls the filter methods; no OSS JA11 filter support; not proven absent |
+
+Diagnostic candidate: `0.9.0-beta.4` / code 18, APK `0fbd6fb1f348da97ef60e0d57cfc6f7e847cc5e0ce98cde5f1eb85779cd06911`,
+**not installed**. It adds only the raw `Ja11FilterProbe` log (request/response/length/session) plus
+tests; the qualified beta.3 remains the installed build.

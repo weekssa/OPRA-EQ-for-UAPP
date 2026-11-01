@@ -67,6 +67,14 @@ Off (4) across genuine power removal and cold reattachment. The User 1 bank and 
 unchanged after every built-in save; no microphone or UAC write occurred. Volume changes persist only
 when saved (runtime-only changes revert to the stored pair). The vendor `0x04` filter read received no
 valid reply on firmware 2.20 and no filter write was sent; the capability is unresolved.
+
+### Vendor call-path check (2026-11-01)
+
+The official web app defines `getFilterModeByCtrl`/`setFilterModeByCtrl` (`0x04`, values 0..4) but
+no examined UI chunk calls them, and the Audio Config page has no filter control. The JA11 answered
+neither `0x11` nor `0x04`. Filter support remains unresolved; no filter write has been sent. A
+read-only probe diagnostic (`Ja11FilterProbe`) now logs the raw request/response for a future
+authorized session.
 ## 2026-10-09 owner-approved Model D — current identity and restart policy
 
 The owner approved session-specific identity requirements for the v0.8.1 correction. This section

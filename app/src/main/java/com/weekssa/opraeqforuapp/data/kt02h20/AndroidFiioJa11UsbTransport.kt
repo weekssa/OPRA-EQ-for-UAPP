@@ -99,10 +99,25 @@ class AndroidFiioJa11UsbTransport(
     suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? {
         val generation = hid.sessionGeneration
         if (filterProbe.isCachedFor(generation)) return filterProbe.value()
-        val value = exchangeOneByte(
-            request = FiioJa11Protocol.readDigitalFilterModeReport(),
-            decoder = FiioJa11Protocol::digitalFilterModeFromResponse,
+        val detachGeneration = hid.detachGeneration
+        val request = FiioJa11Protocol.readDigitalFilterModeReport()
+        val response = hid.exchange(report = request, minResponseBytes = 1, acceptResponse = { true })
+        val sessionStable = response != null && hid.isCurrentSession(generation, detachGeneration)
+        android.util.Log.i(
+            "Ja11FilterProbe",
+            Ja11FilterProbeDiagnostics.describe(
+                generation = generation,
+                detachGeneration = detachGeneration,
+                requestHex = request.toJa11TraceHex(),
+                response = response,
+                sessionStable = sessionStable,
+            ),
         )
+        val value = if (sessionStable) {
+            FiioJa11Protocol.digitalFilterModeFromResponse(requireNotNull(response))
+        } else {
+            null
+        }
         filterProbe.record(generation, value)
         return value
     }

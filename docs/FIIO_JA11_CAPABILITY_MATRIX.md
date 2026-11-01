@@ -54,6 +54,14 @@ The approved [sealed plan](releases/v0.9.0/PLAN.md) supersedes historical no-nat
 All five mandatory investigations are complete. Source-generated packets are demonstrated; independent exact-JA11 acceptance, firmware/UAC applicability, runtime effect, Save/power-loss persistence and companion preservation remain unproven for each mode. This is not a hardware-unavailable finding. No functioning controls are enabled. See [three-pass evidence and provenance](releases/v0.9.0/REFERENCE_EVIDENCE.md) and the [requirements checklist](releases/v0.9.0/REQUIREMENTS.md).
 
 
+
+### Vendor call-path check (2026-11-01)
+
+The official FiiO Control web bundle defines `0x04` filter read/write helpers but no examined UI
+chunk calls them, and the open-source JA11 driver has no filter command. The JA11 did not answer
+either `0x11` or `0x04`. The filter capability is therefore **unresolved** — neither claimed nor
+declared absent. No filter write has been sent. See
+[CANDIDATE_B_INVESTIGATION.md](releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md).
 ### J035 physical result (2026-11-01)
 
 All five presets were saved with the preset-specific `0x19` payload and survived genuine power
