@@ -59,16 +59,17 @@ All five mandatory investigations are complete. Source-generated packets are dem
 
 The official FiiO Control web bundle defines `0x04` filter read/write helpers but no examined UI
 chunk calls them, and the open-source JA11 driver has no filter command. The JA11 did not answer
-either `0x11` or `0x04`. The filter capability is therefore **unresolved** — neither claimed nor
-declared absent. No filter write has been sent. See
+either `0x11` or `0x04`. The vendor Android JA11 2.20 device record declares no filter control, so the capability is
+classified **device-specific not supported (vendor-exposed)**; a hidden firmware capability cannot be
+excluded without vendor confirmation. No filter write has been sent. See
 [CANDIDATE_B_INVESTIGATION.md](releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md).
 ### J035 physical result (2026-11-01)
 
 All five presets were saved with the preset-specific `0x19` payload and survived genuine power
 removal (Vocal, Classic, Bass, User 1, Off), with the User 1 bank and global gain unchanged and zero
 microphone/UAC writes. Saved volume persisted; runtime-only volume did not. Digital-filter `0x04`
-produced no valid reply, so the filter capability remains **unresolved** (not declared absent); no
-filter write was attempted. Full record: J035 in the validation ledger.
+produced no valid reply, and the vendor JA11 2.20 table exposes no filter control; the feature is classified device-specific not
+supported (vendor-exposed). No filter write was attempted. Full record: J035 in the validation ledger.
 ## 2026-10-14 v0.8.3 private beta defaults observation
 
 Exact beta source `7cea4545dddbee2da0b436e0684a9c489835e3cd`, package

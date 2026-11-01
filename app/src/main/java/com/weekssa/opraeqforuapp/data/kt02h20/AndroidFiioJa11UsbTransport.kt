@@ -101,7 +101,10 @@ class AndroidFiioJa11UsbTransport(
         if (filterProbe.isCachedFor(generation)) return filterProbe.value()
         val detachGeneration = hid.detachGeneration
         val request = FiioJa11Protocol.readDigitalFilterModeReport()
+        val sessionCurrentBeforeSend = hid.isCurrentSession(generation, detachGeneration)
+        val startedNanos = System.nanoTime()
         val response = hid.exchange(report = request, minResponseBytes = 1, acceptResponse = { true })
+        val elapsedMillis = (System.nanoTime() - startedNanos) / 1_000_000L
         val sessionStable = response != null && hid.isCurrentSession(generation, detachGeneration)
         android.util.Log.i(
             "Ja11FilterProbe",
@@ -111,6 +114,8 @@ class AndroidFiioJa11UsbTransport(
                 requestHex = request.toJa11TraceHex(),
                 response = response,
                 sessionStable = sessionStable,
+                sessionCurrentBeforeSend = sessionCurrentBeforeSend,
+                elapsedMillis = elapsedMillis,
             ),
         )
         val value = if (sessionStable) {

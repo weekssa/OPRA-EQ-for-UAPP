@@ -138,6 +138,35 @@ Conclusion: the vendor web app carries shared filter code that this version neve
 cannot be cited as evidence that the JA11 supports filters. It also does not prove the firmware lacks
 them.
 
+
+## Phase 2c — official Android app device table (decisive vendor evidence)
+
+Source: official FiiO Control Android APK V4.6.0,
+`https://fiio-firmware.fiio.net/FiiOControl/FiiOControl%20V4.6.0.apk`, 365,535,288 bytes, SHA-256
+`ab0eb9cb4f6efd58a4e9b4edf3ad6ec11961b5e53d12fd6ecd1e80091730ac8d` (downloaded, not installed).
+It is a Flutter app; the per-device capability data is a bundled SQLite database at
+`assets/flutter_assets/assets/database/sc_config_default.db` (770,048 bytes).
+
+`sc_product_info` maps **JadeAudio JA11** to `device_type = 109`. `sc_func_info` has the entry
+`device_type 109`, `device_version 2.20` — exactly our unit — whose `function_msg` declares:
+
+- `stateItems`: sample rate, `mic_detect` (cmd 18 / `0x12`), `uac_version_nui` (32 / `0x20`),
+  `vol_output` (2 / `0x02`).
+- `devicePeqInfo`: `eqMap` Vocal 0 / Classic 1 / Bass 2 / USER1 3 / closeEq 4; `bandCount` 5;
+  `filterList` `[0,1,2]` (PEQ band types PEAK/LS/HS); `eqPreset` 22 (`0x16`); `masterGain` 23
+  (`0x17`); `eqBand` 21 (`0x15`); `eqSwitch` 26 (`0x1A`, `support=false`); `eqResetCmd` 0.
+- `settingItems`: device name (hidden), firmware upgrade, factory reset (`show=false`), instructions.
+- `isSupportAudio = false`; `audioItems` empty; `deviceCommandInterval = 200` ms.
+- **No filter-mode entry and no command `0x04` anywhere in the JA11 2.20 capability record.**
+
+Interpretation: the vendor application does not expose a digital reconstruction filter for this
+exact model and firmware. Combined with the unanswered `0x11` and `0x04` reads, this is strong
+affirmative evidence that the feature is not available through the documented vendor protocol on this
+device. It does not prove a hidden firmware capability is impossible — only the vendor can confirm
+that — so the residual is stated rather than overstated.
+
+Corroboration: the vendor table confirms our command mappings (`0x02`, `0x12`, `0x15`, `0x16`,
+`0x17`, `0x20`), the five-preset model, and the 200 ms command interval our transport already uses.
 ## Phase 3b — ranked hypothesis matrix for the missing `0x04` reply
 
 | ID | Hypothesis | Evidence for | Evidence against | Confidence | Lowest-risk test |
@@ -171,7 +200,10 @@ beta.3 stages the active bank + gain and applies once before saving. Analysis:
 
 ## Goal B status and next evidence
 
-Classification: **Unresolved** (leaning toward F but not proven). No filter write has been attempted.
+Classification: **Device-specific unsupported (vendor-exposed capability)**. The official Android app's
+JA11 2.20 device record declares every supported control and contains no filter mode or `0x04`; the
+unit answered neither `0x11` nor `0x04`. Residual: a hidden firmware capability cannot be excluded
+without vendor confirmation. No filter write has been attempted.
 
 A read-only diagnostic was added for the next authorized session: the filter probe now logs the
 request hex, response length and hex, session generation and stability, without user data. Candidate
@@ -255,14 +287,12 @@ saves still restage the active bank and Apply before `0x19`, which the vendor do
 the staged values were the device's own readback, so the writes were no-ops, but the exact ordering
 should be aligned in the next candidate.
 
-**Goal B — digital filters: BLOCKED (unresolved, not absent).**
+**Goal B — digital filters: device-specific not supported (vendor-exposed).**
 
-The vendor `0x04` read produced no valid reply on firmware 2.20, just as the earlier `0x11` probe did;
-no filter write was attempted. A fresh copy of the official bundle confirms `0x04` is the vendor filter
-command with values 0..4, so the JA11's silence is a device/firmware observation, not a known correct
-discovery that succeeded. Remaining evidence needed: raw HID response bytes/timing for `0x04`, the
-vendor UI's per-device gating for JA11, and any firmware note or capture. The feature is not claimed
-supported or unsupported.
+The official Android app's JA11 2.20 device record declares every supported control and contains no
+filter mode or `0x04`; the unit also answered neither `0x11` nor `0x04`. That is strong affirmative
+evidence that the feature is not available through the vendor protocol on this device. Residual: only
+the vendor could confirm whether a hidden firmware capability exists. No filter write was attempted.
 
 **Open refinement:** implement the vendor ordering for built-ins (selection → `0x19` only, verify by
 readback) and re-validate Off/Classic on a new identity.
@@ -281,8 +311,8 @@ pass.
 |---|---|---|
 | A — EQ persistence | **PASS** on beta.3 (J035) | All five presets and volume persisted across genuine power removal; User 1 untouched; no mic/UAC writes; restoration verified |
 | A — vendor refinement | **Retained as-is** | Removing staging is unverified on this firmware; a discriminating test is proposed |
-| B — digital filters | **Unresolved** | No reply to `0x11` or `0x04`; vendor web app defines but never calls the filter methods; no OSS JA11 filter support; not proven absent |
+| B — digital filters | **Device-specific unsupported (vendor-exposed)** | Vendor Android JA11 2.20 capability table has no filter mode/`0x04`; no reply to `0x11` or `0x04`; web app defines but never calls filter methods |
 
-Diagnostic candidate: `0.9.0-beta.4` / code 18, APK `0fbd6fb1f348da97ef60e0d57cfc6f7e847cc5e0ce98cde5f1eb85779cd06911`,
+Diagnostic candidate: `0.9.0-beta.4` / code 18, APK `651100980a7d2361e5fc5ec486ae309e4ddaf8bb59f98409883281f3f53deebe`,
 **not installed**. It adds only the raw `Ja11FilterProbe` log (request/response/length/session) plus
 tests; the qualified beta.3 remains the installed build.

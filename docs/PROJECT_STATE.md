@@ -9,7 +9,7 @@ Workstream last verified: 2026-10-30. Public/installed tuples below retain their
 Candidate B (`0.9.0-beta.3`/code 17) corrects the two defects the official FiiO command table
 exposed: the `0x19` payload is the selected preset (not constant 3), and the filter command is `0x04`
 with values 0..4 (not `0x11`). Physical result (J035): **Goal A PASS** — all five presets persisted across genuine power removal with
-the User 1 bank untouched and zero mic/UAC writes. **Goal B remains unresolved**: the vendor `0x04`
+the User 1 bank untouched and zero mic/UAC writes. **Goal B is device-specific not supported (vendor-exposed)**: the vendor `0x04`
 filter read received no reply and no filter write was attempted. See
 [CANDIDATE_B_INVESTIGATION.md](releases/v0.9.0/CANDIDATE_B_INVESTIGATION.md).
 

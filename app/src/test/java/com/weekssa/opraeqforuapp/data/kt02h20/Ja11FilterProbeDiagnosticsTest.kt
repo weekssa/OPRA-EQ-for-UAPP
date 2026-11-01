@@ -5,17 +5,21 @@ import org.junit.Test
 
 class Ja11FilterProbeDiagnosticsTest {
     @Test
-    fun aNullResponseReportsNoReplyWithoutInventingBytes() {
+    fun aNullResponseReportsTheTransferContextWithoutInventingBytes() {
         val line = Ja11FilterProbeDiagnostics.describe(
             generation = 4L,
             detachGeneration = 2L,
             requestHex = "02bb0b0000040000ee",
             response = null,
             sessionStable = false,
+            sessionCurrentBeforeSend = true,
+            elapsedMillis = 703L,
         )
         assertThat(line).contains("generation=4")
         assertThat(line).contains("detach=2")
+        assertThat(line).contains("sessionCurrentBeforeSend=true")
         assertThat(line).contains("request=02bb0b0000040000ee")
+        assertThat(line).contains("elapsedMs=703")
         assertThat(line).contains("responseLength=-1")
         assertThat(line).contains("response=none")
         assertThat(line).contains("sessionStable=false")
@@ -29,7 +33,10 @@ class Ja11FilterProbeDiagnosticsTest {
             requestHex = "02bb0b0000040000ee",
             response = byteArrayOf(0x02, 0xBB.toByte(), 0x0B, 0x00, 0x00, 0x04, 0x00, 0x02, 0xEE.toByte()),
             sessionStable = true,
+            sessionCurrentBeforeSend = true,
+            elapsedMillis = 12L,
         )
+        assertThat(line).contains("elapsedMs=12")
         assertThat(line).contains("responseLength=9")
         assertThat(line).contains("response=02bb0b0000040002ee")
         assertThat(line).contains("sessionStable=true")
