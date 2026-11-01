@@ -122,3 +122,18 @@ updated. J034 and J035 remain unchanged historical physical records.
 Gates: 834 JVM tests, lint debug/release/privateBeta, debug/release/privateBeta/androidTest builds, R8,
 306 Python/contract tests, 78/78 API 35 instrumentation, API 26 and API 35 install/launch. The DEVICE
 filter row is absent, the probe is dormant and filter writes are rejected when the flag is off.
+
+## Post-GO procedure (prepare now, execute only after owner GO)
+
+1. Verify owner GO and the exact PR head/scope.
+2. Merge PR #124 under branch protection; verify the exact main commit.
+3. Run exact-main CI (build, unit, lint, R8, API 35 instrumentation, API 26 smoke, CodeQL, contracts).
+4. Produce the officially signed v0.9.0 artifact with the main-only signing workflow.
+5. Verify package `com.weekssa.opraeqforuapp`, version `0.9.0`, version code 20 (next after 19), signer
+   `65c1c125…`, R8 mapping, APK SHA-256 and artifact manifest.
+6. Run signed stable clean install and v0.8.3 in-place upgrade tests that cannot run before signing.
+7. Promote the exact signed artifact without rebuilding; create the annotated `v0.9.0` tag and publish
+   the GitHub release with notes from `docs/releases/v0.9.0.md`.
+8. Download and verify all public assets, checksums and `/releases/latest`; complete publication records.
+
+Any failed post-GO gate stops before publication.
