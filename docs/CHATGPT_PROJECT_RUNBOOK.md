@@ -70,7 +70,7 @@ Candidate `0.9.0-beta.3`/code 17 implements both corrections (830 JVM tests, lin
 FiioJa11 UI tests). Physical session J035: **Goal A PASS** — Vocal, Classic, Bass, User 1 and Off all
 persisted across genuine power removal with the User 1 bank untouched and zero microphone/UAC writes;
 saved volume persists while runtime-only changes revert. **Goal B device-specific not supported (vendor-exposed)** — the vendor `0x04`
-filter read received no valid reply and no filter write was attempted. Full record: J035.
+filter read received no valid reply and no filter write was attempted. Full record: J035. Final evidence review, the vendor chain verification and the owner scope decision are in docs/releases/v0.9.0/CANDIDATE_B_READINESS.md; beta.3 remains the qualified basis and beta.4 stays uninstalled.
 
 ## 1. Mandatory reading
 

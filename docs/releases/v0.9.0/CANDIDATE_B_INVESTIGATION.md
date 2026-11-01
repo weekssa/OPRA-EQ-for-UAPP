@@ -316,3 +316,7 @@ pass.
 Diagnostic candidate: `0.9.0-beta.4` / code 18, APK `651100980a7d2361e5fc5ec486ae309e4ddaf8bb59f98409883281f3f53deebe`,
 **not installed**. It adds only the raw `Ja11FilterProbe` log (request/response/length/session) plus
 tests; the qualified beta.3 remains the installed build.
+
+## Final evidence review (2026-11-01)
+
+The focused vendor-chain verification and the per-goal statuses are consolidated in [CANDIDATE_B_READINESS.md](CANDIDATE_B_READINESS.md). Summary: Goal A PASS on beta.3 (J035); Goal B classified device-specific not supported (vendor-exposed), based on the exact JA11 2.20 record in the official Android app (no filter entry), the unused web helpers, and the unanswered 0x11/0x04 reads. beta.4 was evaluated and not recommended for installation.
