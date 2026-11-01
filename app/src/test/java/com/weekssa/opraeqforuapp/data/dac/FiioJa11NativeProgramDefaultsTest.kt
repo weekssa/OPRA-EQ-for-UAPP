@@ -21,7 +21,7 @@ import org.junit.Test
  */
 class FiioJa11NativeProgramDefaultsTest {
     @Test
-    fun everyProgramVolumeBoundaryAndMicBaselineSavesWithoutMicWrites() = runBlocking {
+    fun everyProgramVolumeBoundaryAndMicBaselineSavesTheSelectedPreset() = runBlocking {
         for (program in FiioJa11Protocol.EqProgram.entries) {
             for (requestedVolume in listOf(0, 60, 40)) {
                 for (micEnabled in listOf(false, true)) {
@@ -48,13 +48,16 @@ class FiioJa11NativeProgramDefaultsTest {
                     assertWithMessage(label).that(verified.report.counts).isEqualTo(
                         FiioJa11DefaultsWriteCounts(
                             volumeWrites = if (requestedVolume != 40) 1 else 0,
-                            programWrites = if (program != FiioJa11Protocol.EqProgram.CLASSIC) 1 else 0,
+                            programWrites = if (program != FiioJa11Protocol.EqProgram.USER_1) 1 else 0,
                             eqBandWrites = FiioJa11Protocol.BAND_COUNT,
                             eqGainWrites = 1,
                             eqApplyWrites = 1,
                             eqSaveWrites = 1,
                         ),
                     )
+                    // FiiO Control sends the selected preset as the 0x19 payload; a constant 3
+                    // would write the active working curve into User 1 (J034).
+                    assertWithMessage(label).that(source.savePrograms).containsExactly(program)
                     assertWithMessage(label).that(verified.snapshot.eqProgram).isEqualTo(program)
                     assertWithMessage(label).that(verified.snapshot.outputVolume).isEqualTo(requestedVolume)
                     assertWithMessage(label).that(verified.snapshot.headsetControlEnabled).isEqualTo(micEnabled)
@@ -73,10 +76,9 @@ class FiioJa11NativeProgramDefaultsTest {
             }
         }
     }
-
     @Test
     fun runtimeOnlyChangeRevertsOnPowerCycleAndSavedPairSurvives() = runBlocking {
-        val source = StatefulJa11Source(startProgram = FiioJa11Protocol.EqProgram.CLASSIC, startVolume = 40)
+        val source = StatefulJa11Source(startProgram = FiioJa11Protocol.EqProgram.USER_1, startVolume = 40)
         val repository = FiioJa11ControlRepository(source)
 
         val runtime = repository.writeControl(
@@ -97,7 +99,7 @@ class FiioJa11NativeProgramDefaultsTest {
             FiioJa11DefaultsRequest(
                 reviewed,
                 55,
-                FiioJa11Protocol.EqProgram.BASS,
+                FiioJa11Protocol.EqProgram.USER_1,
                 FiioJa11DeviceControls.OUTPUT_VOLUME,
             ),
         ) as FiioJa11DefaultsResult.Verified
@@ -105,7 +107,7 @@ class FiioJa11NativeProgramDefaultsTest {
 
         source.powerCycle()
         assertThat(source.runtimeVolume).isEqualTo(55)
-        assertThat(source.runtimeProgram).isEqualTo(FiioJa11Protocol.EqProgram.BASS)
+        assertThat(source.runtimeProgram).isEqualTo(FiioJa11Protocol.EqProgram.USER_1)
     }
 
     @Test
@@ -366,7 +368,7 @@ class FiioJa11NativeProgramDefaultsTest {
     }
 
     private class StatefulJa11Source(
-        startProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.CLASSIC,
+        startProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
         startVolume: Int = 40,
         startMic: Boolean = true,
         startGain: Double = -3.7,
@@ -423,6 +425,7 @@ class FiioJa11NativeProgramDefaultsTest {
         val filterWrites = mutableListOf<FiioJa11Protocol.DigitalFilterMode>()
         var applyWrites = 0
         var saveWrites = 0
+        val savePrograms = mutableListOf<FiioJa11Protocol.EqProgram>()
         var finalReconnectWaits = 0
 
         override fun isSessionCurrent(sessionGeneration: Long): Boolean =
@@ -525,7 +528,8 @@ class FiioJa11NativeProgramDefaultsTest {
             return true
         }
 
-        override suspend fun saveEqToFlash(): Boolean {
+        override suspend fun saveEqToFlash(program: FiioJa11Protocol.EqProgram): Boolean {
+            savePrograms += program
             events += "save"
             saveWrites += 1
             if (!saveSucceeds) return false

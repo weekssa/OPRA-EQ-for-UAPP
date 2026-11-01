@@ -44,7 +44,7 @@ interface FiioJa11DeviceControlSource {
     suspend fun writeEqBand(index: Int, band: FiioJa11Protocol.Band): Boolean = false
     suspend fun writeEqGlobalGain(gainDb: Double): Boolean = false
     suspend fun applyEqChanges(): Boolean = false
-    suspend fun saveEqToFlash(): Boolean = false
+    suspend fun saveEqToFlash(program: FiioJa11Protocol.EqProgram): Boolean = false
     suspend fun awaitFinalReadbackReconnect(): Boolean = false
 }
 
@@ -218,7 +218,12 @@ class FiioJa11ControlRepository(
 
     private suspend fun setDefaultsUnlocked(request: FiioJa11DefaultsRequest): FiioJa11DefaultsResult {
         val operationId = java.util.UUID.randomUUID().toString()
-        val mechanism = if (allowMicRoundTripFallback) {
+        // FiiO Control sends `0x19` with the currently selected preset; a constant 3 targets User 1
+        // regardless of the active preset and damaged the bank in J034. The save payload is now the
+        // requested program, which keeps the write in the slot the working curve came from.
+        val mechanism = if (allowMicRoundTripFallback &&
+            request.requestedProgram != FiioJa11Protocol.EqProgram.USER_1
+        ) {
             FiioJa11DefaultsMechanism.MIC_RECONNECT
         } else {
             FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE
@@ -567,7 +572,7 @@ class FiioJa11ControlRepository(
             return failed("The JA11 session changed after volatile verification. Save was not sent.")
         }
         counts = counts.copy(eqSaveWrites = 1)
-        if (!source.saveEqToFlash()) {
+        if (!source.saveEqToFlash(request.requestedProgram)) {
             return failed("The JA11 applied the preserved EQ, but the one Save boundary did not complete.")
         }
 
@@ -1110,7 +1115,8 @@ class SessionFiioJa11DeviceControlSource(
         sessions.fiioJa11Transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(gainDb))
     override suspend fun applyEqChanges(): Boolean =
         sessions.fiioJa11Transport.sendReport(FiioJa11Protocol.applyReport())
-    override suspend fun saveEqToFlash(): Boolean = sessions.fiioJa11Transport.saveToFlash()
+    override suspend fun saveEqToFlash(program: FiioJa11Protocol.EqProgram): Boolean =
+        sessions.fiioJa11Transport.saveToFlash(program)
     override suspend fun awaitFinalReadbackReconnect(): Boolean =
         sessions.fiioJa11Transport.awaitFinalReadbackReconnect()
 }

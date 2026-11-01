@@ -154,7 +154,13 @@ class AndroidFiioJa11UsbTransport(
         )
     }
 
-    override suspend fun saveToFlash(): Boolean {
+    override suspend fun saveToFlash(): Boolean = saveToFlash(FiioJa11Protocol.EqProgram.USER_1)
+
+    /**
+     * Persist to the preset slot the device is currently set to. FiiO Control sends the selected
+     * preset as the `0x19` payload; a constant 3 writes into User 1 regardless of the active preset.
+     */
+    suspend fun saveToFlash(program: FiioJa11Protocol.EqProgram): Boolean {
         val previousGeneration = hid.sessionGeneration
         val previousDetachGeneration = hid.detachGeneration
         val previousSerial = hid.connectedDeviceSerial
@@ -162,7 +168,7 @@ class AndroidFiioJa11UsbTransport(
         savePreviousDetachGeneration = previousDetachGeneration
         savePreviousSerial = previousSerial
         awaitingLateSaveDetach = false
-        if (!sendReport(FiioJa11Protocol.saveToFlashReport())) return false
+        if (!sendReport(FiioJa11Protocol.saveToFlashReport(program))) return false
 
         // Observe USB state changes through the bounded post-Save window. A detected detach must
         // complete on a fresh unique session before final readback; a stable session is retained

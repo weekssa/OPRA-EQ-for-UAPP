@@ -5,6 +5,28 @@ Status: **Model D makes serial optional continuity evidence while retaining exac
 
 ## v0.9.0-beta.2 native defaults and filter recovery (2026-11-01)
 
+### Candidate B correction (2026-11-01) — official FiiO command semantics
+
+The official FiiO Control web bundle (`fiiocontrol.fiio.com`, `index-7hb30NUo.js`, SHA-256
+`4bc6204460a14434d9790fa1b016182fbf28bc2ec35d810f60abf091b9913d1e`) resolves both open questions:
+
+1. **`0x19` payload is the selected preset**, not a constant. `setSaveEqToDeviceByCtrl()` sends
+   `0x19` with `eqPre.value` (Vocal 0, Classic 1, Bass 2, User 1 3, Off 4). Our candidate always sent
+   3, which is why saving with Classic active wrote into the User 1 slot (J034). The corrected path
+   sends the requested program.
+2. **The filter command is `0x04`**, read `BB 0B 04` and write `AA 0A 04 [value]`, with
+   SD_SHARP=0, SHARP=1, SD_SLOW=2, SLOW=3, NO_OVERSAMPLING=4 (Short Delay Sharp / Sharp Roll-off /
+   Short Delay Slow / Slow Roll-off / Non-Oversampling). `0x11` came from a Savitech/CB5100 lineage
+   and is not the JA11 vendor command; probing it explains the unanswered read.
+
+Other vendor commands observed: `0x01` max volume, `0x07` balance, `0x08` output volume, `0x10`
+screen orientation, `0x15` band, `0x16` preset, `0x17` gain, `0x18` band count, `0x1A` EQ switch,
+`0x1B` reset PEQ, `0x21` factory reset. These are recorded for investigation; only `0x04`, `0x16`,
+`0x19` and the already-qualified commands are implemented.
+
+Physical validation of the corrected save and the `0x04` read is still required; the vendor source
+establishes command semantics, not JA11 persistence behavior.
+
 The recovery candidate generalizes the native defaults transaction to every program. Sequence:
 
 **Physical result (2026-11-01, J034):** the generalization to every program is **unsafe**. `0x19`

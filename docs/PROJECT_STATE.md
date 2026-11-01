@@ -2,9 +2,9 @@
 
 Workstream last verified: 2026-10-30. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.9.0-beta.2 recovery workstream (2026-11-01, in progress)
+## v0.9.0-beta.3 Candidate B workstream (2026-11-01, in progress)
 
-- Candidate build: **v0.9.0-beta.2**, versionCode `16`
+- Candidate build: **v0.9.0-beta.3**, versionCode `17`
 
 The owner-approved [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) supersedes only the
 beta.1 release *ordering* for this workstream: a private, locally test-signed beta (package

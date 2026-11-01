@@ -45,7 +45,8 @@ object FiioJa11Protocol {
     private const val CMD_SAMPLE_RATE = 0x09
     private const val CMD_FIRMWARE = 0x0B
     private const val CMD_HEADSET_CONTROL = 0x12
-    private const val CMD_DIGITAL_FILTER_MODE = 0x11
+    /** FiiO Control read/write of the reconstruction filter mode (values 0..4). */
+    private const val CMD_DIGITAL_FILTER_MODE = 0x04
     private const val CMD_FILTER = 0x15
     private const val CMD_EQ_PROGRAM = 0x16
     private const val CMD_GLOBAL_GAIN = 0x17
@@ -92,11 +93,11 @@ object FiioJa11Protocol {
      * by requiring a valid read reply before the control is offered.
      */
     enum class DigitalFilterMode(val code: Int, val technicalLabel: String) {
-        FAST_LL(1, "FAST-LL"),
-        FAST_PC(2, "FAST-PC"),
-        SLOW_LL(3, "Slow-LL"),
-        SLOW_PC(4, "Slow-PC"),
-        NON_OS(5, "NON-OS"),
+        FAST_LL(0, "FAST-LL"),
+        FAST_PC(1, "FAST-PC"),
+        SLOW_LL(2, "Slow-LL"),
+        SLOW_PC(3, "Slow-PC"),
+        NON_OS(4, "NON-OS"),
         ;
 
         companion object {
@@ -195,8 +196,15 @@ object FiioJa11Protocol {
     fun applyReport(): ByteArray =
         wire(byteArrayOf(SET_1.b(), SET_2.b(), 0, 0, CMD_APPLY.b(), 1, 1, 0, FOOTER.b()))
 
-    fun saveToFlashReport(): ByteArray =
-        wire(byteArrayOf(SET_1.b(), SET_2.b(), 0, 0, CMD_SAVE.b(), 1, 3, 0, FOOTER.b()))
+    /**
+     * Persist the working EQ into the preset slot named by the payload.
+     *
+     * FiiO Control sends `0x19` with the currently selected preset value (Vocal 0 … Off 4), not a
+     * constant. Sending a constant 3 while another preset is active writes that working curve into
+     * User 1 (J034). The legacy no-argument form targets User 1 for the editor path.
+     */
+    fun saveToFlashReport(program: EqProgram = EqProgram.USER_1): ByteArray =
+        wire(byteArrayOf(SET_1.b(), SET_2.b(), 0, 0, CMD_SAVE.b(), 1, program.code.b(), 0, FOOTER.b()))
 
     fun outputVolumeFromResponse(report: ByteArray): Int? =
         oneByteValueFromResponse(report, CMD_OUTPUT_VOLUME)

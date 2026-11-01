@@ -33,11 +33,11 @@ persistence is not claimed.
 
 | Optional mode | Reference `0x11` value | Candidate disposition |
 | --- | --- | --- |
-| FAST-LL | 1 | Tested unit returned no valid reply; row disabled, no write sent. Applicability still unproven |
-| FAST-PC | 2 | Same |
-| Slow-LL | 3 | Same |
-| Slow-PC | 4 | Same |
-| NON-OS | 5 | Same |
+| FAST-LL | 1 | **Superseded**: vendor uses `0x04` value 0 (SD_SHARP). Physical read pending |
+| FAST-PC | 2 | Vendor `0x04` value 1 (SHARP). Physical read pending |
+| Slow-LL | 3 | Vendor `0x04` value 2 (SD_SLOW). Physical read pending |
+| Slow-PC | 4 | Vendor `0x04` value 3 (SLOW). Physical read pending |
+| NON-OS | 5 | Vendor `0x04` value 4 (NO_OVERSAMPLING). Physical read pending |
 
 ## v0.9.0-beta.1 candidate boundary (2026-10-30)
 

@@ -876,7 +876,7 @@ class FiioJa11ControlRepositoryTest {
             return !rejectApply
         }
 
-        override suspend fun saveEqToFlash(): Boolean {
+        override suspend fun saveEqToFlash(program: FiioJa11Protocol.EqProgram): Boolean {
             writeEvents += "save"
             saveWrites += 1
             saveEntryGenerations += sessionGeneration

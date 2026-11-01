@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
@@ -149,6 +150,22 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText("Set as Default", substring = true).assertIsDisplayed()
     }
 
+    @Test
+    fun builtInProgramCanBeSavedWithItsOwnPresetTarget() {
+        var request: FiioJa11DefaultsRequest? = null
+        setContentForTrace(
+            editorApplyTrace(),
+            deviceEqProgram = FiioJa11Protocol.EqProgram.CLASSIC,
+            onDefaults = { request = it },
+        )
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
+        composeRule.onNodeWithText("Save volume 20 and Classic as JA11", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Save as Default").performClick()
+        composeRule.runOnIdle {
+            assertEquals(FiioJa11Protocol.EqProgram.CLASSIC, request?.requestedProgram)
+        }
+    }
     @Test
     fun savedStatusReportsReadbackVerificationAndDropsTheAction() {
         setContentForTrace(
