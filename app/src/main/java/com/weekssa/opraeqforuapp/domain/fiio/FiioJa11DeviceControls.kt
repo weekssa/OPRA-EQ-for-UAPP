@@ -25,6 +25,11 @@ data class FiioJa11DeviceSnapshot(
     val outputVolume: Int,
     val headsetControlEnabled: Boolean,
     val eqProgram: FiioJa11Protocol.EqProgram,
+    /**
+     * Device-reported reconstruction filter. `null` means the JA11 did not return a valid `0x11`
+     * reply, so the control is unavailable rather than guessed.
+     */
+    val digitalFilterMode: FiioJa11Protocol.DigitalFilterMode? = null,
     val uacMode: FiioJa11Protocol.UacMode,
 ) {
     init {
@@ -40,6 +45,7 @@ data class FiioJa11DeviceSnapshot(
 object FiioJa11DeviceControls {
     val OUTPUT_VOLUME = DacControlId("fiio_ja11.output_volume")
     val EQ_PROGRAM = DacControlId("fiio_ja11.eq_program")
+    val DIGITAL_FILTER = DacControlId("fiio_ja11.digital_filter")
     val HEADSET_CONTROL = DacControlId("fiio_ja11.headset_control")
     val UAC_MODE = DacControlId("fiio_ja11.uac_mode")
     val SAMPLE_RATE = DacControlId("fiio_ja11.sample_rate")
@@ -65,6 +71,14 @@ object FiioJa11DeviceControls {
                 DacDiscreteOption(program.name.lowercase(), program.technicalLabel)
             },
         ),
+        DacControlDescriptor.Discrete(
+            id = DIGITAL_FILTER,
+            section = DacControlSection.ADVANCED,
+            safetyClass = DacControlSafetyClass.NORMAL,
+            options = FiioJa11Protocol.DigitalFilterMode.entries.map { mode ->
+                DacDiscreteOption(mode.name.lowercase(), mode.technicalLabel)
+            },
+        ),
         DacControlDescriptor.Toggle(
             id = HEADSET_CONTROL,
             section = DacControlSection.MICROPHONE_INPUT,
@@ -86,6 +100,7 @@ object FiioJa11DeviceControls {
     val softwareImplementedWriteControlIds: Set<DacControlId> = setOf(
         OUTPUT_VOLUME,
         EQ_PROGRAM,
+        DIGITAL_FILTER,
         HEADSET_CONTROL,
         UAC_MODE,
     )
@@ -102,6 +117,7 @@ object FiioJa11DeviceControls {
     fun valueFromSnapshot(controlId: DacControlId, snapshot: FiioJa11DeviceSnapshot): DacControlValue? = when (controlId) {
         OUTPUT_VOLUME -> DacControlValue.Numeric(snapshot.outputVolume.toDouble())
         EQ_PROGRAM -> DacControlValue.Discrete(snapshot.eqProgram.name.lowercase())
+        DIGITAL_FILTER -> snapshot.digitalFilterMode?.let { DacControlValue.Discrete(it.name.lowercase()) }
         HEADSET_CONTROL -> DacControlValue.Toggle(snapshot.headsetControlEnabled)
         UAC_MODE -> DacControlValue.Discrete(snapshot.uacMode.name.lowercase())
         SAMPLE_RATE -> DacControlValue.Text(snapshot.sampleRateLabel)
@@ -114,4 +130,7 @@ object FiioJa11DeviceControls {
 
     fun uacMode(valueId: String): FiioJa11Protocol.UacMode? =
         FiioJa11Protocol.UacMode.entries.firstOrNull { it.name.equals(valueId, ignoreCase = true) }
+
+    fun digitalFilterMode(valueId: String): FiioJa11Protocol.DigitalFilterMode? =
+        FiioJa11Protocol.DigitalFilterMode.entries.firstOrNull { it.name.equals(valueId, ignoreCase = true) }
 }

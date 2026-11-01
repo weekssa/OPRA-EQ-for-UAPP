@@ -90,6 +90,11 @@ class AndroidFiioJa11UsbTransport(
         decoder = FiioJa11Protocol::headsetControlFromResponse,
     )
 
+    suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? = exchangeOneByte(
+        request = FiioJa11Protocol.readDigitalFilterModeReport(),
+        decoder = FiioJa11Protocol::digitalFilterModeFromResponse,
+    )
+
     override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = exchangeOneByte(
         request = FiioJa11Protocol.readEqProgramReport(),
         decoder = FiioJa11Protocol::eqProgramFromResponse,
@@ -108,6 +113,9 @@ class AndroidFiioJa11UsbTransport(
 
     suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean =
         sendReport(FiioJa11Protocol.writeEqProgramReport(program))
+
+    suspend fun writeDigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode): Boolean =
+        sendReport(FiioJa11Protocol.writeDigitalFilterModeReport(mode))
 
     suspend fun writeUacMode(mode: FiioJa11Protocol.UacMode): Boolean =
         sendReport(FiioJa11Protocol.writeUacModeReport(mode))

@@ -26,6 +26,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.ui.FiioJa11StartupDefaultStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -119,46 +120,82 @@ class FiioJa11MyDacContentTest {
     }
 
     @Test
-    fun userOneSetAsDefaultShowsNativePreservationConfirmationAndCapturesReviewedPair() {
+    fun setAsDefaultSavesTheCurrentPairAfterDisclosingTheInterruption() {
         var request: FiioJa11DefaultsRequest? = null
         setContentForTrace(editorApplyTrace(), onDefaults = { request = it })
         composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Device volume").performClick()
-        composeRule.onNodeWithText("+1").performClick()
-        composeRule.onNodeWithText("Set as Default").performClick()
-        composeRule.onNodeWithText("Confirm and Set Default").assertIsDisplayed()
-        composeRule.onNodeWithText("preserve and verify the existing User 1 EQ and microphone setting", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("disconnect briefly during Save", substring = true).assertIsDisplayed()
-        composeRule.onAllNodesWithText("No EQ-band data is written", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
+        composeRule.onNodeWithText("Set startup defaults?").assertIsDisplayed()
+        composeRule.onNodeWithText("JA11 may disconnect briefly", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("keeps the active EQ and microphone setting", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText("microphone round trip", substring = true).assertCountEquals(0)
         composeRule.runOnIdle { assertEquals(null, request) }
-        composeRule.onNodeWithText("Confirm and Set Default").performClick()
+        composeRule.onNodeWithText("Save as Default").performClick()
         composeRule.runOnIdle {
-            assertEquals(21, request?.requestedVolume)
+            assertEquals(20, request?.requestedVolume)
             assertEquals(FiioJa11Protocol.EqProgram.USER_1, request?.requestedProgram)
         }
     }
 
     @Test
-    fun nonUserOneSetAsDefaultShowsReviewedMicTransitionsAndTwoReconnects() {
-        var request: FiioJa11DefaultsRequest? = null
+    fun runtimeOnlyStatusNamesTheUnplugConsequence() {
         setContentForTrace(
             editorApplyTrace(),
-            deviceEqProgram = FiioJa11Protocol.EqProgram.CLASSIC,
-            onDefaults = { request = it },
+            startupStatus = FiioJa11StartupDefaultStatus.RUNTIME_ONLY,
         )
         composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("EQ program").performClick()
-        composeRule.onNodeWithText("Set as Default").performClick()
+        composeRule.onNodeWithText("Set for this session only", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Set as Default", substring = true).assertIsDisplayed()
+    }
 
-        composeRule.onNodeWithText("Reviewed microphone setting: Off", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("switch it to On, then back to Off", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("two USB audio reconnects", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("EQ Library will not write the User 1 EQ", substring = true).assertIsDisplayed()
-        composeRule.runOnIdle { assertEquals(null, request) }
-        composeRule.onNodeWithText("Confirm and Set Default").performClick()
-        composeRule.runOnIdle {
-            assertEquals(FiioJa11Protocol.EqProgram.CLASSIC, request?.requestedProgram)
+    @Test
+    fun savedStatusReportsReadbackVerificationAndDropsTheAction() {
+        setContentForTrace(
+            editorApplyTrace(),
+            startupStatus = FiioJa11StartupDefaultStatus.SAVED,
+        )
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Saved for startup and verified by readback.").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Set as Default", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun digitalFilterSelectorOffersFiveModesAndAppliesOnlyTheChosenOne() {
+        val filters = mutableListOf<FiioJa11Protocol.DigitalFilterMode>()
+        setContentForTrace(editorApplyTrace(), onFilter = { filters += it })
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Digital filter").performClick()
+        FiioJa11Protocol.DigitalFilterMode.entries.forEach { mode ->
+            composeRule.onNodeWithText(mode.technicalLabel, substring = true).assertIsDisplayed()
         }
+        composeRule.onNodeWithText("Slow-PC", substring = true).performClick()
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.runOnIdle {
+            assertEquals(emptyList<FiioJa11Protocol.DigitalFilterMode>(), filters)
+        }
+
+        composeRule.onNodeWithText("Digital filter").performClick()
+        composeRule.onNodeWithText("NON-OS", substring = true).performClick()
+        composeRule.onNodeWithText("Apply").performClick()
+        composeRule.runOnIdle {
+            assertEquals(listOf(FiioJa11Protocol.DigitalFilterMode.NON_OS), filters)
+        }
+    }
+
+    @Test
+    fun unsupportedDigitalFilterRowIsDisabledAndSendsNoCommand() {
+        var filterCalls = 0
+        setContentForTrace(
+            editorApplyTrace(),
+            onFilter = { filterCalls += 1 },
+            digitalFilterMode = null,
+        )
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Not available on this JA11").assertIsDisplayed()
+        composeRule.onNodeWithText("JA11 did not report a filter setting", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Digital filter").performClick()
+        composeRule.onAllNodesWithText("FAST-LL", substring = true).assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals(0, filterCalls) }
     }
 
     @Test
@@ -178,19 +215,19 @@ class FiioJa11MyDacContentTest {
                     eqSaveWrites = 1,
                 ),
                 lastVerifiedSnapshot = deviceSnapshot(),
-                mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+                mechanism = FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE,
                 eqReadback = FiioJa11DefaultsEqReadback.CHANGED,
             ),
         )
         composeRule.onNodeWithText("DEVICE").performClick()
 
         composeRule.onNodeWithText("Defaults were not verified", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Final User 1 EQ readback did not match", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Final EQ readback did not match", substring = true).assertIsDisplayed()
         composeRule.onAllNodesWithText("Defaults verified", substring = true).assertCountEquals(0)
     }
 
     @Test
-    fun cancellingDefaultConfirmationReturnsToStagedVolumeWithoutWriting() {
+    fun cancellingStartupDefaultConfirmationWritesNothing() {
         var applyCalls = 0
         var defaultCalls = 0
         setContentForTrace(
@@ -199,13 +236,10 @@ class FiioJa11MyDacContentTest {
             onDefaults = { defaultCalls += 1 },
         )
         composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Device volume").performClick()
-        composeRule.onNodeWithText("+1").performClick()
-        composeRule.onNodeWithText("Set as Default").performClick()
+        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
+        composeRule.onNodeWithText("Set startup defaults?").assertIsDisplayed()
         composeRule.onNodeWithText("Cancel").performClick()
-
-        composeRule.onAllNodesWithText("Device volume").assertCountEquals(2)
-        composeRule.onNodeWithText("21 / 60").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Set startup defaults?").assertCountEquals(0)
         composeRule.runOnIdle {
             assertEquals(0, applyCalls)
             assertEquals(0, defaultCalls)
@@ -223,7 +257,7 @@ class FiioJa11MyDacContentTest {
         )
         composeRule.onNodeWithText("DEVICE").performClick()
         composeRule.onNodeWithText("Device volume").performClick()
-        composeRule.onNodeWithText("Set as Default").performClick()
+        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
         restorationTester.emulateSavedInstanceStateRestore()
 
         composeRule.runOnIdle { assertEquals(0, defaultCalls) }
@@ -251,8 +285,11 @@ class FiioJa11MyDacContentTest {
         onApply: () -> Unit = {},
         onVolume: (Int) -> Unit = {},
         onProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
+        onFilter: (FiioJa11Protocol.DigitalFilterMode) -> Unit = {},
         onDefaults: (FiioJa11DefaultsRequest) -> Unit = {},
         deviceEqProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
+        digitalFilterMode: FiioJa11Protocol.DigitalFilterMode? = FiioJa11Protocol.DigitalFilterMode.FAST_LL,
+        startupStatus: FiioJa11StartupDefaultStatus = FiioJa11StartupDefaultStatus.UNKNOWN,
         defaultsReport: FiioJa11DefaultsOperationReport? = null,
     ) {
         val bundle = requireNotNull(
@@ -275,14 +312,16 @@ class FiioJa11MyDacContentTest {
                 ),
                 editorState = MyDacEditorUiState(),
                 deviceState = FiioJa11DeviceUiState(
-                    snapshot = deviceSnapshot(eqProgram = deviceEqProgram),
+                    snapshot = deviceSnapshot(eqProgram = deviceEqProgram, digitalFilterMode = digitalFilterMode),
                     isCurrentSession = true,
+                    startupDefaultStatus = startupStatus,
                     defaultsReport = defaultsReport,
                 ),
                 onConnect = {},
                 onReadDeviceControls = {},
                 onSetOutputVolume = onVolume,
                 onSetEqProgram = onProgram,
+                onSetDigitalFilterMode = onFilter,
                 onSetDefaults = onDefaults,
                 onSetHeadsetControl = {},
                 onSetUacMode = {},
@@ -310,6 +349,7 @@ class FiioJa11MyDacContentTest {
 
     private fun deviceSnapshot(
         eqProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
+        digitalFilterMode: FiioJa11Protocol.DigitalFilterMode? = FiioJa11Protocol.DigitalFilterMode.FAST_LL,
     ) = FiioJa11DeviceSnapshot(
         sessionGeneration = 1L,
         usbProductId = FiioJa11Protocol.PRODUCT_ID_UAC_2,
@@ -318,6 +358,7 @@ class FiioJa11MyDacContentTest {
         outputVolume = 20,
         headsetControlEnabled = false,
         eqProgram = eqProgram,
+        digitalFilterMode = digitalFilterMode,
         uacMode = FiioJa11Protocol.UacMode.UAC_2,
     )
 

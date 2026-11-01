@@ -65,6 +65,7 @@ class EqLibraryActions(
     val onReadFiioJa11DeviceControls: () -> Unit,
     val onSetFiioJa11OutputVolume: (Int) -> Unit,
     val onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
+    val onSetFiioJa11DigitalFilterMode: (FiioJa11Protocol.DigitalFilterMode) -> Unit,
     val onSetFiioJa11Defaults: (FiioJa11DefaultsRequest) -> Unit,
     val onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     val onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,

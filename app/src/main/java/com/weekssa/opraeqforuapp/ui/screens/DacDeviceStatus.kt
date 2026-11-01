@@ -35,6 +35,8 @@ import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.ui.FiioJa11StartupDefaultStatus
+import com.weekssa.opraeqforuapp.ui.fiioJa11StartupStatusText
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsEqReadback
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsStage
@@ -56,6 +58,7 @@ internal fun CapabilityDrivenDeviceStatus(
     onReadFiioJa11DeviceControls: () -> Unit = {},
     onSetFiioJa11OutputVolume: (Int) -> Unit = {},
     onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
+    onSetFiioJa11DigitalFilterMode: (FiioJa11Protocol.DigitalFilterMode) -> Unit = {},
     onSetFiioJa11Defaults: (FiioJa11DefaultsRequest) -> Unit = {},
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit = {},
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
@@ -74,6 +77,7 @@ internal fun CapabilityDrivenDeviceStatus(
             onRead = onReadFiioJa11DeviceControls,
             onSetVolume = onSetFiioJa11OutputVolume,
             onSetEqProgram = onSetFiioJa11EqProgram,
+            onSetDigitalFilterMode = onSetFiioJa11DigitalFilterMode,
             onSetDefaults = onSetFiioJa11Defaults,
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
@@ -145,6 +149,7 @@ private fun FiioJa11DeviceStatus(
     onRead: () -> Unit,
     onSetVolume: (Int) -> Unit,
     onSetEqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
+    onSetDigitalFilterMode: (FiioJa11Protocol.DigitalFilterMode) -> Unit,
     onSetDefaults: (FiioJa11DefaultsRequest) -> Unit,
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
@@ -153,6 +158,8 @@ private fun FiioJa11DeviceStatus(
     var stagedVolume by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingEqProgram by rememberSaveable { mutableStateOf(false) }
     var stagedEqProgramName by rememberSaveable { mutableStateOf<String?>(null) }
+    var choosingDigitalFilter by rememberSaveable { mutableStateOf(false) }
+    var stagedFilterName by rememberSaveable { mutableStateOf<String?>(null) }
     var defaultsReview by remember { mutableStateOf<FiioJa11DefaultsRequest?>(null) }
     var pendingHeadsetValue by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var choosingUacMode by rememberSaveable { mutableStateOf(false) }
@@ -162,6 +169,9 @@ private fun FiioJa11DeviceStatus(
     val stagedProgram = stagedEqProgramName?.let { name ->
         FiioJa11Protocol.EqProgram.entries.firstOrNull { it.name == name }
     } ?: snapshot?.eqProgram
+    val stagedFilter = stagedFilterName?.let { name ->
+        FiioJa11Protocol.DigitalFilterMode.entries.firstOrNull { it.name == name }
+    } ?: snapshot?.digitalFilterMode
     val controlsEnabled = connected &&
         state.isCurrentSession &&
         !state.isBusy &&
@@ -179,7 +189,7 @@ private fun FiioJa11DeviceStatus(
         error = state.error,
         enabled = connected,
         busy = state.isBusy || state.pendingRestartWrite != null || operationBusy,
-        operationMessage = if (state.isSavingDefaults) "Saving settings…" else null,
+        operationMessage = if (state.isSavingDefaults) "Saving startup defaults…" else null,
         onRefresh = onRead,
         controlName = ::fiioControlName,
     )
@@ -238,6 +248,48 @@ private fun FiioJa11DeviceStatus(
         enabled = controlsEnabled,
         onClick = { choosingEqProgram = true },
     )
+    val digitalFilter = snapshot.digitalFilterMode
+    SimpleDeviceSettingRow(
+        label = "Digital filter",
+        value = digitalFilter?.technicalLabel ?: "Not available on this JA11",
+        enabled = controlsEnabled && digitalFilter != null,
+        onClick = { choosingDigitalFilter = true },
+    )
+    if (digitalFilter == null) {
+        Text(
+            text = "JA11 did not report a filter setting, so EQ Library sent no filter command.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+
+    Text(
+        text = "Startup defaults",
+        style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.padding(top = 14.dp),
+    )
+    Text(
+        text = fiioJa11StartupStatusText(state.startupDefaultStatus)
+            ?: "Unplugging JA11 restores the volume and EQ program saved as its startup defaults.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 2.dp),
+    )
+    if (state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED) {
+        TextButton(
+            onClick = {
+                defaultsReview = FiioJa11DefaultsRequest(
+                    reviewedSnapshot = snapshot,
+                    requestedVolume = snapshot.outputVolume,
+                    requestedProgram = snapshot.eqProgram,
+                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                )
+            },
+            enabled = controlsEnabled,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp),
+        ) { Text("Set as Default…") }
+    }
 
     DeviceSectionTitle("Microphone")
     Row(
@@ -339,33 +391,20 @@ private fun FiioJa11DeviceStatus(
                         ) { Text("+1") }
                     }
                     Text(
-                        text = "This is the JA11's native 0–60 hardware level. Keep listening volume conservative.",
+                        text = "This is the JA11's native 0–60 hardware level. Nothing is sent until you apply.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
             confirmButton = {
-                Column(horizontalAlignment = Alignment.End) {
-                    TextButton(
-                        onClick = {
-                            stagedVolume = null
-                            onSetVolume(staged)
-                        },
-                        enabled = controlsEnabled && staged != snapshot.outputVolume,
-                    ) { Text("Apply") }
-                    TextButton(
-                        onClick = {
-                            defaultsReview = FiioJa11DefaultsRequest(
-                                reviewedSnapshot = snapshot,
-                                requestedVolume = staged,
-                                requestedProgram = snapshot.eqProgram,
-                                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-                            )
-                        },
-                        enabled = controlsEnabled,
-                    ) { Text("Set as Default") }
-                }
+                TextButton(
+                    onClick = {
+                        stagedVolume = null
+                        onSetVolume(staged)
+                    },
+                    enabled = controlsEnabled && staged != snapshot.outputVolume,
+                ) { Text("Apply") }
             },
             dismissButton = {
                 TextButton(onClick = { stagedVolume = null }) { Text("Cancel") }
@@ -399,29 +438,14 @@ private fun FiioJa11DeviceStatus(
                 }
             },
             confirmButton = {
-                Column(horizontalAlignment = Alignment.End) {
-                    TextButton(
-                        onClick = {
-                            choosingEqProgram = false
-                            stagedProgram?.let(onSetEqProgram)
-                            stagedEqProgramName = null
-                        },
-                        enabled = controlsEnabled && stagedProgram != snapshot.eqProgram,
-                    ) { Text("Apply") }
-                    TextButton(
-                        onClick = {
-                            stagedProgram?.let { program ->
-                                defaultsReview = FiioJa11DefaultsRequest(
-                                    reviewedSnapshot = snapshot,
-                                    requestedVolume = snapshot.outputVolume,
-                                    requestedProgram = program,
-                                    targetControlId = FiioJa11DeviceControls.EQ_PROGRAM,
-                                )
-                            }
-                        },
-                        enabled = controlsEnabled,
-                    ) { Text("Set as Default") }
-                }
+                TextButton(
+                    onClick = {
+                        choosingEqProgram = false
+                        stagedProgram?.let(onSetEqProgram)
+                        stagedEqProgramName = null
+                    },
+                    enabled = controlsEnabled && stagedProgram != snapshot.eqProgram,
+                ) { Text("Apply") }
             },
             dismissButton = {
                 TextButton(onClick = { choosingEqProgram = false; stagedEqProgramName = null }) { Text("Cancel") }
@@ -429,13 +453,50 @@ private fun FiioJa11DeviceStatus(
         )
     }
 
+    if (choosingDigitalFilter && defaultsReview == null) {
+        AlertDialog(
+            onDismissRequest = { choosingDigitalFilter = false; stagedFilterName = null },
+            title = { Text("Digital filter") },
+            text = {
+                Column {
+                    FiioJa11Protocol.DigitalFilterMode.entries.forEach { mode ->
+                        val current = mode == digitalFilter
+                        val selected = mode == stagedFilter
+                        TextButton(
+                            onClick = { stagedFilterName = mode.name },
+                            enabled = controlsEnabled,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(buildString {
+                                append(if (selected) "● " else "○ ")
+                                append(mode.technicalLabel)
+                                if (current) append(" · Current")
+                            })
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        choosingDigitalFilter = false
+                        stagedFilter?.let(onSetDigitalFilterMode)
+                        stagedFilterName = null
+                    },
+                    enabled = controlsEnabled && stagedFilter != null && stagedFilter != digitalFilter,
+                ) { Text("Apply") }
+            },
+            dismissButton = {
+                TextButton(onClick = { choosingDigitalFilter = false; stagedFilterName = null }) { Text("Cancel") }
+            },
+        )
+    }
+
     defaultsReview?.let { request ->
         AlertDialog(
             onDismissRequest = { defaultsReview = null },
-            title = { Text("Set JA11 defaults?") },
-            text = {
-                Text(fiioJa11DefaultsConfirmationText(request))
-            },
+            title = { Text("Set startup defaults?") },
+            text = { Text(fiioJa11DefaultsConfirmationText(request)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -443,10 +504,12 @@ private fun FiioJa11DeviceStatus(
                         stagedVolume = null
                         choosingEqProgram = false
                         stagedEqProgramName = null
+                        choosingDigitalFilter = false
+                        stagedFilterName = null
                         onSetDefaults(request)
                     },
                     enabled = controlsEnabled,
-                ) { Text("Confirm and Set Default") }
+                ) { Text("Save as Default") }
             },
             dismissButton = {
                 TextButton(onClick = { defaultsReview = null }) { Text("Cancel") }
@@ -512,6 +575,7 @@ private fun FiioJa11DeviceStatus(
 private fun fiioControlName(controlId: DacControlId): String = when (controlId) {
     FiioJa11DeviceControls.OUTPUT_VOLUME -> "volume"
     FiioJa11DeviceControls.EQ_PROGRAM -> "EQ program"
+    FiioJa11DeviceControls.DIGITAL_FILTER -> "digital filter"
     FiioJa11DeviceControls.HEADSET_CONTROL -> "headset / mic remote"
     FiioJa11DeviceControls.UAC_MODE -> "USB Audio Class"
     else -> "device setting"

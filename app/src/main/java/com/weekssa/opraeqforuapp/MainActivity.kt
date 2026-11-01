@@ -168,6 +168,7 @@ class MainActivity : ComponentActivity() {
         onReadFiioJa11DeviceControls = viewModel::readFiioJa11DeviceControls,
         onSetFiioJa11OutputVolume = viewModel::setFiioJa11OutputVolume,
         onSetFiioJa11EqProgram = viewModel::setFiioJa11EqProgram,
+        onSetFiioJa11DigitalFilterMode = viewModel::setFiioJa11DigitalFilterMode,
         onSetFiioJa11Defaults = viewModel::setFiioJa11Defaults,
         onSetFiioJa11HeadsetControl = viewModel::setFiioJa11HeadsetControl,
         onSetFiioJa11UacMode = viewModel::setFiioJa11UacMode,

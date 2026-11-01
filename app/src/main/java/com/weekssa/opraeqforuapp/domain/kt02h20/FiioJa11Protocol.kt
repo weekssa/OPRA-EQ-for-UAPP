@@ -45,6 +45,7 @@ object FiioJa11Protocol {
     private const val CMD_SAMPLE_RATE = 0x09
     private const val CMD_FIRMWARE = 0x0B
     private const val CMD_HEADSET_CONTROL = 0x12
+    private const val CMD_DIGITAL_FILTER_MODE = 0x11
     private const val CMD_FILTER = 0x15
     private const val CMD_EQ_PROGRAM = 0x16
     private const val CMD_GLOBAL_GAIN = 0x17
@@ -83,6 +84,26 @@ object FiioJa11Protocol {
         }
     }
 
+    /**
+     * JA11 reconstruction-filter selection (`0x11`).
+     *
+     * Values and names follow the pinned Ircama reference and its compiled command comparator. The
+     * meanings are the reference author's claims; exact-device applicability is negotiated at runtime
+     * by requiring a valid read reply before the control is offered.
+     */
+    enum class DigitalFilterMode(val code: Int, val technicalLabel: String) {
+        FAST_LL(1, "FAST-LL"),
+        FAST_PC(2, "FAST-PC"),
+        SLOW_LL(3, "Slow-LL"),
+        SLOW_PC(4, "Slow-PC"),
+        NON_OS(5, "NON-OS"),
+        ;
+
+        companion object {
+            fun fromCode(code: Int): DigitalFilterMode? = entries.firstOrNull { it.code == code }
+        }
+    }
+
     data class Band(
         val type: String,
         val frequencyHz: Double,
@@ -109,6 +130,12 @@ object FiioJa11Protocol {
 
     fun writeHeadsetControlReport(enabled: Boolean): ByteArray =
         writeOneByteReport(CMD_HEADSET_CONTROL, if (enabled) 1 else 0)
+
+    /** Non-mutating capability probe/readback for the JA11 reconstruction filter. */
+    fun readDigitalFilterModeReport(): ByteArray = readOneByteReport(CMD_DIGITAL_FILTER_MODE)
+
+    fun writeDigitalFilterModeReport(mode: DigitalFilterMode): ByteArray =
+        writeOneByteReport(CMD_DIGITAL_FILTER_MODE, mode.code)
 
     fun readEqProgramReport(): ByteArray = readOneByteReport(CMD_EQ_PROGRAM)
 
@@ -195,6 +222,9 @@ object FiioJa11Protocol {
             1 -> true
             else -> null
         }
+
+    fun digitalFilterModeFromResponse(report: ByteArray): DigitalFilterMode? =
+        oneByteValueFromResponse(report, CMD_DIGITAL_FILTER_MODE)?.let(DigitalFilterMode::fromCode)
 
     fun eqProgramFromResponse(report: ByteArray): EqProgram? =
         oneByteValueFromResponse(report, CMD_EQ_PROGRAM)?.let(EqProgram::fromCode)

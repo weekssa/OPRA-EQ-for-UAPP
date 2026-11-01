@@ -86,7 +86,7 @@ class FiioJa11DeviceUiStateTest {
     fun changedBankCannotRenderAsVerifiedEvenIfStageAccidentallySaysComplete() {
         val report = defaultsReport(
             stage = FiioJa11DefaultsStage.COMPLETE,
-            mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+            mechanism = FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE,
             eqReadback = FiioJa11DefaultsEqReadback.CHANGED,
         )
 
@@ -104,7 +104,7 @@ class FiioJa11DeviceUiStateTest {
     fun nativeDefaultsCopyDescribesUnchangedRestagingWithoutClaimingNoEqWrites() {
         val report = defaultsReport(
             stage = FiioJa11DefaultsStage.COMPLETE,
-            mechanism = FiioJa11DefaultsMechanism.NATIVE_USER_1_REWRITE,
+            mechanism = FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE,
             eqReadback = FiioJa11DefaultsEqReadback.MATCHED,
             counts = FiioJa11DefaultsWriteCounts(
                 volumeWrites = 1,
@@ -116,11 +116,11 @@ class FiioJa11DeviceUiStateTest {
         )
         val text = fiioJa11DefaultsReportText(report)
 
-        assertTrue(text.contains("existing EQ and microphone setting were preserved"))
+        assertTrue(text.contains("Saved to JA11. Volume 30 and User 1 are set."))
+        assertTrue(text.contains("active EQ and microphone setting were preserved"))
         assertFalse(text.contains("bands/gain"))
-        assertFalse(text.contains("No EQ-band data was written"))
         assertThat(requireNotNull(fiioJa11DefaultsEqReadbackText(report)))
-            .isEqualTo("Final User 1 EQ readback matched.")
+            .isEqualTo("Final EQ readback matched.")
     }
 
     @Test
@@ -162,8 +162,9 @@ class FiioJa11DeviceUiStateTest {
                 targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
             ),
         )
-        assertTrue(nativeText.contains("preserve and verify the existing User 1 EQ and microphone setting"))
-        assertTrue(nativeText.contains("disconnect briefly"))
+        assertTrue(nativeText.contains("startup defaults"))
+        assertTrue(nativeText.contains("keeps the active EQ and microphone setting"))
+        assertTrue(nativeText.contains("JA11 may disconnect briefly"))
         assertFalse(nativeText.contains("Apply"))
         assertFalse(nativeText.contains("bands/gain"))
 
@@ -181,6 +182,7 @@ class FiioJa11DeviceUiStateTest {
                     requestedProgram = FiioJa11Protocol.EqProgram.CLASSIC,
                     targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
                 ),
+                mechanism = FiioJa11DefaultsMechanism.MIC_RECONNECT,
             )
             assertTrue(microphoneText.contains("EQ Library will not write the User 1 EQ"))
             assertTrue(microphoneText.contains("Reviewed microphone setting: $reviewed"))

@@ -501,6 +501,11 @@ class EqLibraryViewModel(
         DacControlValue.Discrete(program.name.lowercase()),
     )
 
+    fun setFiioJa11DigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode) = writeFiioJa11Control(
+        FiioJa11DeviceControls.DIGITAL_FILTER,
+        DacControlValue.Discrete(mode.name.lowercase()),
+    )
+
     fun setFiioJa11Defaults(request: FiioJa11DefaultsRequest) {
         val state = mutableFiioJa11DeviceState.value
         if (state.isBusy || !state.isCurrentSession) return
