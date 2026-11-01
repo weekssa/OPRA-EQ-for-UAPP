@@ -172,7 +172,7 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText("DEVICE").performClick()
         composeRule.onAllNodesWithText("Digital filter", substring = true).assertCountEquals(0)
         composeRule.onNodeWithText("Device volume", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("EQ program", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText("EQ program", substring = true).assertCountEquals(2)
     }
 
     @Test
