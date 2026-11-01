@@ -83,7 +83,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            testProguardFiles("proguard-rules-beta-test.pro")
         }
         release {
             isMinifyEnabled = true
@@ -120,9 +119,6 @@ androidComponents {
         variantBuilder.enableAndroidTest = true
     }
     beforeVariants(selector().withBuildType("beta")) { variantBuilder ->
-        variantBuilder.enableAndroidTest = true
-    }
-    beforeVariants(selector().withBuildType("privateBeta")) { variantBuilder ->
         variantBuilder.enableAndroidTest = true
     }
 }

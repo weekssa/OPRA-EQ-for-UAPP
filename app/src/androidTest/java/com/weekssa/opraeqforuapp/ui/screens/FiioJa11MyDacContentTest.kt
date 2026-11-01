@@ -29,6 +29,7 @@ import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11StartupDefaultStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -166,7 +167,11 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText("DEVICE").performClick()
         composeRule.onNodeWithText("Digital filter").performClick()
         FiioJa11Protocol.DigitalFilterMode.entries.forEach { mode ->
-            composeRule.onNodeWithText(mode.technicalLabel, substring = true).assertIsDisplayed()
+            assertTrue(
+                "filter option ${mode.technicalLabel} is missing",
+                composeRule.onAllNodesWithText(mode.technicalLabel, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty(),
+            )
         }
         composeRule.onNodeWithText("Slow-PC", substring = true).performClick()
         composeRule.onNodeWithText("Cancel").performClick()

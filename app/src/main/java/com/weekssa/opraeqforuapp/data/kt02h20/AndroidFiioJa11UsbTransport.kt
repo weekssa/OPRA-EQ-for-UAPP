@@ -25,6 +25,9 @@ class AndroidFiioJa11UsbTransport(
     private var savePreviousDetachGeneration = 0L
     private var savePreviousSerial: String? = null
     private var awaitingLateSaveDetach = false
+    private var filterProbeGeneration = 0L
+    private var filterProbeValue: FiioJa11Protocol.DigitalFilterMode? = null
+    private var filterProbeValid = false
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
     val present: StateFlow<Boolean> = hid.present
@@ -90,10 +93,23 @@ class AndroidFiioJa11UsbTransport(
         decoder = FiioJa11Protocol::headsetControlFromResponse,
     )
 
-    suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? = exchangeOneByte(
-        request = FiioJa11Protocol.readDigitalFilterModeReport(),
-        decoder = FiioJa11Protocol::digitalFilterModeFromResponse,
-    )
+    /**
+     * Probes the optional filter once per USB session. A unit that ignores `0x11` would otherwise
+     * cost its response timeout on every DEVICE refresh; the probe is invalidated by a filter write
+     * and naturally re-probed after a re-enumeration.
+     */
+    suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? {
+        val generation = hid.sessionGeneration
+        if (filterProbeValid && generation == filterProbeGeneration) return filterProbeValue
+        val value = exchangeOneByte(
+            request = FiioJa11Protocol.readDigitalFilterModeReport(),
+            decoder = FiioJa11Protocol::digitalFilterModeFromResponse,
+        )
+        filterProbeGeneration = generation
+        filterProbeValue = value
+        filterProbeValid = generation > 0L
+        return value
+    }
 
     override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = exchangeOneByte(
         request = FiioJa11Protocol.readEqProgramReport(),
@@ -114,8 +130,10 @@ class AndroidFiioJa11UsbTransport(
     suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean =
         sendReport(FiioJa11Protocol.writeEqProgramReport(program))
 
-    suspend fun writeDigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode): Boolean =
-        sendReport(FiioJa11Protocol.writeDigitalFilterModeReport(mode))
+    suspend fun writeDigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode): Boolean {
+        filterProbeValid = false
+        return sendReport(FiioJa11Protocol.writeDigitalFilterModeReport(mode))
+    }
 
     suspend fun writeUacMode(mode: FiioJa11Protocol.UacMode): Boolean =
         sendReport(FiioJa11Protocol.writeUacModeReport(mode))
