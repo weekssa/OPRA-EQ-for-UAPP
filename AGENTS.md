@@ -48,9 +48,9 @@ The shared multi-model workflow at `/Users/stephenweeks/Documents/Codex/Codex-Us
 The workflow's hard-set rules apply here without modification:
 
 - Planning happens in a dedicated `gpt-6.1-sol` thread and ends at handoff. Never begin an edit, test, build, or device operation from a Sol planning thread; execution runs in a fresh or deliberately switched `deepseek/deepseek-flash` thread.
-- Planning protects the Sol budget: heavy read-only context work goes to up to three parallel `gpt-6-luna` agents, each spawn names its model, and Sol synthesizes the plan and hands off.
+- Planning protects the Sol budget: heavy read-only context work goes to up to three parallel research agents on `inferx/deepseek-v4.1-flash-1017-basic`, falling back to `gpt-6-luna` when that endpoint fails or the tool loop is long. Each spawn names its model, and Sol synthesizes the plan and hands off.
 - Keep one writer for execution work. Every substantive subagent call names its model explicitly, and `resume_agent` is not used where the model matters.
-- Do not automatically retry, change model or provider, or escalate reasoning effort. The single permitted substitution is the workflow's peak-aware gate: inside an approved off-peak window, a hard-locked `gpt-6.1-sol` or `gpt-6-luna` request may continue on `deepseek/deepseek-flash`; during peak it fails closed.
+- Do not automatically retry, change model or provider, or escalate reasoning effort. The permitted substitutions are the workflow's peak-aware gate and its two route-scoped combos: inside an approved off-peak window a hard-locked `gpt-6.1-sol` or `gpt-6-luna` request may continue on `deepseek/deepseek-flash`, and only `combo/cheap-first` and `combo/research` may fail over inside their own threads. During peak every other scope fails closed.
 - Owner approval gates in this file remain in force on top of the workflow: merge, publication, hardware mutation, signing changes, and any implementation beyond the current explicit request.
 - Results are reported as DEMONSTRATED, CONFIGURED, NOT EXERCISED, INSPECTION-ONLY, or UNSUPPORTED with their limits, even when the surrounding task seems obvious.
 
