@@ -75,8 +75,8 @@ device-specific capability declaration or a validated device reply, plus physica
 | Framing | report id 2 + command block, length byte, footer `0xEE`; sequence/checksum bytes are tolerated as zero by this device for other commands |
 | Transport | HID output report request, input report reply, interrupt endpoints, 700 ms deadline, 80 ms transfer timeout, queue drain |
 
-`0x11` came from Ircama/ja11-config (header marks it a Savitech command adapted for JA11) and
-Audiocular-Aura (CB5100 `0x4B` flow). It is not the vendor JA11 command and returned no reply.
+`0x11` came from Ircama/ja11-config at pinned revision `affddff6c9808c33ce8b35b0b9759ff0d7f6e405` (header marks it a Savitech command adapted for JA11) and
+Audiocular-Aura at pinned revision `2ea1896287448fc8d6170994cf32048185917b8d` (CB5100 `0x4B` flow). It is not the vendor JA11 command and returned no reply. The other pinned references: adithyasource/fiiocontrol-oss `f38994b3bd51bbc898cfceb5d182a403180df33e`, Cyfine/ja11-web-control `4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30`.
 No filter write was ever attempted. No USB bus capture exists; J034/J035 recorded application-level
 counts and UI readback only. A standard valid `0x04` reply would be accepted by our decoder (values
 0..4); a non-standard frame would not.

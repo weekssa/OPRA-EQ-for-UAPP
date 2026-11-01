@@ -1,8 +1,8 @@
 # Candidate B — final evidence review and release readiness
 
-Status: **AWAITING OWNER SCOPE DECISION.** Goal A is physically verified; Goal B is a documented
-device-specific limitation, not a delivered feature. No merge, signing, publication or further device
-mutation is authorized.
+Status: **RELEASE CANDIDATE PREPARED — AWAITING OWNER GO.** The owner approved the v0.9.0 scope:
+Goal A complete and physically verified, Goal B deferred and removed from the released UI. No merge,
+official signing, publication or further device mutation is authorized before the explicit GO.
 
 ## Deliverable A — Goal A qualification summary
 
@@ -82,24 +82,25 @@ APK `651100980a7d2361e5fc5ec486ae309e4ddaf8bb59f98409883281f3f53deebe`).
 
 ## Deliverable E — product integration
 
-For the exact profile the Digital filter row is present, disabled, and reads "Not available on this
-JA11" with "JA11 did not report a filter setting, so EQ Library sent no filter command." No write is
-possible. Repository and Compose tests cover unsupported and ignored-write cases. This is truthful and
-needs no change. Other devices and firmwares keep runtime capability negotiation; nothing is globally
-disabled.
+The deferred Digital filter row, its selector dialog and the UI callback chain are removed from the
+JA11 DEVICE screen. The repository probe and write paths are dormant behind
+`JA11_FILTER_CONTROL_ENABLED = false`: no `0x04` read or write runs during connection, refresh or
+navigation, and writes are rejected. Tests cover the absent row, zero probes, rejected writes and the
+unchanged persistence matrix. Other devices and firmwares keep runtime capability negotiation; nothing
+is globally disabled.
 
 ## Deliverable F — release readiness
 
-- Qualified technical basis: **beta.3** (physically verified). beta.4 is diagnostic-only and must not
-  replace it.
-- Gates on the beta.3-era source: 830+ JVM tests, lint debug/release/privateBeta,
-  debug/release/privateBeta/androidTest builds, R8 mapping, 306 Python/contract tests, 16/16 FiioJa11
-  UI tests; independent review found no blockers.
-- Outstanding: the owner scope decision on Goal B; merge, official signing, publication and any new
-  device session remain unauthorized.
-- If both goals are required for release, Goal B is a product-scope blocker. If a release may ship with
-  Goal A complete and Goal B documented as a vendor-exposed limitation, the remaining work is release
-  preparation plus the owner publication approval.
+- Physical qualification basis: **beta.3** (J035). The persistence transaction is unchanged in the
+  release candidate; the UI-only change adds no physical claim.
+- Final private candidate: **beta.5** (see the identity table below). beta.4 is diagnostic-only and was
+  not promoted.
+- Local gates: 834 JVM tests, lint debug/release/privateBeta, debug/release/privateBeta/androidTest
+  builds, R8 mapping, 306 Python/contract tests, 78/78 API 35 instrumentation, API 26 and API 35
+  install/launch. Hosted exact-head checks are recorded below once complete.
+- Outstanding before publication: hosted exact-head checks; merge, official signing, stable tag and
+  publication require the owner GO and the post-merge/signing gates.
+- Goal B is deferred, not delivered; the release notes state that accurately.
 
 ## Deliverable G — records
 
