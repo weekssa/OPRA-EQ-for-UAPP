@@ -10,39 +10,36 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.8.3** is the current stable public Android release. v0.8.2 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
+**v0.9.0** is the current stable public Android release. v0.8.3 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
 
-[Download EQ Library v0.8.3](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.3) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.3/EQ-Library-v0.8.3.apk).
+[Download EQ Library v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.9.0/EQ-Library-v0.9.0.apk).
 
-- Package: `com.weekssa.opraeqforuapp`; versionName `0.8.3`; versionCode `14`
+- Package: `com.weekssa.opraeqforuapp`; versionName `0.9.0`; versionCode `20`
 - Android 8.0 / API 26 or newer
-- Install over v0.8.1 to keep local app data
+- Install over v0.8.3 to keep local app data
 - Signed with the project's permanent Android release identity
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
 The public APK SHA-256 is:
 
-`396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`
+`8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`
 
-The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.3/EQ-Library-v0.8.3.apk.sha256) is published with the release.
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.9.0/EQ-Library-v0.9.0.apk.sha256) is published with the release.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## v0.8.3 highlights
+## v0.9.0 highlights
 
 - JA11 volume and EQ program editors stage changes locally, with separate Cancel, session-only Apply, and explicitly confirmed Set as Default actions.
-- Set as Default verifies the selected pair through the microphone reconnect sequence and verifies the original microphone and companion state afterward. It does not use native EQ Save, change UAC, or write EQ-band/gain data.
-- Owner testing passed for the identified beta candidate. Evidence limits remain explicit: app operation counts are not USB bus captures; no independent User 1 comparison or unique same-unit identity measurement is claimed.
+- Set as Default saves the selected JA11 EQ program and volume across genuine power removal, while preserving the User 1 bank and making no microphone or UAC writes.
+- Physical qualification is tied to J035: one Pixel 9, one JA11 at firmware 2.20, and the tested transaction. See the release artifact record and validation ledger for evidence boundaries.
 
-See the [v0.8.3 release notes](docs/releases/v0.8.3.md) for scope, compatibility, installation, and evidence boundaries.
+See the [v0.9.0 release notes](docs/releases/v0.9.0.md) for scope, compatibility, installation, and evidence boundaries.
 
-## v0.8.2 highlights (previous stable release)
+## v0.8.3 (previous stable release)
 
-- My EQs keeps saved items and open headphone detail visible during a brief Automatic-output change on JA11 reconnect.
-- An authorized JA11 Flash completes final verification and refreshes EQ and DEVICE state when its initiating screen is left.
-
-See the [v0.8.2 release notes](docs/releases/v0.8.2.md) for its scope and evidence.
+The previous stable version added the JA11 volume and EQ program defaults flow. See the [v0.8.3 release notes](docs/releases/v0.8.3.md) for its original scope and evidence.
 
 ## v0.8.0 product modernization highlights
 
@@ -159,7 +156,7 @@ Black Pearl `.txt` export uses the verified pyBlackPearl `PK / LS / HS` peak/she
 
 ### FiiO JA11
 
-The in-development **v0.9.0-beta.1** candidate adds native Set as Default for an explicitly requested User 1 target, preserving fresh exact EQ data without microphone writes. Other programs retain the explicit microphone round trip. Candidate power-loss persistence remains unqualified until the final physical session. FAST-LL, FAST-PC, Slow-LL, Slow-PC and NON-OS were each investigated and remain disabled for insufficient independent JA11 evidence. See the [approved plan and evidence](docs/releases/v0.9.0/PLAN.md); public stable remains v0.8.3.
+The v0.9.0 stable release delivers physically qualified JA11 program and volume persistence. Digital reconstruction filters are not delivered; see the [release notes](docs/releases/v0.9.0.md) and preserved [research handoff](docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md).
 
 v0.7.0 includes a strict FiiO JA11 USB identity, a five-band User 1 editor, explicit Review → Apply controls, one-Save persistence, final readback, and failure handling within the existing transaction boundary.
 

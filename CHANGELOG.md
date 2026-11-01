@@ -17,13 +17,8 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+## Historical v0.9.0 beta candidates
 
-### 0.9.0-beta.5 release candidate
-
-- Native JA11 EQ program and volume persistence is physically verified (J035): Vocal, Classic, Bass, User 1 and Off persist across genuine power removal with the User 1 bank untouched and no microphone/UAC writes.
-- The deferred digital-filter control is removed from the JA11 DEVICE screen. The probe and write paths are dormant behind `JA11_FILTER_CONTROL_ENABLED = false`; no filter command runs in normal workflows.
-- The complete digital-filter investigation is preserved in `docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md` for a future version.
-- Version `0.9.0-beta.5` / code 19, private package `com.weekssa.opraeqforuapp.v090beta`, local test signing.
 ### 0.9.0-beta.2 recovery candidate
 
 Physical result (2026-11-01, J034): the native all-program save is **unsafe**. User 1 + volume survived a genuine power removal, but saving with a built-in program active did not persist that program and committed the working curve into the stored User 1 bank. The app reported the failure truthfully; the captured bank was restored exactly and verified. Native Set as Default must remain User 1-only.

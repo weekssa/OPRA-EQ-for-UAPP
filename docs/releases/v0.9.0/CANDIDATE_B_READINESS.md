@@ -1,8 +1,6 @@
 # Candidate B — final evidence review and release readiness
 
-Status: **RELEASE CANDIDATE PREPARED — AWAITING OWNER GO.** The owner approved the v0.9.0 scope:
-Goal A complete and physically verified, Goal B deferred and removed from the released UI. No merge,
-official signing, publication or further device mutation is authorized before the explicit GO.
+Status: **RELEASED — VERIFIED.** The conditional owner GO was exercised after the documented gates passed. PR #124 merged at exact source `1eebfda363a580591abdb3b109b8af5df5b82a90`; official signing, exact-artifact promotion, publication and post-publication APK checksum verification succeeded. See [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](../../release-engineering/v0.9.0-stable/ARTIFACTS.md) for the final provenance tuple. No new device mutation was part of release closeout.
 
 ## Deliverable A — Goal A qualification summary
 
@@ -98,8 +96,7 @@ is globally disabled.
 - Local gates: 834 JVM tests, lint debug/release/privateBeta, debug/release/privateBeta/androidTest
   builds, R8 mapping, 306 Python/contract tests, 78/78 API 35 instrumentation, API 26 and API 35
   install/launch. Hosted exact-head checks are recorded below once complete.
-- Outstanding before publication: hosted exact-head checks; merge, official signing, stable tag and
-  publication require the owner GO and the post-merge/signing gates.
+- Hosted exact-head, merge, exact-main, official signing and promotion gates passed; public stable v0.9.0 is current latest. Full run and artifact identifiers are in the stable artifacts record.
 - Goal B is deferred, not delivered; the release notes state that accurately.
 
 ## Deliverable G — records
@@ -123,7 +120,7 @@ Gates: 834 JVM tests, lint debug/release/privateBeta, debug/release/privateBeta/
 306 Python/contract tests, 78/78 API 35 instrumentation, API 26 and API 35 install/launch. The DEVICE
 filter row is absent, the probe is dormant and filter writes are rejected when the flag is off.
 
-## Post-GO procedure (prepare now, execute only after owner GO)
+## Historical post-GO procedure (completed 2026-11-01)
 
 1. Verify owner GO and the exact PR head/scope.
 2. Merge PR #124 under branch protection; verify the exact main commit.
@@ -136,7 +133,7 @@ filter row is absent, the probe is dormant and filter writes are rejected when t
    the GitHub release with notes from `docs/releases/v0.9.0.md`.
 8. Download and verify all public assets, checksums and `/releases/latest`; complete publication records.
 
-Any failed post-GO gate stops before publication.
+All listed gates passed; the public APK and stable/latest state were independently checked after publication. The historical procedure is retained to explain the release sequence.
 
 ### Hosted verification and artifact integrity (recorded 2026-11-01)
 
