@@ -13,10 +13,37 @@ import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FiioJa11DeviceUiStateTest {
+    @Test
+    fun sessionChangeClearsTheSavedReportAndStartupClaim() {
+        val saved = FiioJa11DeviceUiState(
+            snapshot = snapshot(7L),
+            isCurrentSession = true,
+            startupDefaultStatus = FiioJa11StartupDefaultStatus.SAVED,
+            defaultsReport = defaultsReport(
+                stage = FiioJa11DefaultsStage.COMPLETE,
+                mechanism = FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE,
+                eqReadback = FiioJa11DefaultsEqReadback.MATCHED,
+            ),
+        )
+
+        val sameSession = saved.readSuccess(snapshot(7L))
+        assertThat(sameSession.startupDefaultStatus).isEqualTo(FiioJa11StartupDefaultStatus.SAVED)
+        assertThat(sameSession.defaultsReport).isNotNull()
+
+        val newSession = saved.readSuccess(snapshot(8L))
+        assertThat(newSession.startupDefaultStatus).isEqualTo(FiioJa11StartupDefaultStatus.UNKNOWN)
+        assertNull(newSession.defaultsReport)
+
+        val stale = saved.markStale()
+        assertNull(stale.defaultsReport)
+        assertThat(stale.startupDefaultStatus).isEqualTo(FiioJa11StartupDefaultStatus.UNKNOWN)
+    }
+
     @Test
     fun pendingRestartVerificationRemainsBusyUntilReplacementSessionIsVerified() {
         val baseline = snapshot(sessionGeneration = 4L)

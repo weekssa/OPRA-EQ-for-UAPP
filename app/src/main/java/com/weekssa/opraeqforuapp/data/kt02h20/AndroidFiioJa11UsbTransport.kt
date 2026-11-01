@@ -25,9 +25,7 @@ class AndroidFiioJa11UsbTransport(
     private var savePreviousDetachGeneration = 0L
     private var savePreviousSerial: String? = null
     private var awaitingLateSaveDetach = false
-    private var filterProbeGeneration = 0L
-    private var filterProbeValue: FiioJa11Protocol.DigitalFilterMode? = null
-    private var filterProbeValid = false
+    private val filterProbe = FiioJa11FilterProbeCache()
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
     val present: StateFlow<Boolean> = hid.present
@@ -100,14 +98,12 @@ class AndroidFiioJa11UsbTransport(
      */
     suspend fun readDigitalFilterMode(): FiioJa11Protocol.DigitalFilterMode? {
         val generation = hid.sessionGeneration
-        if (filterProbeValid && generation == filterProbeGeneration) return filterProbeValue
+        if (filterProbe.isCachedFor(generation)) return filterProbe.value()
         val value = exchangeOneByte(
             request = FiioJa11Protocol.readDigitalFilterModeReport(),
             decoder = FiioJa11Protocol::digitalFilterModeFromResponse,
         )
-        filterProbeGeneration = generation
-        filterProbeValue = value
-        filterProbeValid = generation > 0L
+        filterProbe.record(generation, value)
         return value
     }
 
@@ -131,7 +127,7 @@ class AndroidFiioJa11UsbTransport(
         sendReport(FiioJa11Protocol.writeEqProgramReport(program))
 
     suspend fun writeDigitalFilterMode(mode: FiioJa11Protocol.DigitalFilterMode): Boolean {
-        filterProbeValid = false
+        filterProbe.invalidate()
         return sendReport(FiioJa11Protocol.writeDigitalFilterModeReport(mode))
     }
 

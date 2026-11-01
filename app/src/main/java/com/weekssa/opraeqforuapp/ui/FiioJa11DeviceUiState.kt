@@ -84,20 +84,22 @@ data class FiioJa11DeviceUiState(
         error = null,
     )
 
-    fun readSuccess(snapshot: FiioJa11DeviceSnapshot): FiioJa11DeviceUiState = copy(
-        isReading = false,
-        isWriting = false,
-        activeWriteControlId = null,
-        snapshot = snapshot,
-        isCurrentSession = true,
-        lastVerifiedWriteControlId = null,
-        error = null,
-        startupDefaultStatus = if (this.snapshot?.sessionGeneration == snapshot.sessionGeneration) {
-            startupDefaultStatus
-        } else {
-            FiioJa11StartupDefaultStatus.UNKNOWN
-        },
-    )
+    fun readSuccess(snapshot: FiioJa11DeviceSnapshot): FiioJa11DeviceUiState {
+        val sameSession = this.snapshot?.sessionGeneration == snapshot.sessionGeneration
+        return copy(
+            isReading = false,
+            isWriting = false,
+            activeWriteControlId = null,
+            snapshot = snapshot,
+            isCurrentSession = true,
+            lastVerifiedWriteControlId = null,
+            error = null,
+            // A saved-startup claim and its report belong to the session that verified them. A new
+            // session must not present the old result as current.
+            startupDefaultStatus = if (sameSession) startupDefaultStatus else FiioJa11StartupDefaultStatus.UNKNOWN,
+            defaultsReport = if (sameSession) defaultsReport else null,
+        )
+    }
 
     fun beginWrite(controlId: DacControlId): FiioJa11DeviceUiState = copy(
         isReading = false,
@@ -146,6 +148,7 @@ data class FiioJa11DeviceUiState(
         lastVerifiedWriteControlId = null,
         error = message,
         startupDefaultStatus = FiioJa11StartupDefaultStatus.UNKNOWN,
+        defaultsReport = null,
     )
 
     fun markStale(): FiioJa11DeviceUiState = copy(
@@ -154,6 +157,7 @@ data class FiioJa11DeviceUiState(
         activeWriteControlId = null,
         isCurrentSession = false,
         startupDefaultStatus = FiioJa11StartupDefaultStatus.UNKNOWN,
+        defaultsReport = null,
     )
 
     fun withSessionCurrent(current: Boolean): FiioJa11DeviceUiState = copy(
