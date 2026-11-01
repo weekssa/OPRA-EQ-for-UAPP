@@ -87,6 +87,11 @@ class V090ReleaseTest(unittest.TestCase):
         with self.assertRaisesRegex(release.V090ReleaseError, "0.9.0 beta line"):
             release.validate_version(self.root)
 
+        # The stable v0.9.0 release identity is accepted when declared.
+        self.write_version("0.9.0", 20)
+        state.write_text("- Candidate build: **v0.9.0**, versionCode `20`\n", encoding="utf-8")
+        release.validate_version(self.root)
+
     def test_candidate_metadata_is_beta_prerelease_and_nonlatest(self):
         metadata = release.candidate_metadata(SOURCE)
         self.assertEqual("beta", metadata["releaseChannel"])

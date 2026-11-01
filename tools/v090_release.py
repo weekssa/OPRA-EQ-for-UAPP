@@ -41,6 +41,7 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 SOURCE_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 CANDIDATE_STATE_RE = re.compile(r"Candidate build: \*\*v([^*]+)\*\*, versionCode \x60([0-9]+)\x60")
 RECOVERY_VERSION_RE = re.compile(r"0\.9\.0-beta\.[0-9]+")
+STABLE_V09_VERSION = "0.9.0"
 
 
 class V090ReleaseError(RuntimeError):
@@ -102,8 +103,9 @@ def validate_version(project_root: Path, profile: BetaProfile = PROFILE) -> None
     if declared is not None and declared == (version_name, version_code):
         require(version_code > profile.version_code,
                 f"recovery candidate versionCode must advance {profile.version_code}, found {version_code}")
-        require(RECOVERY_VERSION_RE.fullmatch(version_name) is not None,
-                f"recovery candidate versionName must stay in the 0.9.0 beta line, found {version_name}")
+        require(
+            RECOVERY_VERSION_RE.fullmatch(version_name) is not None or version_name == STABLE_V09_VERSION,
+                f"candidate versionName must be the 0.9.0 beta line or the stable {STABLE_V09_VERSION}, found {version_name}")
         return
     if version_name == profile.version_name:
         raise V090ReleaseError(f"Android versionCode must be {profile.version_code}, found {version_code}")
