@@ -37,3 +37,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Task seals (scope-guard)
+GATES.md.sha
