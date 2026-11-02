@@ -116,7 +116,29 @@ report; do not substitute or retry.
 
 ## Review
 
-verdict: pending
-ran: none
+verdict: PASS for gate 2, gate 3 and gate 4 at the document level. Implementation remains
+blocked: the determination is C7(c), and no H criterion is satisfied.
+
+ran:
+- gate 2: read EVALUATION.md; all seven slices carry outcomes, sources, classifications and
+  null-result meanings; APK discrepancy preserved; sibling rows provisional; corrected query
+  specified; B4/B5 and C7(a)/(b)/(c) adjudicated.
+- gate 3: read READINESS.md; dormant paths, false flag, UI gating, decoder weakness, missing
+  fixtures, future tests and lifecycle requirements recorded; no code change or payload.
+- gate 4: read the three draft files; one conditional session with fresh baseline and restoration;
+  two status additions; exactly two issue drafts with H and the classification verbatim.
+- gate 5: git diff --check and scoped name check before commit.
+- gate 1: scope-guard run before commit.
+
 findings:
-- none yet
+- The evaluation is INSPECTION-ONLY consolidation; it did not re-run any probe, capture, install,
+  connection or flash.
+- Preserved APK provenance is unresolved: neither local copy matches the pinned
+  `ab0eb9cb…` digest. Sibling rows stay provisional and were not promoted.
+- Decoder weakness (`packetView` + `oneByteValueFromResponse`) is recorded in READINESS.md as a
+  delivery blocker, not repaired.
+- Documentation drift outside OWNS (`0x11` comments in the transport and capability matrix) is
+  recorded for a future authorized docs task; it was not edited here.
+- This review block was appended under the owner's explicit instruction. That changes the file
+  digest, so the local seal was refreshed to cover the review record. The substantive contract,
+  scope, base and OWNS list are unchanged; no scope change was approved by that refresh.
