@@ -1,8 +1,9 @@
 # Issue drafts — JA11 filter and save-ordering gaps
 
-Status: **NOT FILED.** These are exactly two draft issues. Filing requires separate explicit
-authorization; nothing here authorizes implementation, installation, connection, writes, firmware
-action or release claims.
+Status: **FILED.** Both drafts are filed: issue #132 for the reopening criteria
+(https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/132) and issue #133 for vendor-exact save
+ordering (https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/133); nothing here authorizes
+implementation, installation, connection, writes, firmware action or release claims.
 
 Current classification (verbatim): **device-specific not supported (vendor-exposed)**.
 
