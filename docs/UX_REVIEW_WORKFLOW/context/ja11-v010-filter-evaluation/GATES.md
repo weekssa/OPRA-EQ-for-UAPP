@@ -151,3 +151,12 @@ addressed: full APK digests restored; C7(c) reasoning now separates record-level
 reopening from device-read qualification; issue 2 states H does not gate Save
 ordering; owner session marks Save qualification independently actionable; vendor
 record qualified as the inspected local copy. Determination unchanged: C7(c).
+
+### Review round 2 — independent (gpt-6-luna)
+
+verdict: clean
+ran: scope-guard --root . --base ab243d4f… -> exit 0, seven files in scope
+findings: none. APK digests complete; sibling rows provisional; C7(c) separates
+record-level reopening from device-read qualification; H criteria and
+classification verbatim in both issue drafts; Save ordering independently
+actionable; claims bounded to cited evidence.
