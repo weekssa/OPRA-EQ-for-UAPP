@@ -31,7 +31,7 @@ again with stronger evidence. Reopening requires at least one of the handoff's H
 > first-party capability statement; a validated device-specific `0x04` reply; or an independently
 > verified exact-device implementation.
 
-None is satisfied. The vendor record for the tested tuple declares no filter control; the two
+None is satisfied. One nuance does not change the outcome: a newer JA11 vendor record that exposed a filter control would satisfy the first criterion at the record level only, and converting that into a delivered feature would still need a validated device read under C7(a). The determination below therefore rests on insufficiency, not on impossibility. The vendor record for the tested tuple declares no filter control; the two
 device reads returned no valid reply; no first-party JA11 capability statement was found; and no
 independent exact-device implementation exists. Sibling device records are artifact-local
 observations with unresolved provenance.
@@ -103,8 +103,8 @@ The handoff pins the official Android artifact as 365,535,288 bytes, SHA-256
 `ab0eb9cb4f6efd58a4e9b4edf3ad6ec11961b5e53d12fd6ecd1e80091730ac8d`. The preserved local copies
 do not reproduce it:
 
-- `/tmp/fiio460.apk` is malformed and hashes to `d7f1076e…`.
-- `/tmp/fiio460b.apk` has the recorded byte count but hashes to `516c6d88…`.
+- `/tmp/fiio460.apk` is malformed and hashes to `d7f1076e74f6a92e04616eed17e8d15b460491e822ce07c06d4ee3ac131cd6ac`.
+- `/tmp/fiio460b.apk` has the recorded byte count but hashes to `516c6d882a6723b03d7860f8ab000ce8dc600d9fabe986bfe187ba15d37d110c`.
 - The latter contains the inspected device database, SHA-256
   `1791f8a4210282d51ee7e5956f17bda3459b084fca9eaf8ad695aa5a0953fef9`.
 
@@ -123,7 +123,7 @@ sample rate, `mic_detect` `0x12`, `uac_version_nui` `0x20`, `vol_output` `0x02`,
 settings. It contains **no filter entry and no `0x04`**. The schema enumerates controls with
 get/set commands and show flags, so absence in this record is meaningful for this tuple.
 
-The record is the official app's shipped declaration, but `server_config_or_not = 1` means a
+The record is the declaration in the inspected local copy of the vendor app; its correspondence to the pinned release is unresolved because the APK digest does not match. It carries `server_config_or_not = 1`, which means a
 server-side update cannot be fully excluded from the local artifact alone.
 
 Classification: the absence of a filter control in the JA11 2.20 record is INSPECTION-ONLY, and

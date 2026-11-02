@@ -45,7 +45,7 @@ action or release claim.
 Separately, built-in Save ordering without restage/Apply is **NOT EXERCISED**. J035 qualified the
 shipped sequence; vendor similarity alone does not authorize replacing it.
 
-**Reopening criteria (verbatim):**
+**Reopening criteria (verbatim), for the filter question only.** These criteria do not gate the Save-ordering gap tracked in this issue; that gap is independently actionable and is not waiting on filter evidence.
 
 > Reopen only with: a JA11 firmware whose vendor device record exposes a filter control; a
 > first-party capability statement; a validated device-specific `0x04` reply; or an independently

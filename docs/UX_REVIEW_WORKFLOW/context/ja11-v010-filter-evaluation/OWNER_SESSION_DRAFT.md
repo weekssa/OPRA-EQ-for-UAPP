@@ -42,6 +42,8 @@ Each is a separate decision; approving the session does not grant the others:
 - each category of write (program, volume, filter, save);
 - any firmware action, which is out of scope for this draft.
 
+The vendor-ordering Save qualification is independently actionable. It does not require filter reopening and may be scheduled in its own authorized session; its unresolved status is not coupled to the filter evidence.
+
 ## Prerequisites
 
 - A fresh preflight and the owner's current sitting limit.

@@ -142,3 +142,12 @@ findings:
 - This review block was appended under the owner's explicit instruction. That changes the file
   digest, so the local seal was refreshed to cover the review record. The substantive contract,
   scope, base and OWNS list are unchanged; no scope change was approved by that refresh.
+
+### Review round 1 — independent (gpt-6-luna)
+
+verdict: defects (5, all textual or precision)
+ran: scope-guard --root . --base ab243d4f… -> exit 0, seven files in scope
+addressed: full APK digests restored; C7(c) reasoning now separates record-level
+reopening from device-read qualification; issue 2 states H does not gate Save
+ordering; owner session marks Save qualification independently actionable; vendor
+record qualified as the inspected local copy. Determination unchanged: C7(c).
