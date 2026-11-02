@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-02T20:29:46Z",
+  "generated_at": "2026-11-02T21:39:59Z",
   "headphone_aliases": [
     {
       "aliases": [
@@ -1048616,6 +1048616,242 @@
       "tuning_label": "ANC on"
     },
     {
+      "canonical_profile_id": "community-3e77c9827157e0f7f88f6f6c",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "QCY",
+        "model": "T18",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "8018b0da60a14ef80c8c4e5f10f5be3c757e11fa87ead245a680b7f4ac969c6e",
+          "filters": [
+            {
+              "frequency_hz": 1556.0,
+              "gain_db": 2.2,
+              "q": 1.56,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3003.0,
+              "gain_db": -16.8,
+              "q": 0.48,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 77.0,
+              "gain_db": -1.7,
+              "q": 0.82,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 207.0,
+              "gain_db": 2.4,
+              "q": 1.87,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 5814.0,
+              "gain_db": 17.0,
+              "q": 0.21,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 7914.0,
+              "gain_db": -8.5,
+              "q": 1.02,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 118.0,
+              "gain_db": -3.5,
+              "q": 1.04,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2275.0,
+              "gain_db": 5.8,
+              "q": 1.27,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 6338.0,
+              "gain_db": -9.0,
+              "q": 2.24,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 20.0,
+              "gain_db": 5.2,
+              "q": 0.49,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -7.1,
+          "revision_id": "rev-8018b0da60a14ef80c8c4e5f",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "T18",
+              "source_record_id": "harpo/autoeq:Timmy Target/QCY_T18_L/QCY_T18_L ParametricEQ.txt:05d04fcefdf78b81d91ebfbbe5526fdedf673740",
+              "source_vendor_id": "QCY",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/Timmy Target/QCY_T18_L/QCY_T18_L ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "05d04fcefdf78b81d91ebfbbe5526fdedf673740",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "Timmy Target"
+      },
+      "tuning_label": "Timmy Target — QCY_T18_L"
+    },
+    {
+      "canonical_profile_id": "community-4b26cda8d8c800759a2578d1",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "KZ",
+        "model": "DQ6S",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "c6cd8a1f0b442839baed0f029a0d9838384c25de617fd3cefe672223393497bb",
+          "filters": [
+            {
+              "frequency_hz": 112.0,
+              "gain_db": -4.4,
+              "q": 0.64,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3059.0,
+              "gain_db": 5.9,
+              "q": 1.34,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 559.0,
+              "gain_db": 1.6,
+              "q": 0.78,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 7317.0,
+              "gain_db": -4.9,
+              "q": 3.65,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 8462.0,
+              "gain_db": -1.5,
+              "q": 4.17,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 6201.0,
+              "gain_db": 2.3,
+              "q": 5.98,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 4846.0,
+              "gain_db": -2.2,
+              "q": 4.34,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 62.0,
+              "gain_db": -0.4,
+              "q": 1.49,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2392.0,
+              "gain_db": 0.4,
+              "q": 2.27,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 220.0,
+              "gain_db": -0.2,
+              "q": 1.87,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -5.9,
+          "revision_id": "rev-c6cd8a1f0b442839baed0f02",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "DQ6S",
+              "source_record_id": "harpo/autoeq:Timmy Target/KZ_DQ6S_R/KZ_DQ6S_R ParametricEQ.txt:6b147d5711e9ed63b7a693dc0524179c978dc509",
+              "source_vendor_id": "KZ",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/Timmy Target/KZ_DQ6S_R/KZ_DQ6S_R ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "6b147d5711e9ed63b7a693dc0524179c978dc509",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "Timmy Target"
+      },
+      "tuning_label": "Timmy Target — KZ_DQ6S_R"
+    },
+    {
       "canonical_profile_id": "community-4e4476dfcaf33ebf09261f14",
       "creator": "Maiky76",
       "headphone": {
@@ -1048815,6 +1049051,124 @@
         "name": "Harpo v4 Target"
       },
       "tuning_label": "Harpo v4 Target — EPZ_Q1_R"
+    },
+    {
+      "canonical_profile_id": "community-54b165da814bf0111e493a0f",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "KZ",
+        "model": "AST",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "8a46512f0338b115821d01c8ffc41d1c21e2940030be2c8bf4d7f6a092dcb358",
+          "filters": [
+            {
+              "frequency_hz": 123.0,
+              "gain_db": -6.4,
+              "q": 0.88,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 9163.0,
+              "gain_db": 7.8,
+              "q": 0.36,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 5426.0,
+              "gain_db": -13.3,
+              "q": 2.34,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 778.0,
+              "gain_db": 3.1,
+              "q": 0.79,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3168.0,
+              "gain_db": 4.6,
+              "q": 3.58,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1949.0,
+              "gain_db": -5.7,
+              "q": 1.57,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2588.0,
+              "gain_db": 1.3,
+              "q": 3.78,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 257.0,
+              "gain_db": -1.2,
+              "q": 1.79,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 21.0,
+              "gain_db": 0.9,
+              "q": 5.85,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 27.0,
+              "gain_db": 1.8,
+              "q": 0.69,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -6.8,
+          "revision_id": "rev-8a46512f0338b115821d01c8",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "AST",
+              "source_record_id": "harpo/autoeq:Harpo_v3 Target/KZ_AST_L/KZ_AST_L ParametricEQ.txt:cf1b9a37a490f54420204efac84ffa2834a27c65",
+              "source_vendor_id": "KZ",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/Harpo_v3 Target/KZ_AST_L/KZ_AST_L ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "cf1b9a37a490f54420204efac84ffa2834a27c65",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "Harpo_v3 Target"
+      },
+      "tuning_label": "Harpo_v3 Target — KZ_AST_L"
     },
     {
       "canonical_profile_id": "community-585278d02542c1d982f28e36",
@@ -1049289,6 +1049643,124 @@
         "name": null
       },
       "tuning_label": "SoundMAGIC E11"
+    },
+    {
+      "canonical_profile_id": "community-647051f5bcfc7c0388098ddf",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "TRN",
+        "model": "V80",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "d4e9b35807d9b78be17ea74dc158cee7a389a0bcf94a8a9a2ce0ccb1240df762",
+          "filters": [
+            {
+              "frequency_hz": 133.0,
+              "gain_db": -5.1,
+              "q": 0.52,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2985.0,
+              "gain_db": 6.3,
+              "q": 0.97,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 9211.0,
+              "gain_db": -10.5,
+              "q": 1.09,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1639.0,
+              "gain_db": -4.6,
+              "q": 1.53,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 662.0,
+              "gain_db": 3.0,
+              "q": 0.42,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 5755.0,
+              "gain_db": 7.3,
+              "q": 2.66,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2187.0,
+              "gain_db": 2.8,
+              "q": 2.97,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1043.0,
+              "gain_db": -1.3,
+              "q": 1.97,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 7119.0,
+              "gain_db": -2.5,
+              "q": 4.37,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 69.0,
+              "gain_db": -1.0,
+              "q": 0.99,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -6.1,
+          "revision_id": "rev-d4e9b35807d9b78be17ea74d",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "V80",
+              "source_record_id": "harpo/autoeq:Timmy Target/TRN_V80_R/TRN_V80_R ParametricEQ.txt:84284eb8d642e4a01ad4ac3a561e5c811171cf1e",
+              "source_vendor_id": "TRN",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/Timmy Target/TRN_V80_R/TRN_V80_R ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "84284eb8d642e4a01ad4ac3a561e5c811171cf1e",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "Timmy Target"
+      },
+      "tuning_label": "Timmy Target — TRN_V80_R"
     },
     {
       "canonical_profile_id": "community-68157b04722eca8c1081ba48",
@@ -1049784,6 +1050256,124 @@
       "tuning_label": "Harpo v4 Target — KZ_AST_L"
     },
     {
+      "canonical_profile_id": "community-751b15e756f26d076689f2b5",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "KZ",
+        "model": "ESX",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "94f0022985d746d7465febad5bb29f2f67a46400974e177260f1ee8f5da5e08e",
+          "filters": [
+            {
+              "frequency_hz": 47.0,
+              "gain_db": 2.4,
+              "q": 0.64,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 216.0,
+              "gain_db": -4.2,
+              "q": 1.39,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 5974.0,
+              "gain_db": 3.6,
+              "q": 5.35,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 10000.0,
+              "gain_db": 2.8,
+              "q": 0.25,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3483.0,
+              "gain_db": 2.0,
+              "q": 4.29,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 86.0,
+              "gain_db": 1.2,
+              "q": 2.56,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 4654.0,
+              "gain_db": -2.6,
+              "q": 4.88,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 120.0,
+              "gain_db": -0.6,
+              "q": 1.59,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 4094.0,
+              "gain_db": -1.9,
+              "q": 2.87,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 24.0,
+              "gain_db": 1.0,
+              "q": 4.12,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -5.6,
+          "revision_id": "rev-94f0022985d746d7465febad",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "ESX",
+              "source_record_id": "harpo/autoeq:xGAMQDSP Target/KZ_ESX_R/KZ_ESX_R ParametricEQ.txt:0d045f0d2a48dc232a961214dbe4b0ac01813025",
+              "source_vendor_id": "KZ",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/xGAMQDSP Target/KZ_ESX_R/KZ_ESX_R ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "0d045f0d2a48dc232a961214dbe4b0ac01813025",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "xGAMQDSP Target"
+      },
+      "tuning_label": "xGAMQDSP Target — KZ_ESX_R"
+    },
+    {
       "canonical_profile_id": "community-776947007c41b02055521b38",
       "creator": "sweetchaos",
       "headphone": {
@@ -1050220,6 +1050810,124 @@
         "name": null
       },
       "tuning_label": "Sony WH-1000XM5"
+    },
+    {
+      "canonical_profile_id": "community-94e310c8dfcc8de07c97ffa1",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "KZ",
+        "model": "ESX",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "13c3ecc9cc29ce06f6ff9723551b2a148ef24b011d0c9123bf714b11205fe401",
+          "filters": [
+            {
+              "frequency_hz": 5960.0,
+              "gain_db": 4.5,
+              "q": 0.61,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 4909.0,
+              "gain_db": -5.7,
+              "q": 2.7,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 140.0,
+              "gain_db": 1.5,
+              "q": 0.21,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1621.0,
+              "gain_db": -2.1,
+              "q": 2.36,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3581.0,
+              "gain_db": 2.8,
+              "q": 2.35,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 259.0,
+              "gain_db": -1.7,
+              "q": 0.32,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 7555.0,
+              "gain_db": -3.7,
+              "q": 3.87,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1385.0,
+              "gain_db": 1.6,
+              "q": 4.63,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 6199.0,
+              "gain_db": -3.3,
+              "q": 2.31,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2214.0,
+              "gain_db": -1.3,
+              "q": 3.35,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -3.8,
+          "revision_id": "rev-13c3ecc9cc29ce06f6ff9723",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "ESX",
+              "source_record_id": "harpo/autoeq:CCA FLA Target/KZ_ESX_R/KZ_ESX_R ParametricEQ.txt:53e8dc499bbb0604bee61a5a86a2b80961b48472",
+              "source_vendor_id": "KZ",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/CCA FLA Target/KZ_ESX_R/KZ_ESX_R ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "53e8dc499bbb0604bee61a5a86a2b80961b48472",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "CCA FLA Target"
+      },
+      "tuning_label": "CCA FLA Target — KZ_ESX_R"
     },
     {
       "canonical_profile_id": "community-95b5bea09b6aed15c611a3e6",
@@ -1051328,6 +1052036,124 @@
       "tuning_label": "Elysian X Target — KZ_ESX_R"
     },
     {
+      "canonical_profile_id": "community-aa86ffcf48969dc730919056",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "QCY",
+        "model": "T18",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "a04eef188317c4e72a9ed936b6c2cf17d0264e7611ef08ce9e3d265772640b45",
+          "filters": [
+            {
+              "frequency_hz": 10000.0,
+              "gain_db": 8.8,
+              "q": 0.23,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 6395.0,
+              "gain_db": -14.1,
+              "q": 1.51,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 215.0,
+              "gain_db": 2.7,
+              "q": 1.75,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 109.0,
+              "gain_db": -3.4,
+              "q": 0.96,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 582.0,
+              "gain_db": -1.0,
+              "q": 1.22,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 25.0,
+              "gain_db": 2.8,
+              "q": 5.06,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 24.0,
+              "gain_db": 6.2,
+              "q": 0.36,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 44.0,
+              "gain_db": 1.3,
+              "q": 1.84,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3673.0,
+              "gain_db": -3.2,
+              "q": 2.22,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 25.0,
+              "gain_db": -3.0,
+              "q": 5.15,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -7.0,
+          "revision_id": "rev-a04eef188317c4e72a9ed936",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "T18",
+              "source_record_id": "harpo/autoeq:Harpo v4 Target/QCY_T18_L/QCY_T18_L ParametricEQ.txt:3cb1bb704ad89ac8d02cf874733b9b0ff388db64",
+              "source_vendor_id": "QCY",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/Harpo v4 Target/QCY_T18_L/QCY_T18_L ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "3cb1bb704ad89ac8d02cf874733b9b0ff388db64",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "Harpo v4 Target"
+      },
+      "tuning_label": "Harpo v4 Target — QCY_T18_L"
+    },
+    {
       "canonical_profile_id": "community-bad77b3d7389ea3d1687ad58",
       "creator": "Kentajalli",
       "headphone": {
@@ -1052075,6 +1052901,124 @@
       "tuning_label": "xGAMQDSP Target — EPZ_Q1_R"
     },
     {
+      "canonical_profile_id": "community-d678317c12731f38683b9e85",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "CCA",
+        "model": "CXS",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "989e6556cc2c82a19e78df077ff46ea7ad4031af2dfdc6f3f60ef028bbd87d5d",
+          "filters": [
+            {
+              "frequency_hz": 4991.0,
+              "gain_db": -7.4,
+              "q": 2.9,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2215.0,
+              "gain_db": -6.3,
+              "q": 2.29,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 6460.0,
+              "gain_db": 5.8,
+              "q": 3.19,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 9293.0,
+              "gain_db": 4.1,
+              "q": 4.76,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 255.0,
+              "gain_db": 1.5,
+              "q": 0.18,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3144.0,
+              "gain_db": 1.8,
+              "q": 5.46,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 7842.0,
+              "gain_db": 0.1,
+              "q": 6.0,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3860.0,
+              "gain_db": -2.1,
+              "q": 4.06,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 10000.0,
+              "gain_db": -1.8,
+              "q": 5.5,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 20.0,
+              "gain_db": 5.2,
+              "q": 0.65,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -5.4,
+          "revision_id": "rev-989e6556cc2c82a19e78df07",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "CXS",
+              "source_record_id": "harpo/autoeq:ISN H40 Target/CCA_CXS_R/CCA_CXS_R ParametricEQ.txt:239eb8fb9ee8de9887191ee70b1b322be982e874",
+              "source_vendor_id": "CCA",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/ISN H40 Target/CCA_CXS_R/CCA_CXS_R ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "239eb8fb9ee8de9887191ee70b1b322be982e874",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "ISN H40 Target"
+      },
+      "tuning_label": "ISN H40 Target — CCA_CXS_R"
+    },
+    {
       "canonical_profile_id": "community-e0ac411d7822e53485e44c12",
       "creator": null,
       "headphone": {
@@ -1052510,6 +1053454,124 @@
         "name": "Timmy Target"
       },
       "tuning_label": "Timmy Target — EPZ_Q1_R"
+    },
+    {
+      "canonical_profile_id": "community-eab47148cf1ddd7b9fb2c424",
+      "creator": null,
+      "headphone": {
+        "manufacturer": "KZ",
+        "model": "AST",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "a61d63c235d5d29bcee1209c6510c8310748c9425eac4a53eccb121bc8ee4900",
+          "filters": [
+            {
+              "frequency_hz": 6106.0,
+              "gain_db": -11.1,
+              "q": 2.6,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 3809.0,
+              "gain_db": 5.7,
+              "q": 0.62,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 229.0,
+              "gain_db": -1.4,
+              "q": 1.02,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1724.0,
+              "gain_db": -5.3,
+              "q": 2.33,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 672.0,
+              "gain_db": 1.3,
+              "q": 1.35,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 20.0,
+              "gain_db": 0.3,
+              "q": 1.77,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 32.0,
+              "gain_db": 1.1,
+              "q": 0.7,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 5136.0,
+              "gain_db": -6.2,
+              "q": 5.32,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 124.0,
+              "gain_db": -1.0,
+              "q": 1.89,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2155.0,
+              "gain_db": -2.4,
+              "q": 4.32,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -3.7,
+          "revision_id": "rev-a61d63c235d5d29bcee1209c",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": null,
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "github-community",
+              "source_kind": "repository",
+              "source_product_id": "AST",
+              "source_record_id": "harpo/autoeq:CCA FLA Target/KZ_AST_L/KZ_AST_L ParametricEQ.txt:3cac47c2536371cf2040b40bfd0057d6bcc7f34a",
+              "source_vendor_id": "KZ",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/harpo/autoeq/blob/d1c5613c5f51046d8463b1e11f2871d6befa0a05/CCA FLA Target/KZ_AST_L/KZ_AST_L ParametricEQ.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "3cac47c2536371cf2040b40bfd0057d6bcc7f34a",
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "explicit_target",
+        "name": "CCA FLA Target"
+      },
+      "tuning_label": "CCA FLA Target — KZ_AST_L"
     },
     {
       "canonical_profile_id": "community-ed02e1f22e9fce84bc3e27f7",
