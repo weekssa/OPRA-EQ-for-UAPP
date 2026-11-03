@@ -26,7 +26,7 @@ OWNS: GATES.md,
 
    ```sh
    test -s docs/implementation/workflow-no-peak-20261103/GATES.md.sha &&
-   /Users/stephenweeks/Documents/Codex/Codex-Usage-Policies/tools/scope-guard --root . --base a4e83697f567610d9e500976f2e8028714c98214
+   /Users/stephenweeks/Documents/Codex/Codex-Usage-Policies/tools/scope-guard --root . --base e80eedba5c03044eaafe8711ac35460d7024df03
    ```
 
    EXPECT: the approval is recorded, the seal matches, and changes stay in OWNS.
@@ -62,7 +62,7 @@ OWNS: GATES.md,
 
    ```sh
    git diff --check &&
-   git diff --name-only a4e83697f567610d9e500976f2e8028714c98214
+   git diff --name-only e80eedba5c03044eaafe8711ac35460d7024df03
    ```
 
    EXPECT: only OWNS paths changed; OPRA instructions describe hard-lock fallback
