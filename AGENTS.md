@@ -102,6 +102,7 @@ The workflow's hard-set rules apply here without modification:
 - Android SDK discovery is machine-local: configure `ANDROID_HOME`/`ANDROID_SDK_ROOT` or the ignored `local.properties` file's `sdk.dir`. Do not commit a user-specific SDK path. This project currently compiles against API 36 and Build Tools 36.0.0.
 - Standard development checks include `./gradlew :app:testDebugUnitTest`, `./gradlew lintDebug`, and `./gradlew assembleDebug`. Use the smallest relevant check during iteration and run the complete applicable gates on a coherent candidate head.
 - In the Codex macOS environment, prefer `./tools/codex-android <Gradle task or Android command>`. It selects the local JDK/SDK, exposes `adb`, `android`, `avdmanager`, and `emulator`, and routes Gradle caches to a writable temporary location. Examples: `./tools/codex-android :app:testDebugUnitTest`, `./tools/codex-android adb devices`, and `./tools/codex-android emulator -list-avds`.
+- Use the `gh` CLI (installed at `~/.local/bin/gh`) for all GitHub reads and writes, not the app's GitHub connector, because the connector runs a native-account model outside the workflow and cannot read Dependabot endpoints.
 
 The current public release and verified source/artifact tuple are maintained in `docs/PROJECT_STATE.md` and `docs/PUBLIC_RELEASE_CHECKLIST.md`. Release provenance does not establish which artifact is installed on a physical device.
 
