@@ -1,0 +1,10 @@
+{"event":"session_start","identity":{"product":"JadeAudio JA11","product_id":258,"vendor_id":10610,"version_number":544}}
+{"event":"send","frame_hex":"02 BB 0B 00 01 02 00 3A EE","request":"volume-control"}
+{"elapsed_ms":6.015374790877104,"event":"response","raw_hex":"02 BB 0B 00 01 02 01 3C 19 EE 00 00 00 00 00 00 00 00 00 00 00","request":"volume-control","value":60}
+{"event":"send","frame_hex":"02 BB 0B 00 00 11 00 00 EE","request":"j034-replicate-zero-crc-seq-0000"}
+{"event":"silence","request":"j034-replicate-zero-crc-seq-0000"}
+{"event":"send","frame_hex":"02 BB 0B 00 00 11 00 28 EE","request":"computed-crc-seq-0000"}
+{"event":"silence","request":"computed-crc-seq-0000"}
+{"event":"send","frame_hex":"02 BB 0B 00 02 11 00 67 EE","request":"computed-crc-seq-0002"}
+{"event":"silence","request":"computed-crc-seq-0002"}
+{"event":"session_complete","interpretation":"BOUNDED_NEGATIVE: all three filter reads silent","outcomes":["R","S","S","S"]}

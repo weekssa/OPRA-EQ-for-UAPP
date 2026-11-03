@@ -412,4 +412,12 @@ preparation of two separately authorized evidence tracks:
 Working zero-CRC traffic for volume, presets and Save contradicts a universal request-CRC rule; a
 command-specific CRC/sequence requirement for `0x11` remains **UNSUPPORTED**. The public hardware
 classification remains **device-specific not supported (vendor-exposed)** for the tested JA11 2.20
-tuple. Neither hardware track is scheduled or approved. Filter UI remains disabled.
+tuple. On the separately approved raw-preserving repeat, the volume control passed with value 60 and a
+valid response CRC, while the exact J034 zero-CRC `0x11` read and both computed-CRC `0x11` reads were
+silent through their 700 ms windows. This is a **bounded negative** for the tested tuple, not proof of
+silicon absence or a conclusion about mode meanings, selection, acoustics, persistence or restoration.
+The J034 replay authority is exhausted; filter UI remains disabled.
+
+A separately connected stock JM12 exposes `31B2:0111`, report IDs `0x4B` and `0x54`, and 11-byte
+reports; it has no JA11 report ID `0x02`. The JA11 command frames therefore cannot be treated as a
+valid stock-JM12 comparison. Its filter capability remains UNSUPPORTED and no JM12 frames were sent.

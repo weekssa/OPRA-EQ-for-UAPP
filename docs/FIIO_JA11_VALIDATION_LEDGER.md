@@ -878,3 +878,73 @@ were the device's own readback, so the four built-in saves were no-ops, but the 
 
 **Filter status:** no valid reply to either `0x11` or the vendor `0x04`; capability unresolved, not
 declared absent. No filter write was attempted.
+
+## 2026-11-03 J036 — JA11 0x11 CRC/sequence read comparison (BOUNDED NEGATIVE)
+
+**Scope:** one direct, read-only macOS IOKit HID session, approved by the owner after
+the JA11 was moved from the Pixel 9 to the Mac. This was not an APK test. No
+install, firmware action, filter write, Apply or Save occurred.
+
+**Device:** one FiiO/JadeAudio JA11, USB `2972:0102`, device version `0x0220`
+(firmware 2.20). The public archive omits the stable serial hash and session
+location identifier. The HID descriptor exposes report ID `0x02` with 20-byte
+input/output payloads.
+
+**First approved attempt:** only the volume-control request
+`02 BB 0B 00 01 02 00 3A EE` was sent once. An input report arrived but failed
+strict CRC validation. The harness stopped before any filter request. The
+original harness did not persist the malformed bytes, so this attempt is
+INCONCLUSIVE, not a filter negative.
+
+**Approved repeat:** after separate owner approval, a corrected raw-preserving
+harness ran once. The volume control returned in 6.015 ms:
+
+```text
+02 BB 0B 00 01 02 01 3C 19 EE 00 00 00 00 00 00 00 00 00 00 00
+```
+
+The meaningful ten-byte frame is `02 BB 0B 00 01 02 01 3C 19 EE`; value `3C`
+is volume 60. CRC `19` validates over `00 01 02 01 3C`. The volume gate passed.
+
+Each filter read was then sent once and observed for 700 ms:
+
+```text
+02 BB 0B 00 00 11 00 00 EE  -> no response
+02 BB 0B 00 00 11 00 28 EE  -> no response
+02 BB 0B 00 02 11 00 67 EE  -> no response
+```
+
+**Result:** **BOUNDED NEGATIVE.** The exact J034 zero-CRC request and both
+computed-CRC variants were silent. No retry, transport change or timeout change
+occurred. The result applies only to this JA11/firmware/host tuple. It does not
+prove silicon absence or establish filter mode meanings, selection behavior,
+acoustic effect, persistence or restoration.
+
+**Evidence:** [J036 archive](implementation/ja11-filter-b1-b2-prep/evidence/2026-11-03-r2/README.md).
+
+```text
+harness.swift   2e1af7f54c6288f9e7498fece7d668e32f75c6f4e2085a394703fd5e051a6a9f
+harness binary  4cc48d025f8b021b4eeff37748adb06b57cc82fc4774d4486fdbf2bce70d6feb
+manifest.json   d365f502166b4d80b38ee386fb9fc14b2c88ac61e7c2795df343938efa660369
+session.jsonl   08f8dfcc32c5c98b20aa59812641507aa214df8ef1811bfd2336f96e6d8189db
+```
+
+**Limit:** the executed harness waited through each 700 ms silent window but did
+not persist per-window elapsed timestamps. Total process duration was about 2.05 s,
+consistent with the three full windows plus the volume response.
+
+**Restoration:** no setting was intentionally changed. The volume read was 60,
+but no pre-session baseline was captured; no full state-restoration claim is made.
+The J034 replay authority is exhausted.
+
+## 2026-11-03 J037 — stock JM12 HID descriptor comparison (INSPECTION-ONLY)
+
+A stock JM12/`KT02H20 HIFI Audio` was connected read-only to the same Mac. It
+enumerated as USB `31B2:0111`, device version `0x0001`, with report IDs `0x4B` and
+`0x54` and 11-byte input/output reports. It does not expose JA11 report ID `0x02`.
+
+The JA11 `BB 0B` / `AA 0A` frames therefore cannot be sent as a valid comparison
+on this stock JM12. The JM12 matches the separate register-oriented `4B` surface;
+published documentation identifies volume, PEQ and DRC registers but no
+reconstruction-filter register. No JM12 protocol frame or firmware action was
+sent. JM12 filter capability remains UNSUPPORTED.

@@ -1,10 +1,10 @@
 # FiiO JA11 digital filter research handoff
 
-Status: **DEFERRED from v0.9.0; B1/B2 evidence preparation complete, NOT EXERCISED.** Vendor-exposed
+Status: **DEFERRED from v0.9.0; B1 completed with a bounded negative; B2 NOT EXERCISED.** Vendor-exposed
 digital-filter control is not available for JA11 firmware 2.20; the feature is not delivered and this
 document preserves the investigation for a future version. Written 2026-11-01; updated 2026-11-03 with
-the owner-selected evidence tracks. Neither track authorizes device access. A future agent should be
-able to resume from here without chat history.
+the owner-selected evidence tracks and the completed B1 bounded-negative result. A future repeat or
+B2 session requires new owner approval. A future agent should resume from here without chat history.
 
 ## A. Project objective and scope
 
@@ -143,10 +143,10 @@ qualification, and no firmware modification or speculative probing.
 **Deferred from v0.9.0 — vendor-exposed digital-filter control unavailable for JA11 firmware 2.20;
 functionality not delivered; research preserved for a future version.**
 
-## K. 2026-11-03 Option B preparation — NOT EXERCISED
+## K. 2026-11-03 Option B evidence — B1 bounded negative; B2 not exercised
 
-The owner selected preparing two evidence tracks. No device was connected, no request was sent, no
-equipment was purchased and no filter write was prepared.
+The owner selected two evidence tracks. B1 was later separately approved and completed; B2 remains
+unexercised. No equipment was purchased and no filter write was prepared.
 
 - [B1 session package](../implementation/ja11-filter-b1-b2-prep/B1_SESSION.md) defines one
   separately approved read-only JA11 session: volume control, exact J034 `0x11` zero-CRC replay,
@@ -169,3 +169,17 @@ Working zero-CRC volume, preset and Save traffic contradicts a universal request
 A command-specific CRC or sequence rule for `0x11` remains **UNSUPPORTED** and is the narrow B1
 question. A positive B1 reply would prove readback only on the tested tuple. Mode meanings, selection,
 acoustic effect, persistence and restoration remain unproven. Filters stay disabled and deferred.
+
+On 2026-11-03 the owner connected the exact JA11 to the Mac and approved a B1 attempt. A temporary
+native IOKit harness's first volume read stopped on CRC validation and did not retain raw bytes. After
+a separate owner approval, a corrected raw-preserving repeat passed the volume control (value 60,
+valid response CRC) and then sent each `0x11` read once. All three were silent through their 700 ms
+windows, with no retry. Per the pre-registered rule this is a **bounded negative** for those exact
+frames on the tested unit/firmware/host tuple. It is not proof of silicon absence, selection behavior,
+mode meanings, acoustic behavior, persistence or restoration. No filter write, Apply or Save was sent.
+
+A stock JM12 was then inspected read-only on the same Mac. It enumerated as `31B2:0111`,
+`KT02H20 HIFI Audio`, version `0x0001`, and exposed report IDs `0x4B` and `0x54` with 11-byte
+reports, without the JA11 report ID `0x02`. Therefore the same `BB 0B`/`AA 0A` comparison cannot be
+sent through that stock firmware. This is not a JM12 filter-capability finding; its register protocol
+is a separate surface and no reconstruction-filter register is established. No frames were sent.

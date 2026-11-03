@@ -1,0 +1,57 @@
+{
+  "host": "macOS",
+  "identity": {
+    "product": "JadeAudio JA11",
+    "product_id": 258,
+    "vendor_id": 10610,
+    "version_number": 544
+  },
+  "interpretation": "BOUNDED_NEGATIVE: all three filter reads silent",
+  "outcomes": [
+    "R",
+    "S",
+    "S",
+    "S"
+  ],
+  "plan": [
+    {
+      "frame_hex": "02 BB 0B 00 01 02 00 3A EE",
+      "name": "volume-control"
+    },
+    {
+      "frame_hex": "02 BB 0B 00 00 11 00 00 EE",
+      "name": "j034-replicate-zero-crc-seq-0000"
+    },
+    {
+      "frame_hex": "02 BB 0B 00 00 11 00 28 EE",
+      "name": "computed-crc-seq-0000"
+    },
+    {
+      "frame_hex": "02 BB 0B 00 02 11 00 67 EE",
+      "name": "computed-crc-seq-0002"
+    }
+  ],
+  "requests": [
+    {
+      "elapsed_ms": 6.015374790877104,
+      "name": "volume-control",
+      "outcome": "R",
+      "raw_hex": "02 BB 0B 00 01 02 01 3C 19 EE 00 00 00 00 00 00 00 00 00 00 00",
+      "value": 60
+    },
+    {
+      "name": "j034-replicate-zero-crc-seq-0000",
+      "outcome": "S"
+    },
+    {
+      "name": "computed-crc-seq-0000",
+      "outcome": "S"
+    },
+    {
+      "name": "computed-crc-seq-0002",
+      "outcome": "S"
+    }
+  ],
+  "schema": 1,
+  "session_approval": "owner-approved-B1-2026-11-03-r2"
+}

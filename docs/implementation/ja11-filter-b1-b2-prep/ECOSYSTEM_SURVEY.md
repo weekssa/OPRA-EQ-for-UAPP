@@ -39,6 +39,25 @@ request-CRC requirement. A command-specific CRC or sequence requirement for
 `0x11` remains possible but is unproven. B1 is designed to test that narrow
 question; it is not a licence to repeat J034 outside its approved session.
 
+## 2026-11-03 local stock JM12 descriptor check — INSPECTION-ONLY
+
+The owner's stock JM12 was connected and enumerated on macOS as `KTMicro`,
+USB `31B2:0111`, product `KT02H20 HIFI Audio`, version `0x0001`. Its HID
+descriptor exposes report IDs `0x4B` and `0x54`, with 11-byte input and output
+reports. It does **not** expose report ID `0x02`.
+
+Consequently, the JA11 `02 BB 0B...` / `02 AA 0A...` command transport cannot
+be exercised on this stock JM12 merely because both products belong to the
+KT02H20 family. Running those frames would target a report not declared by the
+device. The JM12 instead matches the register-oriented `4B` surface documented
+by gxcreator/ktmicro-tools; no reconstruction-filter register is established
+there. A firmware cross-flash is outside this work and would not be capability
+evidence without separate authorization and qualification.
+
+Classification: descriptor observation **DEMONSTRATED** for this unit; the
+reconstruction-filter capability of the JM12 remains **UNSUPPORTED**. It is not
+a valid substitute for B2's official-app sibling capture.
+
 ## Source links
 
 - <https://github.com/ParkWardRR/fiio-ja11-jcally-jm12-moondropkt02-kt02h20-dac-amp-control/tree/c59b923dc46a4666af2e7ae4b898256c5d92a293>
