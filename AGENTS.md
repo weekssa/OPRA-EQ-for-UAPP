@@ -45,16 +45,12 @@ Update the maintained documents in the same workstream when a later decision sup
 
 The shared multi-model workflow at `/Users/stephenweeks/Documents/Codex/Codex-Usage-Policies/WORKFLOW.md` governs model roles, delegation, scheduling, and handoffs for every task in this project. Read it with this file at the start of substantive work. It is not copied or restated here: this file governs repository identity, product behavior, evidence, testing, devices, and release, and controls when the two disagree on a project fact.
 
-The workflow's hard-set rules apply here without modification:
+The workflow rules are not restated here. They live in the global Codex instructions at
+`~/.codex/AGENTS.md` and in the canonical policy above; this repository states only its own facts.
 
-- Planning happens in a dedicated `gpt-6.1-sol` thread and ends at handoff. Never begin an edit, test, build, or device operation from a Sol planning thread; execution runs in a fresh `commandcode/deepseek-deepseek-v4.1-flash` thread.
-- Planning protects the Sol budget: heavy read-only context work goes to `commandcode/deepseek-deepseek-v4.1-flash` research agents, and only when the question splits into independent slices. The single question that decides the plan may also go to `commandcode/z-ai-glm-5.3-flash` so two model families can disagree; Sol reconciles them rather than averaging. Free Command Code rows take bulk extraction only. Research belongs to planning: execution runs one writer and one final `gpt-6-luna` review, and every subagent is written into the gate file before it spawns. InferX stays out of every automatic route. Each spawn names its model, and Sol synthesizes the plan and hands off.
-- Every task executes against an accepted gate file. The task keeps `GATES.md` in its own folder, the repository-root `GATES.md` points at it, and approval seals it. `tools/scope-guard` proves the tree stayed inside `OWNS:` and reports any change outside it.
-- Starting an execution task: verify `~/.codex/config.toml` reads model = `commandcode/deepseek-deepseek-v4.1-flash` and model_reasoning_effort = `high`, and stop if either differs; read the root `GATES.md` pointer, then the task gate file; restate `OWNS:` and the gates before the first write; run `/Users/stephenweeks/Documents/Codex/Codex-Usage-Policies/tools/scope-guard --root .` before every commit; stop at the turn cap. One writer, no research subagents, and a single `gpt-6-luna` review at the end.
-- Keep one writer for execution work. Every substantive subagent call names its model explicitly, and `resume_agent` is not used where the model matters.
-- Do not automatically retry, change model or provider, or escalate reasoning effort. The permitted substitutions are the workflow's hard-lock fallback and its research combo: a hard-locked `gpt-6.1-sol` request may continue on `commandcode/deepseek-deepseek-v4.1-flash` without a time-of-day condition, and `combo/research` may fail over inside its own thread; research itself already runs on Command Code, so a Luna lock no longer affects it. Every other scope fails closed.
-- Owner approval gates in this file remain in force on top of the workflow: merge, publication, hardware mutation, signing changes, and any implementation beyond the current explicit request.
-- Results are reported as DEMONSTRATED, CONFIGURED, NOT EXERCISED, INSPECTION-ONLY, or UNSUPPORTED with their limits, even when the surrounding task seems obvious.
+Project files win on project facts; the workflow wins on process. The owner approval gates that are
+specific to this repository remain in force on top of it: merge, publication, hardware mutation,
+signing changes, and any implementation beyond the current explicit request.
 
 ## Product architecture
 
