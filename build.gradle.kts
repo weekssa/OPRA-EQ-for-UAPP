@@ -8,6 +8,7 @@ buildscript {
             "org.apache.commons:commons-lang3:3.18.0",
             "org.bitbucket.b_c:jose4j:0.9.6",
             "org.jdom:jdom2:2.0.6.1",
+            "com.google.guava:guava:33.7.2-jre",
         )
     }
 }
@@ -27,6 +28,7 @@ subprojects {
         ) {
             // These AGP-generated tool configurations resolve SDK tooling independently of the
             // root buildscript classpath. Keep their transitive selections on the patched releases.
+            resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
             resolutionStrategy.force(
                 "org.apache.httpcomponents:httpclient:4.5.14",
                 "org.apache.httpcomponents:httpmime:4.5.14",
@@ -38,6 +40,7 @@ subprojects {
         }
         if (name.startsWith("unified-test-platform-")) {
             // Keep the AGP-created UTP configuration on one patched Netty release family.
+            resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
             resolutionStrategy.force(
                 "io.netty:netty-buffer:4.1.137.Final",
                 "io.netty:netty-codec:4.1.137.Final",
@@ -55,9 +58,12 @@ subprojects {
         if (name.contains("AndroidTest")) {
             // These two alerts resolve only in Android instrumentation-test configurations.
             resolutionStrategy.force(
-                "com.google.guava:guava:32.0.0-android",
+                "com.google.guava:guava:33.7.2-android",
                 "org.jsoup:jsoup:1.23.2",
             )
+        }
+        if (name.contains("UnitTest")) {
+            resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
         }
     }
 }
