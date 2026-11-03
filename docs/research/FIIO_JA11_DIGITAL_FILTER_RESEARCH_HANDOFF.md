@@ -1,8 +1,10 @@
 # FiiO JA11 digital filter research handoff
 
-Status: **DEFERRED from v0.9.0.** Vendor-exposed digital-filter control is not available for JA11
-firmware 2.20; the feature is not delivered and this document preserves the investigation for a future
-version. Written 2026-11-01. A future agent should be able to resume from here without chat history.
+Status: **DEFERRED from v0.9.0; B1/B2 evidence preparation complete, NOT EXERCISED.** Vendor-exposed
+digital-filter control is not available for JA11 firmware 2.20; the feature is not delivered and this
+document preserves the investigation for a future version. Written 2026-11-01; updated 2026-11-03 with
+the owner-selected evidence tracks. Neither track authorizes device access. A future agent should be
+able to resume from here without chat history.
 
 ## A. Project objective and scope
 
@@ -140,3 +142,30 @@ qualification, and no firmware modification or speculative probing.
 
 **Deferred from v0.9.0 — vendor-exposed digital-filter control unavailable for JA11 firmware 2.20;
 functionality not delivered; research preserved for a future version.**
+
+## K. 2026-11-03 Option B preparation — NOT EXERCISED
+
+The owner selected preparing two evidence tracks. No device was connected, no request was sent, no
+equipment was purchased and no filter write was prepared.
+
+- [B1 session package](../implementation/ja11-filter-b1-b2-prep/B1_SESSION.md) defines one
+  separately approved read-only JA11 session: volume control, exact J034 `0x11` zero-CRC replay,
+  computed-CRC `0x11` at sequence `0000`, and computed-CRC `0x11` at sequence `0002`. Each is sent
+  once, observed for 700 ms, and never retried. The zero-CRC replay is permitted only inside that
+  exact future session because same-host/same-session framing is the evidence question.
+- [Offline harness](../../tools/ja11_filter_probe.py) generates and verifies the four vectors and
+  rejects hardware mode without both explicit execution switches. Its tests are CONFIGURED and the
+  vectors are INSPECTION-ONLY until a separately approved physical session.
+- [B2 capture proposal](../implementation/ja11-filter-b1-b2-prep/B2_CAPTURE_PROPOSAL.md) defines a
+  passive official-app capture on a verified filter-capable sibling, plus an acquisition decision
+  for a KA15 and inline analyzer. Acquisition, setup and the future sibling selection/restore writes
+  each remain separate owner approvals. Sibling traffic can establish only that sibling's observed
+  app sequence.
+- [Ecosystem survey](../implementation/ja11-filter-b1-b2-prep/ECOSYSTEM_SURVEY.md) pins eight
+  repositories, their framing/transport, JA11 claims and licences. Ircama remains the sole explicit
+  reconstruction-filter implementation; no inspected implementation demonstrates JA11 filter success.
+
+Working zero-CRC volume, preset and Save traffic contradicts a universal request-CRC requirement.
+A command-specific CRC or sequence rule for `0x11` remains **UNSUPPORTED** and is the narrow B1
+question. A positive B1 reply would prove readback only on the tested tuple. Mode meanings, selection,
+acoustic effect, persistence and restoration remain unproven. Filters stay disabled and deferred.

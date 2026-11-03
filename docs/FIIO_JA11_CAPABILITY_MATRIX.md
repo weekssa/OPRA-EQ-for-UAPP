@@ -395,3 +395,21 @@ published from tagged source `4f325d673159b40515086fe5143df12b29ddb076` with pub
 software-verified User 1 five-band editor/apply path. This publication fact does not alter the
 capability classifications: JA11 remains physically evidence-bounded, with no new power-cycle
 retention or broader hardware-support claim.
+
+## 2026-11-03 filter evidence preparation — NOT EXERCISED
+
+No JA11 filter connection, request, write, install or qualification occurred. The owner selected
+preparation of two separately authorized evidence tracks:
+
+- **B1:** four read requests in one same-host/stable session — volume control, exact J034 `0x11`
+  zero-CRC replay, computed-CRC `0x11` at sequence `0000`, and computed-CRC `0x11` at sequence
+  `0002`. One send each, 700 ms window, no retry. The zero-CRC replay has no authority outside the
+  exact approved session. See [B1 session](implementation/ja11-filter-b1-b2-prep/B1_SESSION.md).
+- **B2:** passive capture of the official app selecting and restoring a filter on an independently
+  verified filter-capable sibling. Acquisition, setup and future sibling writes are separate owner
+  decisions. The result cannot establish JA11 capability. See [B2 proposal](implementation/ja11-filter-b1-b2-prep/B2_CAPTURE_PROPOSAL.md).
+
+Working zero-CRC traffic for volume, presets and Save contradicts a universal request-CRC rule; a
+command-specific CRC/sequence requirement for `0x11` remains **UNSUPPORTED**. The public hardware
+classification remains **device-specific not supported (vendor-exposed)** for the tested JA11 2.20
+tuple. Neither hardware track is scheduled or approved. Filter UI remains disabled.
