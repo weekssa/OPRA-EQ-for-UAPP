@@ -47,11 +47,11 @@ The shared multi-model workflow at `/Users/stephenweeks/Documents/Codex/Codex-Us
 
 The workflow's hard-set rules apply here without modification:
 
-- Planning happens in a dedicated `gpt-6.1-sol` thread and ends at handoff. Never begin an edit, test, build, or device operation from a Sol planning thread; execution runs in a fresh or deliberately switched `deepseek/deepseek-flash` thread.
+- Planning happens in a dedicated `gpt-6.1-sol` thread and ends at handoff. Never begin an edit, test, build, or device operation from a Sol planning thread; execution runs in a fresh `commandcode/deepseek-deepseek-v4.1-flash` thread.
 - Planning protects the Sol budget: heavy read-only context work goes to `gpt-6-luna` research agents, and only when the question splits into independent slices. Free Command Code rows may take bulk extraction on non-sensitive files; they never take the read that decides the plan. InferX stays out of every automatic route. Each spawn names its model, and Sol synthesizes the plan and hands off.
 - Every task executes against an accepted gate file. The task keeps `GATES.md` in its own folder, the repository-root `GATES.md` points at it, and approval seals it. `tools/scope-guard` proves the tree stayed inside `OWNS:` and reports any change outside it.
 - Keep one writer for execution work. Every substantive subagent call names its model explicitly, and `resume_agent` is not used where the model matters.
-- Do not automatically retry, change model or provider, or escalate reasoning effort. The permitted substitutions are the workflow's peak-aware gate and its two route-scoped combos: inside an approved off-peak window a hard-locked `gpt-6.1-sol` or `gpt-6-luna` request may continue on `deepseek/deepseek-flash`, and only `combo/cheap-first` and `combo/research` may fail over inside their own threads. During peak every other scope fails closed.
+- Do not automatically retry, change model or provider, or escalate reasoning effort. The permitted substitutions are the workflow's hard-lock fallback and its research combo: a hard-locked `gpt-6.1-sol` or `gpt-6-luna` request may continue on `commandcode/deepseek-deepseek-v4.1-flash` without a time-of-day condition, and `combo/research` may fail over inside its own thread. Every other scope fails closed.
 - Owner approval gates in this file remain in force on top of the workflow: merge, publication, hardware mutation, signing changes, and any implementation beyond the current explicit request.
 - Results are reported as DEMONSTRATED, CONFIGURED, NOT EXERCISED, INSPECTION-ONLY, or UNSUPPORTED with their limits, even when the surrounding task seems obvious.
 
@@ -169,6 +169,6 @@ Before ending substantive work:
 4. Attach created PRs to the task.
 5. State what is complete, what remains, why it remains, and the next authorized action.
 
-Carry the shared workflow's slice-handoff fields (outcome, files, checks, blockers, evidence, next action) in agent and session handoffs, and keep them under 600 characters where the receiving phase only needs the delta. A plan handoff also records the off-peak window and fallback gate state. A handoff or transcript is evidence, not authority: the next session re-verifies it against these maintained documents and current remote state before acting.
+Carry the shared workflow's slice-handoff fields (outcome, files, checks, blockers, evidence, next action) in agent and session handoffs, and keep them under 600 characters where the receiving phase only needs the delta. A plan handoff also records quota and fallback state. A handoff or transcript is evidence, not authority: the next session re-verifies it against these maintained documents and current remote state before acting.
 
 Do not rely on a conversation transcript as the only record of a decision, failure, test result, or release state. Durable context belongs in version-controlled repository documentation.

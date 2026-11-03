@@ -1,6 +1,6 @@
 # Gates
 
-active: docs/implementation/ja11-filter-b1-b2-prep/GATES.md
+active: docs/implementation/workflow-no-peak-20261103/GATES.md
 
 The active task's gate file is the contract. `tools/scope-guard` resolves this
 pointer, so the seal and the drift check apply to the task file. Approval seals
