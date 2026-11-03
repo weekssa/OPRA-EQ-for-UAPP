@@ -65,5 +65,12 @@ subprojects {
         if (name.contains("UnitTest")) {
             resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
         }
+        if (
+            (name.startsWith("ksp") && name.endsWith("KotlinProcessorClasspath")) ||
+            (name.startsWith("_agp_internal_") && name.endsWith("_kspClasspath"))
+        ) {
+            // KSP resolves its own processor classpath, independently of the configurations above.
+            resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
+        }
     }
 }
