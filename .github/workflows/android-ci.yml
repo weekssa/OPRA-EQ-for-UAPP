@@ -465,6 +465,27 @@ jobs:
           else
             package_manager_path='not restarted (heap-growth limit already configured)'
           fi
+          # The emulator NAT has no IPv6 path. When the resolver answers the catalog host with
+          # AAAA records first, the app's fetch fails immediately inside the guest while the
+          # identical request succeeds from the host. Pin the catalog host to IPv4 in the guest
+          # so this gate measures the app instead of guest egress.
+          catalog_host='raw.githubusercontent.com'
+          catalog_ipv4="$(getent ahostsv4 "$catalog_host" | awk 'NR==1 {print $1}')"
+          if [[ -n "$catalog_ipv4" ]]; then
+            adb root > /dev/null 2>&1 || true
+            adb wait-for-device
+            adb shell 'mount -o rw,remount /system' > /dev/null 2>&1 || adb remount > /dev/null 2>&1 || true
+            hosts_line="$catalog_ipv4 $catalog_host"
+            if adb shell "grep -qF '$catalog_host' /system/etc/hosts"; then
+              printf 'Catalog host already pinned in the emulator hosts file.\n'
+            else
+              adb shell "echo '$hosts_line' >> /system/etc/hosts" || true
+              printf 'Pinned %s to %s in the emulator hosts file.\n' "$catalog_host" "$catalog_ipv4"
+            fi
+            adb shell 'tail -3 /system/etc/hosts' || true
+          else
+            printf 'Could not resolve an IPv4 address for %s on the host; guest DNS left unchanged.\n' "$catalog_host"
+          fi
           heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
           heap_growth_limit_before_report="$heap_growth_limit_before"
           if [[ -z "$heap_growth_limit_before_report" ]]; then
@@ -620,6 +641,8 @@ jobs:
             curl -sS -o /dev/null -w 'host catalog probe: http=%{http_code} size=%{size_download} time=%{time_total}\n' \
               --max-time 120 \
               https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json >&2 || true
+            adb shell ping -c 1 -W 5 raw.githubusercontent.com 2>&1 | tail -3 >&2 || true
+            adb shell getprop net.dns1 2>&1 | tail -1 >&2 || true
             printf 'EQ catalog did not show its Manufacturers heading and populated 1Custom row within 300 seconds.\n' >&2
             exit 1
           fi
