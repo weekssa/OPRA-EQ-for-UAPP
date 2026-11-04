@@ -1,5 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.fiio
 
+import com.weekssa.opraeqforuapp.BuildConfig
+
 /**
  * Applies a tuning request through the same discipline as a physical device transaction:
  * one exclusive operation, a fresh baseline read, a session-generation fence, exactly one write,
@@ -12,6 +14,7 @@ class Ja11TuningController(
     private val transport: Ja11TuningTransport,
     private val exclusivity: Ja11TuningExclusivity = MutexJa11TuningExclusivity(),
     private val capability: Ja11TuningCapability = JA11_TESTED_FIRMWARE_2_20_CAPABILITY,
+    private val prototypeEnabled: Boolean = BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED,
 ) {
     suspend fun read(): Ja11TuningReadOutcome = exclusivity.withExclusiveOperation { readLocked() }
 
@@ -24,6 +27,7 @@ class Ja11TuningController(
      */
     suspend fun saveStartupDefaults(): Ja11TuningSaveOutcome =
         exclusivity.withExclusiveOperation {
+            if (!prototypeEnabled) return@withExclusiveOperation Ja11TuningSaveOutcome.Unsupported
             val controls = transport as? Ja11TuningPrototypeControls
                 ?: return@withExclusiveOperation Ja11TuningSaveOutcome.Unsupported
             if (!controls.saveStartupDefaults()) {
@@ -59,6 +63,7 @@ class Ja11TuningController(
     }
 
     private suspend fun applyLocked(request: Ja11TuningApplyRequest): Ja11TuningApplyOutcome {
+        if (!prototypeEnabled) return Ja11TuningApplyOutcome.Unsupported
         if (!transport.isSimulated && !capability.hardwareWritesAuthorized) {
             return Ja11TuningApplyOutcome.Unsupported
         }

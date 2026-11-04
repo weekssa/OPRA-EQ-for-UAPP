@@ -139,3 +139,69 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
   ]
 }
 ```
+
+## Execution record (2026-11-03)
+
+Candidate commit: `2432fd74cacff843a90cb8eed9c5fe322f35d31b` plus the review corrections recorded
+in the commit that adds this section. Branch `codex/ja11-tuning-prototype`, worktree
+`/Users/stephenweeks/.codex/worktrees/9af0/OPRA-EQ-development`, base
+`30054466fa110adfaa9f9b2058eb8af700fbc56d`.
+
+Commands and results, all with `./tools/codex-android`:
+
+- focused new JVM tests (controller, simulated transport, UI state): 29 tests, 0 failures.
+- `:app:testDebugUnitTest`: 863 tests, 0 failures, 0 skipped.
+- `:app:lintDebug :app:assembleDebug :app:assemblePrivateBeta :app:assembleRelease`: BUILD SUCCESSFUL.
+- `bash tools/verify-r8-mapping.sh`: R8 mapping verified.
+- generated `BuildConfig`: `JA11_TUNING_PROTOTYPE_ENABLED=false` for release, `true` for debug and
+  privateBeta.
+- `:app:connectedDebugAndroidTest`-equivalent by explicit serial (`adb -s emulator-5602`):
+  `com.weekssa.opraeqforuapp.ui.screens.Ja11TuningPrototypeTest` 7/7 passed on an isolated API 36
+  AVD (`opra_api36`, port 5602).
+- privateBeta APK installed and launched on isolated API 36 (port 5602), API 35 (port 5606) and
+  API 26 (port 5604) AVDs; process alive, no crash-buffer entry. The pre-existing emulator-only
+  `com.weekssa.opraeqforuapp.v090beta` installs had a different signer and were uninstalled first.
+- the physical Pixel 9 visible on wireless ADB was never targeted; every device command named an
+  emulator serial.
+
+Private prototype APK: `EQ-Library-ja11-tuning-prototype-2432fd7.apk`, package
+`com.weekssa.opraeqforuapp.v090beta`, versionName `0.9.0`, versionCode `20`, SHA-256
+`aa2b9cffc2931a6b1720eabdd5d990626bb76dae1cfffde699f75adf8fb47f01`, local test signer SHA-256
+`945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5` (not the pinned release signer).
+Known-good rollback APK: public v0.9.0, SHA-256
+`8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`.
+
+Screenshots (light, dark, verified and 1.5x system font scale) were captured from the API 36 AVD
+into the local owner-package directory outside the repository. The pre-review APK digest
+`588af702…` is superseded by the corrected build above.
+
+Implementation note: the simulated controller is owned by the prototype composable rather than the
+ViewModel, because the surface owns no USB session and must not touch the production dependency
+graph. Serialization, the session fence, readback and no-replay semantics live in the tested
+controller; the UI only stages and renders. State does not survive process death, which is
+acceptable for a simulation and is disclosed here.
+
+## Review
+
+Exactly one fresh independent `gpt-6-luna` review (high effort) inspected candidate `2432fd7` and
+returned **FAIL** with three P2 findings and one inconclusive note. No second review was spawned.
+The findings and dispositions:
+
+1. **Attempted values shown as last read.** `beginApply()` replaced the displayed level and gate
+   before verification, so an uncertain disconnect could render the requested value as "Last read".
+   Fixed: `beginApply` no longer touches verified values; a regression test asserts the row keeps the
+   last verified value during apply and after an uncertain disconnect.
+2. **No build-level write guard in the controller.** Fixed: `Ja11TuningController` now takes
+   `prototypeEnabled = BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED` and returns
+   `Unsupported` from `apply` and `saveStartupDefaults` when false. A test proves a production
+   build cannot write even through a simulated transport.
+3. **Evidence record inconsistent with the sealed gate file.** The gate file is sealed by
+   `seed-task`; editing it would invalidate the approval seal, so the execution record and verdict
+   live here and this section is the authoritative evidence pointer. The runbook entry cites the
+   same candidate.
+4. **Inconclusive: rendered large text.** Resolved by capturing a dialog screenshot at a real 1.5x
+   system font scale on the API 36 AVD; text reflows without clipping. The Compose `LocalDensity`
+   override in the test does not affect dialog windows, so the system-scale capture is the evidence.
+
+Residual limits: simulated behavior only; no JA11 read, write, firmware, acoustic or persistence
+evidence; the physical Pixel 9 and every DAC remain untouched.

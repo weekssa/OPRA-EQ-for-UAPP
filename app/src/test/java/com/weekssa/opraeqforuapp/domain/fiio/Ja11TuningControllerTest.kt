@@ -145,6 +145,25 @@ class Ja11TuningControllerTest {
     }
 
     @Test
+    fun productionBuildsRefuseWritesEvenForASimulatedTransport() = runBlocking {
+        val transport = SimulatedJa11TuningTransport()
+        val controller = Ja11TuningController(transport, prototypeEnabled = false)
+        val generation = (controller.read() as Ja11TuningReadOutcome.Read).snapshot.sessionGeneration
+
+        assertEquals(
+            Ja11TuningApplyOutcome.Unsupported,
+            controller.apply(Ja11TuningApplyRequest(requested, generation)),
+        )
+        assertEquals(0, transport.writeAttempts)
+        assertEquals(Ja11TuningSaveOutcome.Unsupported, controller.saveStartupDefaults())
+        assertEquals(
+            Ja11TuningPersistence.UNKNOWN,
+            (transport.read() as Ja11TuningReadResult.Success).snapshot.persistence,
+        )
+        assertEquals(0, transport.committedWrites)
+    }
+
+    @Test
     fun simulatedStartupSaveSurvivesReconnectAndUnsavedValuesDoNot() = runBlocking {
         val transport = SimulatedJa11TuningTransport()
         val controller = Ja11TuningController(transport)

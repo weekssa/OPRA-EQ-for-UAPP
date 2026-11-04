@@ -69,7 +69,25 @@ class Ja11TuningUiStateTest {
         assertEquals(Ja11TuningPhase.DISCONNECTED, state.phase)
         assertEquals(Ja11TuningPersistence.UNKNOWN, state.persistence)
         assertTrue(state.error!!.contains("Completion is unknown"))
-        assertTrue(state.error!!.contains("Read the current values"))
+        assertTrue(state.error.contains("Read the current values"))
+    }
+
+    @Test
+    fun stagedApplyNeverReplacesTheLastVerifiedValue() {
+        val verified = Ja11TuningUiState().read(snapshot)
+        val requested = Ja11TuningValues(Ja11TuningLevel.WARMEST, noiseGateEnabled = true)
+        val applying = verified.beginApply(requested)
+
+        assertEquals("applying must not claim the requested value as current", "Warmer · gate on", ja11TuningRowValue(applying))
+
+        val uncertain = applying.applyOutcome(
+            Ja11TuningApplyOutcome.Disconnected("Cable removed.", uncertain = true),
+        )
+        assertEquals(
+            "an uncertain write must fall back to the last verified value",
+            "Last read · Warmer · gate on",
+            ja11TuningRowValue(uncertain),
+        )
     }
 
     @Test

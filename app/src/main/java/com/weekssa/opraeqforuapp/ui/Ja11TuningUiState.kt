@@ -56,8 +56,6 @@ data class Ja11TuningUiState(
 
     fun beginApply(values: Ja11TuningValues): Ja11TuningUiState = copy(
         phase = Ja11TuningPhase.APPLYING,
-        level = values.level,
-        noiseGateEnabled = values.noiseGateEnabled,
         error = null,
     )
 

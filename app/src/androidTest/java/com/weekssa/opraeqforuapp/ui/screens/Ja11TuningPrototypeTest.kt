@@ -125,6 +125,11 @@ class Ja11TuningPrototypeTest {
 
         composeRule.onNodeWithText("JA11 tuning (simulated)").assertIsDisplayed()
         composeRule.onNodeWithText("Noise gate (simulated)").assertIsDisplayed()
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.getExternalFilesDir("ja11-tuning-screenshots")?.let { dir ->
+            save(captureDialog(), File(dir, "dialog-large-text.png"))
+        }
     }
 
     @Test
