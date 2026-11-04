@@ -9,11 +9,11 @@
     "baselineCommit": "35f0c90a0e55e701d4343ed978a440d34aae13aa"
   },
   "candidate": {
-    "sourceSha": "a64d2ff1e6b4e61b906a18fb3d2166d066a2bb2e",
-    "runId": 41825792697,
-    "artifactId": 13319931584,
-    "artifactArchiveSha256": "16c670e6c73d923aaf51b1474848fb18e50a4df5674dc34daee2b629ab521a14",
-    "apkSha256": "a095eb5fc6790ac166dcd712eefb4a86042edbbd5357ffc50054f604debda04d",
+    "sourceSha": "6cb3deb9825fdfa4ee32ce7fd05deb0cfc402d4a",
+    "runId": 41842322131,
+    "artifactId": 13330113132,
+    "artifactArchiveSha256": "b6f1839c65ecde89fe16da2cbb5543c7c6e7cb2a1a2ddf83cab46fb538e88f01",
+    "apkSha256": "daee1ed6c0599f12d0fd3ff05dfb8cd71abc23af32639954adf94b46b6b3a606",
     "signerSha256": "65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747"
   },
   "computerQualification": {
