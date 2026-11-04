@@ -521,7 +521,13 @@ class EqLibraryViewModel(
         if (state.isBusy) return
         mutableJa11DcrTuningState.value = state.beginRead()
         viewModelScope.launch {
-            val read = Ja11DcrTuning.parameters.associate { it.register to hardwareRepository.readJa11KtRegister(it.register) }
+            var read = Ja11DcrTuning.parameters.associate { it.register to hardwareRepository.readJa11KtRegister(it.register) }
+            repeat(2) {
+                if (read.values.any { it == null }) {
+                    delay(700)
+                    read = Ja11DcrTuning.parameters.associate { it.register to hardwareRepository.readJa11KtRegister(it.register) }
+                }
+            }
             if (ja11DcrBaseline == null && read.values.all { it != null }) {
                 ja11DcrBaseline = read[0x5B]
             }

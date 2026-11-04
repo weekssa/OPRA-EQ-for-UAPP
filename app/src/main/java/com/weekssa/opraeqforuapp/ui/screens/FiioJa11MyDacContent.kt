@@ -96,12 +96,7 @@ internal fun FiioJa11MyDacContent(
     val connected = connectionState is Kt02h20ConnectionState.Connected
     LaunchedEffect(connected, selectedTab) {
         if (!connected || selectedTab != 1) return@LaunchedEffect
-        // A replug can appear connected a moment before the device answers; retry briefly so the
-        // row does not stay on "Unknown" after an automatic reconnect.
-        repeat(3) {
-            onReadDeviceControls()
-            delay(1_500)
-        }
+        onReadDeviceControls()
     }
     val editorApplyTrace = when (val status = operationStatus) {
         is FiioJa11OperationStatus.Completed -> operationTrace?.takeIf { trace ->
