@@ -15,7 +15,7 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 - JA11 digital reconstruction filters are not exposed by the official vendor implementation for firmware 2.20, so the control is absent from this release. The complete investigation and reopening criteria are preserved in `docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md`.
 
-## [Unreleased]
+## [0.10.0-beta.1] - 2026-11-04
 
 ### JA11 tuning and DEVICE UX
 

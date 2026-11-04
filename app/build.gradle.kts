@@ -30,8 +30,8 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20
-        versionName = "0.9.0"
+        versionCode = 21
+        versionName = "0.10.0-beta.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -46,7 +46,7 @@ android {
         buildConfigField("boolean", "JA11_FILTER_CONTROL_ENABLED", "false")
         // Private prototype only: shows the simulated JA11 tuning model on My DAC -> DEVICE.
         // Production variants leave this false; no hardware tuning command exists.
-        buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "false")
+        buildConfigField("boolean", "JA11_TUNING_ENABLED", "true")
     }
 
     buildTypes {
@@ -58,7 +58,7 @@ android {
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
         debug {
-            buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "true")
+            buildConfigField("boolean", "JA11_TUNING_ENABLED", "true")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
         create("beta") {
@@ -82,7 +82,7 @@ android {
             initWith(getByName("release"))
             isMinifyEnabled = true
             applicationIdSuffix = ".v090beta"
-            buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "true")
+            buildConfigField("boolean", "JA11_TUNING_ENABLED", "true")
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
@@ -102,7 +102,7 @@ android {
             versionNameSuffix = "-tuningproto"
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
-            buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "true")
+            buildConfigField("boolean", "JA11_TUNING_ENABLED", "true")
             matchingFallbacks += listOf("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

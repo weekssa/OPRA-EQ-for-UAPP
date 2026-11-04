@@ -2,6 +2,14 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
+## v0.10.0-beta.1 candidate (2026-11-04)
+
+Beta candidate, not published: versionName 0.10.0-beta.1, versionCode 21, package
+com.weekssa.opraeqforuapp. It ships the JA11 Tuning (Ellyn) toggle, the DEVICE page redesign,
+runtime edits with explicit Set as Default, and automatic reconnect/refresh. Evidence limits and
+the identity-guard history are in docs/FIIO_JA11_PROTOCOL_NOTES.md and
+docs/releases/0.10.0-beta.1.md. v0.9.0 remains public stable until this candidate is promoted.
+
 ## Current stable release: v0.9.0 (published 2026-11-01)
 
 - Release: [EQ Library v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), public, immutable, non-draft, non-prerelease, current latest; release ID `430455005`, published `2026-11-01T09:38:36Z`.

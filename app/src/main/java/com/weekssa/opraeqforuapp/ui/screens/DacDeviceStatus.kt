@@ -224,7 +224,7 @@ private fun FiioJa11DeviceStatus(
         enabled = controlsEnabled,
         onClick = { choosingEqProgram = true },
     )
-    if (BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED) {
+    if (BuildConfig.JA11_TUNING_ENABLED) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
