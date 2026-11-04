@@ -10,7 +10,7 @@ Beta candidate, not published: versionName 0.9.0-beta.4, versionCode 21, package
 com.weekssa.opraeqforuapp. It ships the JA11 Tuning (Ellyn) toggle, the DEVICE page redesign,
 runtime edits with explicit Set as Default, and automatic reconnect/refresh. Evidence limits and
 the identity-guard history are in docs/FIIO_JA11_PROTOCOL_NOTES.md and
-docs/releases/0.9.0-beta.4.md. v0.9.0 remains public stable until this candidate is promoted.
+docs/releases/v0.9.0-beta.4.md. v0.9.0 remains public stable until this candidate is promoted.
 
 ## Current stable release: v0.9.0 (published 2026-11-01)
 
