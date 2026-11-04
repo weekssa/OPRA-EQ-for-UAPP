@@ -25,6 +25,13 @@ class Ja11DcrTuningUiStateTest {
     }
 
     @Test
+    fun usbIdentityRegisterCannotBeWritten() {
+        assertFalse(Ja11DcrTuning.canWriteRegister(Ja11DcrTuning.USB_IDENTITY_REGISTER))
+        assertTrue(Ja11DcrTuning.canWriteRegister(0x3A))
+        assertTrue(Ja11DcrTuning.canWriteRegister(0x3B))
+    }
+
+    @Test
     fun usbIdentityRegisterIsNeverATuningParameter() {
         assertFalse(Ja11DcrTuning.parameters.any { it.register == Ja11DcrTuning.USB_IDENTITY_REGISTER })
     }

@@ -80,7 +80,7 @@ class AndroidFiioJa11UsbTransport(
 
     /** Writes one KT config register and verifies it with one readback. */
     suspend fun writeKtRegister(address: Int, value: Int): Boolean {
-        if (address == com.weekssa.opraeqforuapp.domain.kt02h20.Ja11DcrTuning.USB_IDENTITY_REGISTER) {
+        if (!com.weekssa.opraeqforuapp.domain.kt02h20.Ja11DcrTuning.canWriteRegister(address)) {
             return false
         }
         val ack = hid.exchange(

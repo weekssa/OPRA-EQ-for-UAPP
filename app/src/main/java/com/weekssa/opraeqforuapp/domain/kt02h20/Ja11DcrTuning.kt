@@ -30,6 +30,8 @@ object Ja11DcrTuning {
      */
     const val USB_IDENTITY_REGISTER = 0x5B
 
+    fun canWriteRegister(address: Int): Boolean = address != USB_IDENTITY_REGISTER
+
     fun isStock(value: Int?): Boolean = value == STOCK
 
     fun isEllyn(value: Int?): Boolean = value == ELLYN
