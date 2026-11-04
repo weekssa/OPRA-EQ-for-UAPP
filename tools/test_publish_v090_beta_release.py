@@ -204,7 +204,7 @@ class V090PublisherTest(unittest.TestCase):
         (self.root / "app").mkdir()
         (self.root / "docs/releases").mkdir(parents=True)
         (self.root / "app/build.gradle.kts").write_text(
-            'android {\n    defaultConfig {\n        versionCode = 15\n        versionName = "0.9.0-beta.4"\n    }\n}\n',
+            'android {\n    defaultConfig {\n        versionCode = 21\n        versionName = "0.9.0-beta.4"\n    }\n}\n',
             encoding="utf-8",
         )
         (self.root / "release-signing-cert.sha256").write_text(SIGNER + "\n", encoding="utf-8")

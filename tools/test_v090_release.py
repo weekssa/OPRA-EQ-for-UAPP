@@ -20,7 +20,7 @@ class V090ReleaseTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="v090-release-test-")
         self.root = Path(self.temp.name)
         (self.root / "app").mkdir()
-        self.write_version("0.9.0-beta.4", 15)
+        self.write_version("0.9.0-beta.4", 21)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -61,7 +61,7 @@ class V090ReleaseTest(unittest.TestCase):
     def test_advancing_recovery_candidate_must_be_declared_and_advance(self):
         (self.root / "docs").mkdir()
         state = self.root / "docs/PROJECT_STATE.md"
-        self.write_version("0.9.0-beta.2", 16)
+        self.write_version("0.9.0-beta.2", 22)
 
         # Not declared: the pinned beta contract still governs.
         with self.assertRaisesRegex(release.V090ReleaseError, "versionName"):
@@ -72,7 +72,7 @@ class V090ReleaseTest(unittest.TestCase):
         with self.assertRaisesRegex(release.V090ReleaseError, "versionName"):
             release.validate_version(self.root)
 
-        state.write_text("- Candidate build: **v0.9.0-beta.2**, versionCode `16`\n", encoding="utf-8")
+        state.write_text("- Candidate build: **v0.9.0-beta.2**, versionCode `22`\n", encoding="utf-8")
         release.validate_version(self.root)
 
         # A recovery candidate must advance the pinned versionCode.
@@ -82,13 +82,13 @@ class V090ReleaseTest(unittest.TestCase):
             release.validate_version(self.root)
 
         # It must also stay inside the 0.9.0 beta line.
-        self.write_version("0.9.1-beta.2", 17)
-        state.write_text("- Candidate build: **v0.9.1-beta.2**, versionCode `17`\n", encoding="utf-8")
+        self.write_version("0.9.1-beta.2", 22)
+        state.write_text("- Candidate build: **v0.9.1-beta.2**, versionCode `22`\n", encoding="utf-8")
         with self.assertRaisesRegex(release.V090ReleaseError, "0.9.0 beta line"):
             release.validate_version(self.root)
 
         # The stable v0.9.0 release identity is accepted when declared.
-        self.write_version("0.9.0", 20)
+        self.write_version("0.9.0", 22)
         state.write_text("- Candidate build: **v0.9.0**, versionCode `20`\n", encoding="utf-8")
         release.validate_version(self.root)
 
