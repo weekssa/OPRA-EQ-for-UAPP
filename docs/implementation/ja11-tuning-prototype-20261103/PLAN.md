@@ -158,6 +158,8 @@ Commands and results, all with `./tools/codex-android`:
 - `:app:connectedDebugAndroidTest`-equivalent by explicit serial (`adb -s emulator-5602`):
   `com.weekssa.opraeqforuapp.ui.screens.Ja11TuningPrototypeTest` 7/7 passed on an isolated API 36
   AVD (`opra_api36`, port 5602).
+  The contract's gate 3 command would target every attached device, including the physical Pixel 9
+  visible on wireless ADB, so it was executed as an explicit-serial instrumentation run instead.
 - privateBeta APK installed and launched on isolated API 36 (port 5602), API 35 (port 5606) and
   API 26 (port 5604) AVDs; process alive, no crash-buffer entry. The pre-existing emulator-only
   `com.weekssa.opraeqforuapp.v090beta` installs had a different signer and were uninstalled first.

@@ -20,7 +20,7 @@ with a session fence, verified readback and no replay, distinguishes unknown fro
 session-only from saved and unknown persistence, and states on every value that nothing is sent to
 the DAC. The private APK is `com.weekssa.opraeqforuapp.v090beta`.
 
-Evidence for this candidate: 27 new JVM tests (plus the existing suite), `lintDebug`,
+Evidence for this candidate: 29 new JVM tests (863 total), `lintDebug`,
 `assembleDebug`, `assemblePrivateBeta`, `assembleRelease` with R8, and 7/7 API 36 Compose tests
 including light, dark, large-text and screenshot capture. The minified private APK installed and
 launched on API 36 and API 26 emulators; the pre-existing emulator-only `v090beta` install was
