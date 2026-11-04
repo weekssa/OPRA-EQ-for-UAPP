@@ -464,10 +464,7 @@ transport now refuses that address and a regression test asserts it is not a tun
 
 The remaining community deltas are `0x3A` (`4 → 0`) and `0x3B` (`0x0D → 0x0C`).
 The private build's DEVICE toggle writes those two with per-register readback and restores stock.
-The FiiO `0x19` Save commits the chip's working config block, not only the EQ program; a save
-followed by a genuine power cycle preserved `0x3A/0x3B`, volume and program together. The app
-therefore saves automatically after volume and program changes and after EQ flashes; the separate
-"Set as Default" action was removed.
+The FiiO `0x19` Save commits the startup volume/program store and re-enumerates USB. The DSP registers `0x3A/0x3B` are written straight to non-volatile config: they survived a genuine power cycle with no `0x19` save. Volume 55 without a save reverted to 56, so volume/program are runtime-only until the explicit Set as Default action; the app does not auto-save. A full `0x00-0xFF` dump before/after a save was identical, and the space above `0xFF` is not a register file.
 Owner-reported audible effect: the change was heard on the tested unit (subjective, not measured). The gate block `0x71-0x73` is unchanged by the
 community image.
 

@@ -17,6 +17,13 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### JA11 tuning and DEVICE UX
+
+- Private prototype build: My DAC -> DEVICE gains a Tuning (Ellyn) toggle that writes KT config registers 0x3A/0x3B, verifies readback, and persists on write. The USB identity register 0x5B is blocked at the transport.
+- DEVICE simplified: "Device settings" header, Audio (volume, EQ program, tuning, Startup settings), Microphone, USB & System, About. Startup settings shows Not saved / Save / Saved; volume uses a slider; microphone and UAC confirmations are one line.
+- Automatic reconnect re-reads device state and clears stale tuning state on disconnect.
+- Evidence: one Pixel 9 and one JA11 at firmware 2.20; the audible result is an owner report, not an acoustic measurement. Not enabled in release builds and not a public support claim.
+
 ## Historical v0.9.0 beta candidates
 
 ### 0.9.0-beta.2 recovery candidate
