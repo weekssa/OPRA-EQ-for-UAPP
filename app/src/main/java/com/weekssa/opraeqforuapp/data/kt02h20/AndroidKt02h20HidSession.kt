@@ -458,7 +458,7 @@ internal class AndroidKt02h20HidSession(
                 if (session != null) {
                     if (!requireUniqueCandidate || isCurrentSession(currentSessionGeneration, detachSequence)) {
                         hadSession = true
-            mutableState.value = Kt02h20ConnectionState.Connected
+                        mutableState.value = Kt02h20ConnectionState.Connected
                         return@withLock
                     }
                     closeSessionLocked()
