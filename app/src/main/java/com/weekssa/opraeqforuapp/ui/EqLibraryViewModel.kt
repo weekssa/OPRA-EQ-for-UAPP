@@ -586,7 +586,7 @@ class EqLibraryViewModel(
     private fun scheduleJa11AutoSave() {
         ja11AutoSaveJob?.cancel()
         ja11AutoSaveJob = viewModelScope.launch {
-            delay(1_500L)
+            delay(4_000L)
             val state = mutableFiioJa11DeviceState.value
             val snapshot = state.snapshot ?: return@launch
             if (state.isBusy || !state.isCurrentSession) return@launch

@@ -209,33 +209,6 @@ private fun FiioJa11DeviceStatus(
         return
     }
 
-    state.defaultsReport?.let { report ->
-        val verified = fiioJa11DefaultsReportIsVerified(report)
-        Text(
-            text = fiioJa11DefaultsReportText(report),
-            style = MaterialTheme.typography.bodySmall,
-            color = if (verified) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        if (report.stage == FiioJa11DefaultsStage.COMPLETE ||
-            report.stage == FiioJa11DefaultsStage.FINAL_VERIFY ||
-            report.stage == FiioJa11DefaultsStage.NATIVE_FINAL_VERIFY
-        ) {
-            fiioJa11DefaultsEqReadbackText(report)?.let { text ->
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (report.eqReadback == FiioJa11DefaultsEqReadback.CHANGED) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-        }
-    }
-
     DeviceSectionTitle("Audio")
     SimpleDeviceSettingRow(
         label = "Device volume",
