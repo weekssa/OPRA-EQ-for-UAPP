@@ -129,25 +129,6 @@ jobs:
         id: start_emulator
         shell: bash
         run: |
-          set -euo pipefail
-          # adbd restarts while switching to root and can briefly refuse the connection, so retry
-          # instead of failing the gate on a transient control-channel error.
-          adb_as_root() {
-            local deadline=$((SECONDS + 90))
-            local current_uid=''
-            while true; do
-              adb root > /dev/null 2>&1 || true
-              adb wait-for-device > /dev/null 2>&1 || true
-              current_uid="$(adb shell id -u 2>/dev/null | tr -d '\r' || true)"
-              if [[ "$current_uid" == "0" ]]; then
-                return 0
-              fi
-              if (( SECONDS >= deadline )); then
-                return 1
-              fi
-              sleep 2
-            done
-          }
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
           nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_35 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
@@ -365,6 +346,25 @@ jobs:
               printf '\n' | tee -a "$adb_timeout_report" >&2
             fi
             return "$status"
+          }
+          set -euo pipefail
+          # adbd restarts while switching to root and can briefly refuse the connection, so retry
+          # instead of failing the gate on a transient control-channel error.
+          adb_as_root() {
+            local deadline=$((SECONDS + 90))
+            local current_uid=''
+            while true; do
+              adb root > /dev/null 2>&1 || true
+              adb wait-for-device > /dev/null 2>&1 || true
+              current_uid="$(adb shell id -u 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$current_uid" == "0" ]]; then
+                return 0
+              fi
+              if (( SECONDS >= deadline )); then
+                return 1
+              fi
+              sleep 2
+            done
           }
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
