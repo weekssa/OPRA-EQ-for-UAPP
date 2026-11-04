@@ -25,7 +25,7 @@ class Ja11DcrTuningUiStateTest {
     @Test
     fun unknownAndNullAreNotRenderedAsEllyn() {
         assertEquals(Ja11DcrTuningPhase.UNKNOWN, Ja11DcrTuningUiState().read(null).phase)
-        assertEquals("Unknown", ja11DcrRowValue(Ja11DcrTuningUiState().read(null)))
+        assertEquals("Tap Refresh to read", ja11DcrRowValue(Ja11DcrTuningUiState().read(null)))
     }
 
     @Test
