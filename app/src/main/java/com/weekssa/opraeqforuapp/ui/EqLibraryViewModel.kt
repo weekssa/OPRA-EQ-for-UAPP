@@ -470,7 +470,10 @@ class EqLibraryViewModel(
                         val pending = mutableFiioJa11DeviceState.value.pendingRestartWrite
                         if (pending == null) refreshFiioJa11DeviceState()
                     }
-                    else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
+                    else -> {
+                        mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
+                        mutableJa11DcrTuningState.value = Ja11DcrTuningUiState()
+                    }
                 }
             }
         }
@@ -654,6 +657,19 @@ class EqLibraryViewModel(
                         mutableFiioJa11DeviceState.value.verified(controlId, result.snapshot)
                     if (controlId == FiioJa11DeviceControls.EQ_PROGRAM) {
                         hardwareRepository.readFiioJa11Snapshot()
+                    }
+                    if (
+                        controlId == FiioJa11DeviceControls.OUTPUT_VOLUME ||
+                        controlId == FiioJa11DeviceControls.EQ_PROGRAM
+                    ) {
+                        setFiioJa11Defaults(
+                            FiioJa11DefaultsRequest(
+                                reviewedSnapshot = result.snapshot,
+                                requestedVolume = result.snapshot.outputVolume,
+                                requestedProgram = result.snapshot.eqProgram,
+                                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                            ),
+                        )
                     }
                 }
                 is FiioJa11ControlWriteResult.ReconnectRequired -> {

@@ -34,6 +34,19 @@ hardware stayed at volume 60/60 and EQ program Off. That session was read-only t
 write, Apply, Save, firmware or microphone operation occurred. This is not a hardware capability,
 and it changes no canonical EQ, output, protocol or Save behavior.
 
+## 2026-11-03 JA11 tuning: real register path and automatic save
+
+The JA11 answers the KT 11-byte register protocol on report 0x4B. The community firmware's deltas
+are register 0x3A (4 -> 0) and 0x3B (0x0D -> 0x0C), both audible on the tested unit, plus register
+0x5B, which is the USB identity (2972:0102 -> 31B2:2003). The app never writes 0x5B; an earlier
+revision did and re-badged a test unit, which was restored by reflashing stock V2.2.
+
+Persistence: the FiiO 0x19 Save commits the chip config block, so a save plus a genuine power
+cycle preserves the tuning, volume and program. Volume and program changes now auto-save; EQ
+flashes already end with Save. The separate "Set as Default" button and the obsolete simulated
+tuning row were removed. Evidence is one Pixel 9 and one JA11; the audible result is an owner
+report, not a measurement.
+
 ## 2026-11-01 v0.9.0 stable publication and closeout — current release
 
 EQ Library v0.9.0 is public stable/latest. Release ID `430455005` was published at `2026-11-01T09:38:36Z` from exact source `1eebfda363a580591abdb3b109b8af5df5b82a90` (PR #124). The official signed-candidate run `41288639063` succeeded and produced artifact `13076990020`; promotion run `41289359379` passed exact-artifact checks, hosted clean install, v0.8.3 upgrade and publication. The annotated `v0.9.0` tag peels to the exact source and binds the candidate provenance. A fresh public APK download independently matched the candidate APK SHA-256. Full hashes and readback evidence are in [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md).

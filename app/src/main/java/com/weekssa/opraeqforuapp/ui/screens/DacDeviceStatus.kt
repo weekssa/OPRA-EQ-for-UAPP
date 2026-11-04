@@ -33,8 +33,6 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacMetadataOrigin
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
-import com.weekssa.opraeqforuapp.domain.fiio.Ja11TuningTransport
-import com.weekssa.opraeqforuapp.domain.fiio.SimulatedJa11TuningTransport
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
@@ -67,7 +65,6 @@ internal fun CapabilityDrivenDeviceStatus(
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit = {},
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
     fiioJa11OperationBusy: Boolean = false,
-    ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
     ja11DcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
     onSetJa11DcrTuning: (Boolean) -> Unit = {},
 ) {
@@ -88,7 +85,6 @@ internal fun CapabilityDrivenDeviceStatus(
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
             operationBusy = fiioJa11OperationBusy,
-            ja11TuningTransportFactory = ja11TuningTransportFactory,
             dcrTuningState = ja11DcrTuningState,
             onSetDcrTuning = onSetJa11DcrTuning,
         )
@@ -162,7 +158,6 @@ private fun FiioJa11DeviceStatus(
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
     operationBusy: Boolean,
-    ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
     dcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
     onSetDcrTuning: (Boolean) -> Unit = {},
 ) {
@@ -275,11 +270,6 @@ private fun FiioJa11DeviceStatus(
                 dcrTuningState.error?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
-                Text(
-                    text = "Writes the gate-side registers the modified firmware changes, then verifies readback. The USB identity register is never touched.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
             Switch(checked = dcrTuningState.tuningEnabled, onCheckedChange = null)
         }
@@ -290,39 +280,6 @@ private fun FiioJa11DeviceStatus(
         enabled = controlsEnabled,
         onClick = { choosingEqProgram = true },
     )
-    if (BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED) {
-        Ja11TuningPrototypeSection(
-            enabled = connected && !state.isBusy && !operationBusy,
-            transportFactory = ja11TuningTransportFactory,
-        )
-    }
-    Text(
-        text = "Startup defaults",
-        style = MaterialTheme.typography.labelLarge,
-        modifier = Modifier.padding(top = 14.dp),
-    )
-    Text(
-        text = fiioJa11StartupStatusText(state.startupDefaultStatus)
-            ?: "Unplugging JA11 restores the volume and EQ program saved as its startup defaults.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 2.dp),
-    )
-    if (state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED) {
-        TextButton(
-            onClick = {
-                defaultsReview = FiioJa11DefaultsRequest(
-                    reviewedSnapshot = snapshot,
-                    requestedVolume = snapshot.outputVolume,
-                    requestedProgram = snapshot.eqProgram,
-                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-                )
-            },
-            enabled = controlsEnabled,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp),
-        ) { Text("Set as Default…") }
-    }
-
     DeviceSectionTitle("Microphone")
     Row(
         modifier = Modifier

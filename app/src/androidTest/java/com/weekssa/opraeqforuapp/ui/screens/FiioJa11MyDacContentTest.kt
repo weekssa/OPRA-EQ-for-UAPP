@@ -122,24 +122,6 @@ class FiioJa11MyDacContentTest {
     }
 
     @Test
-    fun setAsDefaultSavesTheCurrentPairAfterDisclosingTheInterruption() {
-        var request: FiioJa11DefaultsRequest? = null
-        setContentForTrace(editorApplyTrace(), onDefaults = { request = it })
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
-        composeRule.onNodeWithText("Set startup defaults?").assertIsDisplayed()
-        composeRule.onNodeWithText("JA11 may disconnect briefly", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("keeps the active EQ and microphone setting", substring = true).assertIsDisplayed()
-        composeRule.onAllNodesWithText("microphone round trip", substring = true).assertCountEquals(0)
-        composeRule.runOnIdle { assertEquals(null, request) }
-        composeRule.onNodeWithText("Save as Default").performClick()
-        composeRule.runOnIdle {
-            assertEquals(20, request?.requestedVolume)
-            assertEquals(FiioJa11Protocol.EqProgram.USER_1, request?.requestedProgram)
-        }
-    }
-
-    @Test
     fun runtimeOnlyStatusNamesTheUnplugConsequence() {
         setContentForTrace(
             editorApplyTrace(),

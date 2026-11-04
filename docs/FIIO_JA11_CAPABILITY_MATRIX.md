@@ -464,7 +464,11 @@ transport now refuses that address and a regression test asserts it is not a tun
 
 The remaining community deltas are `0x3A` (`4 → 0`) and `0x3B` (`0x0D → 0x0C`).
 The private build's DEVICE toggle writes those two with per-register readback and restores stock.
-Their audible effect is **not established**; the gate block `0x71-0x73` is unchanged by the
+The FiiO `0x19` Save commits the chip's working config block, not only the EQ program; a save
+followed by a genuine power cycle preserved `0x3A/0x3B`, volume and program together. The app
+therefore saves automatically after volume and program changes and after EQ flashes; the separate
+"Set as Default" action was removed.
+Owner-reported audible effect: the change was heard on the tested unit (subjective, not measured). The gate block `0x71-0x73` is unchanged by the
 community image.
 
 Incident record: an earlier revision targeted `0x5B` as "DCR" and re-badged a test unit. The
