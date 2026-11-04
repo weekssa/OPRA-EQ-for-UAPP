@@ -708,3 +708,13 @@ Extended scan (2026-11-03): reading 0x100-0x3FF does not expose a register file;
 or misaligned (values contain the request frame bytes, e.g. 4b0b...). There is no readable mirror of
 the FiiO startup volume/program store above 0xFF. Volume and program persistence therefore requires
 the 0x19 save, with its USB re-enumeration; only the DSP config registers (e.g. 0x3A/0x3B) persist on write.
+
+Firmware deep dive (2026-11-03): the factory image supplied by the owner is byte-identical to the
+official FiiO V2.2 image (SHA-256 65fea4995a4425064bc737c7bc8ec64e212c8b6297c6b9dfcc2b90a5814103de).
+The only 0x3C (60) byte in the config region is part of the gate coefficient d3 da e2 3c; there is no
+zero-hit for a 60-volume default in the config block, and no readable register changes between a saved
+volume of 56 and 55 (full 0x00-0xFF dumps identical). Reading above 0xFF returns echoed/misaligned
+frames, not a register file. Conclusion: the startup volume/program store is device-side user data,
+not present in the firmware image or the KT register bank; only the 0x19 save writes it, and that
+command's USB re-enumeration is device behavior. A restart-free persistence path would require the
+vendor tool's SAVE protocol, which did not answer on the JA11 HID channel.
