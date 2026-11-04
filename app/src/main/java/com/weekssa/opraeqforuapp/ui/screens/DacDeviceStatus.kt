@@ -254,6 +254,32 @@ private fun FiioJa11DeviceStatus(
         onClick = { choosingEqProgram = true },
     )
     DeviceSectionTitle("Microphone")
+    Text(
+        text = "Startup defaults",
+        style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.padding(top = 14.dp),
+    )
+    Text(
+        text = fiioJa11StartupStatusText(state.startupDefaultStatus)
+            ?: "Runtime changes are lost on unplug. Set them as default to keep them.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 2.dp),
+    )
+    if (state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED) {
+        TextButton(
+            onClick = {
+                defaultsReview = FiioJa11DefaultsRequest(
+                    reviewedSnapshot = snapshot,
+                    requestedVolume = snapshot.outputVolume,
+                    requestedProgram = snapshot.eqProgram,
+                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                )
+            },
+            enabled = controlsEnabled,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp),
+        ) { Text("Set as Default…") }
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()

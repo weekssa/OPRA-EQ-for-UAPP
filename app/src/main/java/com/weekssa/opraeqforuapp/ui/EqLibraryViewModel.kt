@@ -585,8 +585,7 @@ class EqLibraryViewModel(
      * after the user stops, instead of a re-enumeration per step.
      */
     private fun scheduleJa11AutoSave() {
-        ja11AutoSaveJob?.cancel()
-        ja11SavePending = true
+        // Runtime-only by default; the explicit "Set as Default" action commits the save.
     }
 
     /**
