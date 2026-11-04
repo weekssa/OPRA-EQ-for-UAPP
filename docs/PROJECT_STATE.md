@@ -2,13 +2,15 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.10.0-beta.1 candidate (2026-11-04)
+## v0.9.0-beta.4 candidate (2026-11-04)
 
-Beta candidate, not published: versionName 0.10.0-beta.1, versionCode 21, package
+Candidate build: **v0.9.0-beta.4**, versionCode `21`.
+
+Beta candidate, not published: versionName 0.9.0-beta.4, versionCode 21, package
 com.weekssa.opraeqforuapp. It ships the JA11 Tuning (Ellyn) toggle, the DEVICE page redesign,
 runtime edits with explicit Set as Default, and automatic reconnect/refresh. Evidence limits and
 the identity-guard history are in docs/FIIO_JA11_PROTOCOL_NOTES.md and
-docs/releases/0.10.0-beta.1.md. v0.9.0 remains public stable until this candidate is promoted.
+docs/releases/0.9.0-beta.4.md. v0.9.0 remains public stable until this candidate is promoted.
 
 ## Current stable release: v0.9.0 (published 2026-11-01)
 

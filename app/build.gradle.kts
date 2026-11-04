@@ -31,7 +31,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 21
-        versionName = "0.10.0-beta.1"
+        versionName = "0.9.0-beta.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -65,7 +65,7 @@ android {
             initWith(getByName("release"))
             isMinifyEnabled = true
             applicationIdSuffix = ".v083beta"
-            versionNameSuffix = "-beta.1"
+            versionNameSuffix = ""
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")

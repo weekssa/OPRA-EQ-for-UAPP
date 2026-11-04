@@ -99,7 +99,7 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
     "docs/FIIO_JA11_CAPABILITY_MATRIX.md",
     "docs/CHATGPT_PROJECT_RUNBOOK.md",
     "docs/PROJECT_STATE.md",
-    "docs/releases/0.10.0-beta.1.md",
+    "docs/releases/0.9.0-beta.4.md",
     "CHANGELOG.md",
     "app/src/main/java/com/weekssa/opraeqforuapp/MainActivity.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/EqLibraryActions.kt",

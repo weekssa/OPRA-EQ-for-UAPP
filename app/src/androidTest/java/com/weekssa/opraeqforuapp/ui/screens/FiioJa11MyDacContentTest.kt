@@ -26,7 +26,9 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStage
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.Ja11DcrTuning
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11StartupDefaultStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import org.junit.Assert.assertEquals
@@ -249,6 +251,16 @@ class FiioJa11MyDacContentTest {
         composeRule.runOnIdle { assertEquals(listOf(FiioJa11Protocol.EqProgram.CLASSIC), appliedPrograms) }
     }
 
+    @Test
+    fun tuningToggleRendersOnAndInvokesCallback() {
+        var requested: Boolean? = null
+        setContentForTrace(editorApplyTrace(), onDcrTuning = { requested = it })
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithText("Tuning (Ellyn)").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Tuning (Ellyn)").performClick()
+        composeRule.runOnIdle { assertEquals(false, requested) }
+    }
+
     private fun setContentForTrace(
         trace: FiioJa11OperationTrace,
         restorationTester: StateRestorationTester? = null,
@@ -260,6 +272,8 @@ class FiioJa11MyDacContentTest {
         digitalFilterMode: FiioJa11Protocol.DigitalFilterMode? = FiioJa11Protocol.DigitalFilterMode.FAST_LL,
         startupStatus: FiioJa11StartupDefaultStatus = FiioJa11StartupDefaultStatus.UNKNOWN,
         defaultsReport: FiioJa11DefaultsOperationReport? = null,
+        dcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState().read(Ja11DcrTuning.ELLYN),
+        onDcrTuning: (Boolean) -> Unit = {},
     ) {
         val bundle = requireNotNull(
             HardwareEqSnapshotFactory.fiioJa11(
@@ -306,6 +320,8 @@ class FiioJa11MyDacContentTest {
                 operationTrace = trace,
                 operationStatus = FiioJa11OperationStatus.Completed(trace),
                 onMessage = {},
+                dcrTuningState = dcrTuningState,
+                onSetDcrTuning = onDcrTuning,
             )
         }
         if (restorationTester == null) {
