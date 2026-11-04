@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-04T19:40:40Z",
+  "generated_at": "2026-11-04T19:59:50Z",
   "headphone_aliases": [
     {
       "aliases": [
@@ -1050457,6 +1050457,68 @@
       "tuning_label": "Hifiman Arya Review (headphone)"
     },
     {
+      "canonical_profile_id": "community-838497e5c1545f6be17454ad",
+      "creator": "sweetchaos",
+      "headphone": {
+        "manufacturer": "Audio-Technica",
+        "model": "ATH-R70x",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "6f297b90ccf0c570a1db342d9d19658141dee5087839911a310d35d0436ccef2",
+          "filters": [
+            {
+              "frequency_hz": 30.0,
+              "gain_db": 10.0,
+              "q": 1.0,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 4300.0,
+              "gain_db": 5.0,
+              "q": 3.0,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -10.0,
+          "revision_id": "rev-6f297b90ccf0c570a1db342d",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": "sweetchaos",
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "audio-science-review",
+              "source_kind": "community",
+              "source_product_id": "ATH-R70x",
+              "source_record_id": "post-1141048",
+              "source_vendor_id": "Audio-Technica",
+              "updated_at_epoch_seconds": null,
+              "url": "https://www.audiosciencereview.com/forum/index.php?threads/audio-technica-ath-r70x-review-headphone.32498/#post-1141048"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": null,
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "unknown",
+        "name": null
+      },
+      "tuning_label": "Audio-Technica ATH-R70x Review (Headphone)"
+    },
+    {
       "canonical_profile_id": "community-8433c136c12d077753c84b3d",
       "creator": null,
       "headphone": {
@@ -1052433,6 +1052495,89 @@
         "name": null
       },
       "tuning_label": "Main-ish"
+    },
+    {
+      "canonical_profile_id": "community-c8aad216863304b1f2898657",
+      "creator": "sweetchaos",
+      "headphone": {
+        "manufacturer": "Takstar",
+        "model": "Pro 82",
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "dea9a9784c9e1e43924baae25d8b542aeab3fa537ed1250b9575f8e7ca2776a8",
+          "filters": [
+            {
+              "frequency_hz": 144.0,
+              "gain_db": -6.0,
+              "q": 2.0,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 400.0,
+              "gain_db": 5.0,
+              "q": 3.0,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 4500.0,
+              "gain_db": 5.0,
+              "q": 2.5,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 8618.0,
+              "gain_db": -6.0,
+              "q": 5.0,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 13500.0,
+              "gain_db": -7.0,
+              "q": 4.0,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": null,
+          "is_latest": true,
+          "preamp_gain_db": -4.9,
+          "revision_id": "rev-dea9a9784c9e1e43924baae2",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": "sweetchaos",
+              "discovered_at_epoch_seconds": null,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": null,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "audio-science-review",
+              "source_kind": "community",
+              "source_product_id": "Pro 82",
+              "source_record_id": "post-842631",
+              "source_vendor_id": "Takstar",
+              "updated_at_epoch_seconds": null,
+              "url": "https://www.audiosciencereview.com/forum/index.php?threads/takstar-pro-82-review-headphone.24878/#post-842631"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": null,
+          "verification_status": "unverified"
+        }
+      ],
+      "target": {
+        "kind": "unknown",
+        "name": null
+      },
+      "tuning_label": "Takstar Pro 82 Review (Headphone)"
     },
     {
       "canonical_profile_id": "community-cc536504a45900f764e725e2",
