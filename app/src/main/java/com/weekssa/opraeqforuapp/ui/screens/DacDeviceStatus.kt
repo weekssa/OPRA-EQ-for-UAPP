@@ -38,6 +38,8 @@ import com.weekssa.opraeqforuapp.domain.fiio.SimulatedJa11TuningTransport
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState
+import com.weekssa.opraeqforuapp.ui.ja11DcrRowValue
 import com.weekssa.opraeqforuapp.ui.FiioJa11StartupDefaultStatus
 import com.weekssa.opraeqforuapp.ui.fiioJa11StartupStatusText
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsEqReadback
@@ -66,6 +68,8 @@ internal fun CapabilityDrivenDeviceStatus(
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
     fiioJa11OperationBusy: Boolean = false,
     ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
+    ja11DcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
+    onSetJa11DcrTuning: (Boolean) -> Unit = {},
 ) {
     when (deviceId) {
         DacDeviceId.TRN_BLACK_PEARL -> BlackPearlDeviceStatus(
@@ -85,6 +89,8 @@ internal fun CapabilityDrivenDeviceStatus(
             onSetUacMode = onSetFiioJa11UacMode,
             operationBusy = fiioJa11OperationBusy,
             ja11TuningTransportFactory = ja11TuningTransportFactory,
+            dcrTuningState = ja11DcrTuningState,
+            onSetDcrTuning = onSetJa11DcrTuning,
         )
         DacDeviceId.SIMGOT_EW300 -> Text(
             text = "EW300 five-band EQ is managed from My EQs / EQ Library.",
@@ -157,6 +163,8 @@ private fun FiioJa11DeviceStatus(
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
     operationBusy: Boolean,
     ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
+    dcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
+    onSetDcrTuning: (Boolean) -> Unit = {},
 ) {
     var stagedVolume by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingEqProgram by rememberSaveable { mutableStateOf(false) }
@@ -240,6 +248,42 @@ private fun FiioJa11DeviceStatus(
         enabled = controlsEnabled,
         onClick = { stagedVolume = snapshot.outputVolume },
     )
+    if (BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = dcrTuningState.tuningEnabled,
+                    enabled = controlsEnabled && !dcrTuningState.isBusy,
+                    role = Role.Switch,
+                    onValueChange = onSetDcrTuning,
+                )
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("DCR tuning (Ellyn)", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = ja11DcrRowValue(dcrTuningState),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (controlsEnabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+                dcrTuningState.error?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+                Text(
+                    text = "Writes the DCR register the modified firmware changes, then verifies readback.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = dcrTuningState.tuningEnabled, onCheckedChange = null)
+        }
+    }
     SimpleDeviceSettingRow(
         label = "EQ program",
         value = snapshot.eqProgram.technicalLabel,

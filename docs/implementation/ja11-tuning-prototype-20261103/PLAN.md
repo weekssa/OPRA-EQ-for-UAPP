@@ -98,7 +98,17 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/Ja11TuningPrototypeTest.kt",
     "docs/FIIO_JA11_CAPABILITY_MATRIX.md",
     "docs/CHATGPT_PROJECT_RUNBOOK.md",
-    "docs/PROJECT_STATE.md"
+    "docs/PROJECT_STATE.md",
+    "app/src/main/java/com/weekssa/opraeqforuapp/MainActivity.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/ui/EqLibraryActions.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/ui/EqLibraryApp.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/MyDacRootScreen.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/data/kt02h20/AndroidFiioJa11UsbTransport.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/data/dac/DacSessionRepository.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/data/hardware/HardwareEqRepository.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/domain/kt02h20/Ja11DcrTuning.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/ui/Ja11DcrTuningUiState.kt",
+    "app/src/test/java/com/weekssa/opraeqforuapp/ui/Ja11DcrTuningUiStateTest.kt"
   ],
   "excluded": [
     "JA11 hardware writes, writes of any tuning register, Apply or Save on physical hardware",

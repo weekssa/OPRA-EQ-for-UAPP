@@ -450,3 +450,18 @@ The J034 replay authority is exhausted; filter UI remains disabled.
 A separately connected stock JM12 exposes `31B2:0111`, report IDs `0x4B` and `0x54`, and 11-byte
 reports; it has no JA11 report ID `0x02`. The JA11 command frames therefore cannot be treated as a
 valid stock-JM12 comparison. Its filter capability remains UNSUPPORTED and no JM12 frames were sent.
+
+## DCR / noise-gate runtime channel (2026-11-03, device-confirmed)
+
+The JA11 answers the KT 11-byte register protocol on HID report `0x4B` (read `0x52`,
+write `0x57`), independent of the FiiO run-mode report `0x02`. On the tested unit:
+
+- registers `0x71-0x73` (noise gate) and `0x78-0x7A` (limiter) read back and match the
+  official 2.2 image at offset `0x1174 + (register - 0x71) * 4`;
+- register `0x6F`, the DCR parameter changed by the community firmware, reads `0x00000000`
+  on the tested 2.20 firmware, while the 2.2-based Ellyn image holds `0x200331B2`.
+
+A private device toggle now reads `0x6F`, writes the Ellyn value or restores the captured
+baseline, and requires a matching readback. The write path is verified on hardware; the audible
+effect and persistence across power removal are **not established**, and the 2.2-derived value is
+not claimed to be correct for 2.20.

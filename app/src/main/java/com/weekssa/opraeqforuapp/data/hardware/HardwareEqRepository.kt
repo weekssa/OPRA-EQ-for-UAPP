@@ -73,6 +73,12 @@ class HardwareEqRepository(
     val fiioJa11OperationTrace: StateFlow<FiioJa11OperationTrace?> = fiioJa11Flasher.lastOperationTrace
     val fiioJa11OperationStatus: StateFlow<FiioJa11OperationStatus> = fiioJa11Flasher.operationStatus
 
+    suspend fun readJa11KtRegister(address: Int): Int? =
+        dacSessionRepository.readJa11KtRegister(address)
+
+    suspend fun writeJa11KtRegister(address: Int, value: Int): Boolean =
+        dacSessionRepository.writeJa11KtRegister(address, value)
+
     private val mutableUnsupportedJcallyState = MutableStateFlow<Kt02h20ConnectionState>(
         Kt02h20ConnectionState.Disconnected,
     )

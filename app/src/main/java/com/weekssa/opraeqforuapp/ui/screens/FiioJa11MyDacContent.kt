@@ -87,6 +87,9 @@ internal fun FiioJa11MyDacContent(
     operationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
     onMessage: (String) -> Unit,
     ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
+    dcrTuningState: com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState =
+        com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState(),
+    onSetDcrTuning: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -242,6 +245,8 @@ internal fun FiioJa11MyDacContent(
                 onSetFiioJa11UacMode = onSetUacMode,
                 fiioJa11OperationBusy = operationStatus is FiioJa11OperationStatus.Running,
                 ja11TuningTransportFactory = ja11TuningTransportFactory,
+                ja11DcrTuningState = dcrTuningState,
+                onSetJa11DcrTuning = onSetDcrTuning,
             )
         }
     }

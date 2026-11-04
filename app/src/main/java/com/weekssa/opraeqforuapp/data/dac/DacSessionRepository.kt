@@ -154,6 +154,23 @@ class DacSessionRepository(
     suspend fun <T> withExclusiveFiioJa11Operation(block: suspend () -> T): T =
         fiioJa11OperationMutex.withLock { block() }
 
+    suspend fun readJa11KtRegister(address: Int): Int? = withExclusiveFiioJa11Operation {
+        if (fiioJa11Transport.state.value is Kt02h20ConnectionState.Connected) {
+            fiioJa11Transport.readKtRegister(address)
+        } else {
+            null
+        }
+    }
+
+    suspend fun writeJa11KtRegister(address: Int, value: Int): Boolean =
+        withExclusiveFiioJa11Operation {
+            if (fiioJa11Transport.state.value is Kt02h20ConnectionState.Connected) {
+                fiioJa11Transport.writeKtRegister(address, value)
+            } else {
+                false
+            }
+        }
+
     suspend fun <T> withExclusiveEw300Operation(block: suspend () -> T): T =
         ew300OperationMutex.withLock { block() }
 

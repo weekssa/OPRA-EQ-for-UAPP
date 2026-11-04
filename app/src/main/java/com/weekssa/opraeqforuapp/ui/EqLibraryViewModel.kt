@@ -75,6 +75,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11EditorBaseline
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
+import com.weekssa.opraeqforuapp.domain.kt02h20.Ja11DcrTuning
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
@@ -147,6 +148,7 @@ private data class HardwareConnectionUiState(
     val fiioJa11OperationStatus: FiioJa11OperationStatus,
     val blackPearlQualificationState: BlackPearlQualificationUiState,
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
+    val ja11DcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
     val ew300PlaybackGainState: Ew300PlaybackGainUiState,
     val blackPearlFlashOutcome: BlackPearlFlashUiOutcome?,
 )
@@ -184,6 +186,7 @@ data class EqLibraryUiState(
     val fiioJa11OperationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
+    val ja11DcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
     val ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     val blackPearlFlashOutcome: BlackPearlFlashUiOutcome? = null,
 )
@@ -212,6 +215,8 @@ class EqLibraryViewModel(
     private var fiioJa11EditorBaseline: FiioJa11EditorBaseline? = null
     private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
     private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
+    private val mutableJa11DcrTuningState = MutableStateFlow(Ja11DcrTuningUiState())
+    private var ja11DcrBaseline: Int? = null
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
     private val mutableBlackPearlFlashOutcome = MutableStateFlow<BlackPearlFlashUiOutcome?>(null)
@@ -383,11 +388,16 @@ class EqLibraryViewModel(
         )
     }
 
+    private val hardwareConnectionsWithDcrTuning = combine(
+        hardwareConnections,
+        mutableJa11DcrTuningState,
+    ) { hardware, dcr -> hardware.copy(ja11DcrTuningState = dcr) }
+
     val uiState: StateFlow<EqLibraryUiState> = combine(
         preferencesRepository.preferences,
         catalogRepository.state,
         libraryUi,
-        hardwareConnections,
+        hardwareConnectionsWithDcrTuning,
         hardwareRepository.recognitionState,
     ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
@@ -422,6 +432,7 @@ class EqLibraryViewModel(
             fiioJa11OperationStatus = hardware.fiioJa11OperationStatus,
             blackPearlQualificationState = hardware.blackPearlQualificationState,
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
+            ja11DcrTuningState = hardware.ja11DcrTuningState,
             ew300PlaybackGainState = hardware.ew300PlaybackGainState,
             blackPearlFlashOutcome = hardware.blackPearlFlashOutcome,
         )
@@ -458,6 +469,7 @@ class EqLibraryViewModel(
                     Kt02h20ConnectionState.Connected -> {
                         val pending = mutableFiioJa11DeviceState.value.pendingRestartWrite
                         if (pending == null) refreshFiioJa11DeviceState()
+                        refreshJa11DcrTuning()
                     }
                     else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
                 }
@@ -495,6 +507,38 @@ class EqLibraryViewModel(
         FiioJa11DeviceControls.OUTPUT_VOLUME,
         DacControlValue.Numeric(level.toDouble()),
     )
+
+    fun refreshJa11DcrTuning() {
+        val state = mutableJa11DcrTuningState.value
+        if (state.isBusy) return
+        mutableJa11DcrTuningState.value = state.beginRead()
+        viewModelScope.launch {
+            val value = hardwareRepository.readJa11KtRegister(Ja11DcrTuning.REGISTER)
+            if (ja11DcrBaseline == null && value != null) ja11DcrBaseline = value
+            android.util.Log.i("Ja11Dcr", "reg=0x" + Ja11DcrTuning.REGISTER.toString(16) + " value=" + (value?.let { "0x" + it.toUInt().toString(16) } ?: "null"))
+            mutableJa11DcrTuningState.value =
+                mutableJa11DcrTuningState.value.read(value).copy(baseline = ja11DcrBaseline)
+        }
+    }
+
+    fun setJa11DcrTuning(enabled: Boolean) {
+        val state = mutableJa11DcrTuningState.value
+        if (state.isBusy) return
+        val target = if (enabled) Ja11DcrTuning.ELLYN else (ja11DcrBaseline ?: Ja11DcrTuning.STOCK)
+        if (state.value == target) return
+        mutableJa11DcrTuningState.value = state.beginApply()
+        viewModelScope.launch {
+            val written = hardwareRepository.writeJa11KtRegister(Ja11DcrTuning.REGISTER, target)
+            val readback = hardwareRepository.readJa11KtRegister(Ja11DcrTuning.REGISTER)
+            mutableJa11DcrTuningState.value = if (written && readback == target) {
+                mutableJa11DcrTuningState.value.read(readback)
+            } else {
+                mutableJa11DcrTuningState.value.failed(
+                    "The JA11 did not confirm the tuning change. Read the current value before retrying.",
+                )
+            }
+        }
+    }
 
     fun setFiioJa11EqProgram(program: FiioJa11Protocol.EqProgram) = writeFiioJa11Control(
         FiioJa11DeviceControls.EQ_PROGRAM,
