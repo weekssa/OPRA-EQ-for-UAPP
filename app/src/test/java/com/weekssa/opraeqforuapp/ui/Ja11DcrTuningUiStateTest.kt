@@ -12,6 +12,8 @@ class Ja11DcrTuningUiStateTest {
         assertEquals(Ja11DcrTuningPhase.STOCK, Ja11DcrTuningUiState().read(Ja11DcrTuning.STOCK).phase)
         assertEquals(Ja11DcrTuningPhase.ELLYN, Ja11DcrTuningUiState().read(Ja11DcrTuning.ELLYN).phase)
         assertTrue(Ja11DcrTuningUiState().read(Ja11DcrTuning.ELLYN).tuningEnabled)
+        assertEquals("On", ja11DcrToggleValue(Ja11DcrTuningUiState().read(Ja11DcrTuning.ELLYN)))
+        assertEquals("Off", ja11DcrToggleValue(Ja11DcrTuningUiState().read(Ja11DcrTuning.STOCK)))
         assertFalse(Ja11DcrTuningUiState().read(Ja11DcrTuning.STOCK).tuningEnabled)
     }
 

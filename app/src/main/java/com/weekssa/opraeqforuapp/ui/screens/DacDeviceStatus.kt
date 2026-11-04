@@ -259,7 +259,7 @@ private fun FiioJa11DeviceStatus(
             Column(modifier = Modifier.weight(1f)) {
                 Text("Tuning (Ellyn)", style = MaterialTheme.typography.labelLarge)
                 Text(
-                    text = ja11DcrRowValue(dcrTuningState),
+                    text = com.weekssa.opraeqforuapp.ui.ja11DcrToggleValue(dcrTuningState),
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (controlsEnabled) {
                         MaterialTheme.colorScheme.onSurface

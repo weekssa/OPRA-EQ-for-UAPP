@@ -62,3 +62,13 @@ internal fun ja11DcrRowValue(state: Ja11DcrTuningUiState): String = when {
     state.phase == Ja11DcrTuningPhase.ERROR -> "Not current"
     else -> "Tap Refresh to read"
 }
+
+/** Compact On/Off label for the DEVICE row, matching the microphone row. */
+internal fun ja11DcrToggleValue(state: Ja11DcrTuningUiState): String = when (state.phase) {
+    Ja11DcrTuningPhase.ELLYN -> "On"
+    Ja11DcrTuningPhase.STOCK -> "Off"
+    Ja11DcrTuningPhase.OTHER -> "Unrecognised"
+    Ja11DcrTuningPhase.READING, Ja11DcrTuningPhase.APPLYING -> "Checking…"
+    Ja11DcrTuningPhase.ERROR -> "Not current"
+    Ja11DcrTuningPhase.UNKNOWN -> "Unknown"
+}
