@@ -130,6 +130,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # adbd restarts while switching to root and can briefly refuse the connection, so retry
+          # instead of failing the gate on a transient control-channel error.
+          adb_as_root() {
+            local deadline=$((SECONDS + 90))
+            local current_uid=''
+            while true; do
+              adb root > /dev/null 2>&1 || true
+              adb wait-for-device > /dev/null 2>&1 || true
+              current_uid="$(adb shell id -u 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$current_uid" == "0" ]]; then
+                return 0
+              fi
+              if (( SECONDS >= deadline )); then
+                return 1
+              fi
+              sleep 2
+            done
+          }
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
           nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_35 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
@@ -411,8 +429,7 @@ jobs:
           heap_growth_limit_before="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
           if [[ -z "$heap_growth_limit_before" ]]; then
             printf 'API-26 x86_64 image leaves dalvik.vm.heapgrowthlimit unset; applying the required default 48m before app installation.\n'
-            adb root
-            adb wait-for-device
+            adb_as_root || { printf 'Could not restart adbd as root before applying the API-26 runtime default.\n' >&2; exit 1; }
             shell_uid="$(adb shell id -u | tr -d '\r')"
             if [[ "$shell_uid" != "0" ]]; then
               printf 'Could not obtain root to apply the required API-26 48m runtime default.\n' >&2
@@ -472,8 +489,7 @@ jobs:
           catalog_host='raw.githubusercontent.com'
           catalog_ipv4="$(getent ahostsv4 "$catalog_host" | awk 'NR==1 {print $1}')"
           if [[ -n "$catalog_ipv4" ]]; then
-            adb root > /dev/null 2>&1 || true
-            adb wait-for-device
+            adb_as_root || true
             adb shell 'mount -o rw,remount /system' > /dev/null 2>&1 || adb remount > /dev/null 2>&1 || true
             hosts_line="$catalog_ipv4 $catalog_host"
             if adb shell "grep -qF '$catalog_host' /system/etc/hosts"; then
