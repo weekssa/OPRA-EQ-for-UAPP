@@ -89,7 +89,7 @@ class V090ReleaseTest(unittest.TestCase):
 
         # The stable v0.9.0 release identity is accepted when declared.
         self.write_version("0.9.0", 22)
-        state.write_text("- Candidate build: **v0.9.0**, versionCode `20`\n", encoding="utf-8")
+        state.write_text("- Candidate build: **v0.9.0**, versionCode `22`\n", encoding="utf-8")
         release.validate_version(self.root)
 
     def test_candidate_metadata_is_beta_prerelease_and_nonlatest(self):
