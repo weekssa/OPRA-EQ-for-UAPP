@@ -212,9 +212,15 @@ private fun FiioJa11DeviceStatus(
     DeviceSectionTitle("Audio")
     SimpleDeviceSettingRow(
         label = "Device volume",
-        value = "${snapshot.outputVolume} / ${FiioJa11Protocol.MAX_OUTPUT_VOLUME}",
+        value = snapshot.outputVolume.toString() + " / " + FiioJa11Protocol.MAX_OUTPUT_VOLUME,
         enabled = controlsEnabled,
         onClick = { stagedVolume = snapshot.outputVolume },
+    )
+    SimpleDeviceSettingRow(
+        label = "EQ program",
+        value = snapshot.eqProgram.technicalLabel,
+        enabled = controlsEnabled,
+        onClick = { choosingEqProgram = true },
     )
     if (BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED) {
         Row(
@@ -247,39 +253,35 @@ private fun FiioJa11DeviceStatus(
             Switch(checked = dcrTuningState.tuningEnabled, onCheckedChange = null)
         }
     }
-    SimpleDeviceSettingRow(
-        label = "EQ program",
-        value = snapshot.eqProgram.technicalLabel,
-        enabled = controlsEnabled,
-        onClick = { choosingEqProgram = true },
-    )
-    DeviceSectionTitle("Microphone")
-    Text(
-        text = "Startup defaults",
-        style = MaterialTheme.typography.labelLarge,
-        modifier = Modifier.padding(top = 14.dp),
-    )
-    Text(
-        text = fiioJa11StartupStatusText(state.startupDefaultStatus)
-            ?: "Runtime changes are lost on unplug. Set them as default to keep them.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 2.dp),
-    )
-    if (state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED) {
-        TextButton(
-            onClick = {
-                defaultsReview = FiioJa11DefaultsRequest(
-                    reviewedSnapshot = snapshot,
-                    requestedVolume = snapshot.outputVolume,
-                    requestedProgram = snapshot.eqProgram,
-                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-                )
-            },
-            enabled = controlsEnabled,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp),
-        ) { Text("Set as Default…") }
+
+    DeviceSectionTitle("Startup defaults")
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = fiioJa11StartupStatusText(state.startupDefaultStatus)
+                ?: "Runtime only. Save to keep volume and program after unplug.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        if (state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED) {
+            TextButton(
+                onClick = {
+                    defaultsReview = FiioJa11DefaultsRequest(
+                        reviewedSnapshot = snapshot,
+                        requestedVolume = snapshot.outputVolume,
+                        requestedProgram = snapshot.eqProgram,
+                        targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                    )
+                },
+                enabled = controlsEnabled,
+            ) { Text("Save") }
+        }
     }
+
+    DeviceSectionTitle("Microphone")
     Row(
         modifier = Modifier
             .fillMaxWidth()
