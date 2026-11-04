@@ -4,6 +4,16 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
+## 2026-11-04 v0.10.0 stable publication and closeout — current release
+
+EQ Library v0.10.0 is public stable/latest. The owner confirmed the v0.9.0-beta.4 build working on the device and asked for it as the official .10 release, so the same feature set was cut as a new identity: versionName `0.10.0`, versionCode `22`, package `com.weekssa.opraeqforuapp`.
+
+Release ID `434267766` was published at `2026-11-04T18:04:05Z` from exact source `9cbdfdb0df9be146338881aae617caa03818205c` (PR #140). Signed candidate run `41880767569` produced artifact `13348838458` (archive `1eda1551…`); promotion run `41882199504` passed exact-candidate verification and the published-v0.9.0 upgrade lane before publication. The annotated `v0.10.0` tag object `a9d37fcaa4d7d458b0602ead8376a8735f40c3a4` peels to that source. A fresh public APK download matched `755fe80c…` and the pinned signer `65c1c125…`. Full provenance is in [`release-engineering/v0.10.0-stable/ARTIFACTS.md`](release-engineering/v0.10.0-stable/ARTIFACTS.md).
+
+The release carries the JA11 Tuning (Ellyn) toggle, the DEVICE page redesign, and the previously qualified volume/program persistence. Digital reconstruction filters remain not delivered. Physical evidence is unchanged: one Pixel 9, one JA11 at firmware 2.20, and an owner-reported audible result. The published APK has not been re-read from the phone.
+
+Two supporting changes landed with this release series: the API-26 smoke gate in `.github/workflows/android-ci.yml` now seeds the catalog cache instead of depending on emulator egress (the guest data network reports unreachable on current runner images) and reclaims runner disk before the emulator starts; and the v0.9.0 beta contract check validates the frozen published record rather than requiring the live tree to keep building the shipped beta identity.
+
 ## 2026-11-03/04 JA11 tuning: real register path, persistence and DEVICE UX
 
 The JA11 answers the KT 11-byte register protocol on report 0x4B. The community firmware's deltas

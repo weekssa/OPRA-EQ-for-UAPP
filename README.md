@@ -10,36 +10,41 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.9.0** is the current stable public Android release. v0.8.3 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
+**v0.10.0** is the current stable public Android release. v0.9.0 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
 
-[Download EQ Library v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.9.0/EQ-Library-v0.9.0.apk).
+[Download EQ Library v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.10.0/EQ-Library-v0.10.0.apk).
 
-- Package: `com.weekssa.opraeqforuapp`; versionName `0.9.0`; versionCode `20`
+- Package: `com.weekssa.opraeqforuapp`; versionName `0.10.0`; versionCode `22`
 - Android 8.0 / API 26 or newer
-- Install over v0.8.3 to keep local app data
+- Install over v0.9.0 or v0.9.0-beta.4 to keep local app data
 - Signed with the project's permanent Android release identity
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
 The public APK SHA-256 is:
 
-`8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`
+`755fe80c0f8fb1a3276814a5c372d669d35f9e87d4f328e683d5b90bd8f9d7ae`
 
-The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.9.0/EQ-Library-v0.9.0.apk.sha256) is published with the release.
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.10.0/EQ-Library-v0.10.0.apk.sha256) is published with the release.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## v0.9.0 highlights
+## v0.10.0 highlights
 
-- JA11 volume and EQ program editors stage changes locally, with separate Cancel, session-only Apply, and explicitly confirmed Set as Default actions.
-- Set as Default saves the selected JA11 EQ program and volume across genuine power removal, while preserving the User 1 bank and making no microphone or UAC writes.
-- Physical qualification is tied to J035: one Pixel 9, one JA11 at firmware 2.20, and the tested transaction. See the release artifact record and validation ledger for evidence boundaries.
+- My DAC → DEVICE gains a Tuning (Ellyn) toggle that writes KT config registers 0x3A and 0x3B, verifies each readback, and persists on write across a genuine power cycle. The USB identity register 0x5B is refused by the transport and covered by a regression test.
+- DEVICE is reorganised around Device settings (volume slider, EQ program, Tuning, Startup settings), Microphone, USB & System and About, with Startup settings showing Not saved / Save / Saved.
+- Runtime volume and EQ program stay session-only until Set as Default; the JA11 tuning registers persist on write. Automatic reconnect re-reads device state and clears stale tuning state.
+- Evidence is one Pixel 9 and one JA11 at firmware 2.20. The audible result is an owner report, not an acoustic measurement, and other firmware or units are not qualified.
 
-See the [v0.9.0 release notes](docs/releases/v0.9.0.md) for scope, compatibility, installation, and evidence boundaries.
+See the [v0.10.0 release notes](docs/releases/v0.10.0.md) for scope, compatibility, installation, and evidence boundaries.
 
-## v0.8.3 (previous stable release)
+## v0.9.0 (previous stable release)
 
-The previous stable version added the JA11 volume and EQ program defaults flow. See the [v0.8.3 release notes](docs/releases/v0.8.3.md) for its original scope and evidence.
+v0.9.0 added the JA11 volume and EQ program defaults flow, physically qualified across genuine power removal. See the [v0.9.0 release notes](docs/releases/v0.9.0.md) for its original scope and evidence.
+
+## v0.8.3 (earlier stable release)
+
+The earlier stable version added the JA11 volume and EQ program defaults flow. See the [v0.8.3 release notes](docs/releases/v0.8.3.md) for its original scope and evidence.
 
 ## v0.8.0 product modernization highlights
 
@@ -156,7 +161,7 @@ Black Pearl `.txt` export uses the verified pyBlackPearl `PK / LS / HS` peak/she
 
 ### FiiO JA11
 
-The v0.9.0 stable release delivers physically qualified JA11 program and volume persistence. Digital reconstruction filters are not delivered; see the [release notes](docs/releases/v0.9.0.md) and preserved [research handoff](docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md).
+The v0.10.0 stable release delivers the Ellyn tuning toggle, the redesigned DEVICE page, and the previously qualified JA11 program and volume persistence. Digital reconstruction filters are not delivered; see the [release notes](docs/releases/v0.10.0.md) and preserved [research handoff](docs/research/FIIO_JA11_DIGITAL_FILTER_RESEARCH_HANDOFF.md).
 
 v0.7.0 includes a strict FiiO JA11 USB identity, a five-band User 1 editor, explicit Review → Apply controls, one-Save persistence, final readback, and failure handling within the existing transaction boundary.
 

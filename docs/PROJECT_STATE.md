@@ -2,22 +2,21 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.10.0 stable candidate (2026-11-04)
+## v0.10.0 stable release (2026-11-04)
 
-Candidate build: **v0.10.0**, versionCode `22`.
+Published stable release: [EQ Library v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0), release ID `434267766`, published `2026-11-04T18:04:05Z`, immutable, non-draft, non-prerelease and `/releases/latest`. versionName `0.10.0`, versionCode `22`, package `com.weekssa.opraeqforuapp`. It promotes the JA11 tuning and DEVICE work the owner confirmed working on the device in v0.9.0-beta.4; release notes are in docs/releases/v0.10.0.md and v0.9.0 is the previous stable release.
 
-Promotes the JA11 tuning and DEVICE work the owner confirmed working on the device in
-v0.9.0-beta.4. This is a new version identity only (versionName 0.10.0, versionCode 22, package
-com.weekssa.opraeqforuapp) with release notes in docs/releases/v0.10.0.md. v0.9.0 remains public
-stable and current latest until this candidate is promoted.
+- Exact source: `9cbdfdb0df9be146338881aae617caa03818205c`; signed candidate run `41880767569`, artifact `13348838458`, archive SHA-256 `1eda1551c57b6ba26300c855c4705bedcaa12b806dfeff8a0fbf2a680714d06a`.
+- APK SHA-256 `755fe80c0f8fb1a3276814a5c372d669d35f9e87d4f328e683d5b90bd8f9d7ae`; signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; annotated tag object `a9d37fcaa4d7d458b0602ead8376a8735f40c3a4`.
+- Promotion run `41882199504` passed exact-candidate verification and the published-v0.9.0 upgrade lane before publication. The public APK was downloaded and independently matched to the candidate APK SHA-256 and pinned signer.
 
 - Predecessor prerelease: [EQ Library v0.9.0-beta.4](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0-beta.4), prerelease with make_latest disabled, published 2026-11-04T14:05:57Z; versionName 0.9.0-beta.4, versionCode 21.
 - v0.9.0-beta.4 signed candidate run 41842322131, artifact 13330113132, archive SHA-256 b6f1839c65ecde89fe16da2cbb5543c7c6e7cb2a1a2ddf83cab46fb538e88f01, APK SHA-256 daee1ed6c0599f12d0fd3ff05dfb8cd71abc23af32639954adf94b46b6b3a606, signer 65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747; promotion run 41843816477. The public beta APK was downloaded and matched.
 - Evidence limits and the identity-guard history are in docs/FIIO_JA11_PROTOCOL_NOTES.md and the release notes.
 
-## Current stable release: v0.9.0 (published 2026-11-01)
+## Previous stable release: v0.9.0 (published 2026-11-01)
 
-- Release: [EQ Library v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), public, immutable, non-draft, non-prerelease, current latest; release ID `430455005`, published `2026-11-01T09:38:36Z`.
+- Release: [EQ Library v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), public, immutable, non-draft, non-prerelease, previous stable (superseded by v0.10.0); release ID `430455005`, published `2026-11-01T09:38:36Z`.
 - Exact source: `1eebfda363a580591abdb3b109b8af5df5b82a90` (PR #124 merge).
 - Application: `com.weekssa.opraeqforuapp`, versionName `0.9.0`, versionCode `20`.
 - Official candidate workflow [run 41288639063](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/41288639063) succeeded; signed artifact ID `13076990020`, artifact `EQ-Library-v0.9.0-signed-1eebfda363a580591abdb3b109b8af5df5b82a90`, archive SHA-256 `ba5937e0191175539115df9e253c456364b6d3a17eae50ed54f381c1139bb131`.
@@ -41,19 +40,21 @@ Native User1 defaults is implemented for computer qualification with unchanged f
 
 - Product: EQ Library / OPRA EQ for UAPP
 - Android application ID: `com.weekssa.opraeqforuapp`
-- Current public stable release: **v0.9.0**, versionCode `20`
-- Public release: [v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), release ID `430455005`, immutable stable release and `/releases/latest`
-- Annotated tag: `v0.9.0` (object `1c4e3fdabbc7c2a97f93685abb5758263595b46b`)
-- Release source: `1eebfda363a580591abdb3b109b8af5df5b82a90`
-- Exact stable APK SHA-256: `8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`
+- Current public stable release: **v0.10.0**, versionCode `22`
+- Public release: [v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0), release ID `434267766`, immutable stable release and `/releases/latest`
+- Annotated tag: `v0.10.0` (object `a9d37fcaa4d7d458b0602ead8376a8735f40c3a4`)
+- Release source: `9cbdfdb0df9be146338881aae617caa03818205c`
+- Exact stable APK SHA-256: `755fe80c0f8fb1a3276814a5c372d669d35f9e87d4f328e683d5b90bd8f9d7ae`
 - Pinned signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
-- Full source/build/APK/checksum/signer/public asset evidence: [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md)
+- Full source/build/APK/checksum/signer/public asset evidence: [`release-engineering/v0.10.0-stable/ARTIFACTS.md`](release-engineering/v0.10.0-stable/ARTIFACTS.md)
 
 The exact APK/source tuple proves public release identity. It does **not** prove which artifact is currently installed on an owner's phone.
 
 ## Installed device state
 
-Current post-publication state: **v0.9.0 verified installed** (2026-11-03, read-only). During the
+Current v0.10.0 install state: **UNKNOWN / NOT VERIFIED.** The owner confirmed the v0.9.0-beta.4 build working on the device on 2026-11-04, but the published v0.10.0 APK has not been re-read from the phone, so the installed-bytes claim below still describes the earlier v0.9.0 install.
+
+Last recorded post-publication state: **v0.9.0 verified installed** (2026-11-03, read-only). During the
 JA11 tuning prototype session, a read-only query identified the physical Pixel 9 on Android 17 and
 found package `com.weekssa.opraeqforuapp` at versionName `0.9.0` / versionCode `20`; the on-device
 SHA-256 of its `base.apk` is

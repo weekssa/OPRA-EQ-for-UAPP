@@ -8,11 +8,21 @@ The checklist is organized around the **current release state**. Detailed histor
 
 The former beta.1 preparation record is superseded by Candidate B/J035, PR #124, and the v0.9.0 stable publication. Its dated evidence remains in the release execution records.
 
-## Current stable release: v0.9.0
+## Current stable release: v0.10.0
 
-EQ Library v0.9.0 is the immutable public stable release and is returned by `/releases/latest`. v0.8.3 is the previous stable release.
+EQ Library v0.10.0 is the immutable public stable release and is returned by `/releases/latest`. v0.9.0 is the previous stable release.
 
-- [x] Public release [v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), release ID `430455005`, published `2026-11-01T09:38:36Z`, non-draft, non-prerelease and latest.
+- [x] Public release [v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0), release ID `434267766`, published `2026-11-04T18:04:05Z`, immutable, non-draft, non-prerelease and latest.
+- [x] Source identity: PR #140 merge; annotated tag `v0.10.0` object `a9d37fcaa4d7d458b0602ead8376a8735f40c3a4` resolves to `9cbdfdb0df9be146338881aae617caa03818205c` and binds signed candidate run `41880767569`, artifact `13348838458` and archive SHA-256 `1eda1551c57b6ba26300c855c4705bedcaa12b806dfeff8a0fbf2a680714d06a`.
+- [x] Stable metadata: package `com.weekssa.opraeqforuapp`, versionName `0.10.0`, versionCode `22`, advancing the shipped v0.9.0-beta.4 code `21` and stable v0.9.0 code `20`.
+- [x] Signed candidate run `41880767569` succeeded from the exact source; artifact ID `13348838458`.
+- [x] Candidate APK SHA-256 `755fe80c0f8fb1a3276814a5c372d669d35f9e87d4f328e683d5b90bd8f9d7ae`; signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; the public APK was downloaded independently and matched both the sidecar checksum and the pinned signer.
+- [x] Promotion run `41882199504` passed exact-candidate verification and the published-v0.9.0 upgrade lane before publication.
+- [x] Content: JA11 Tuning (Ellyn), the DEVICE page redesign, and the previously qualified volume/program persistence. Digital reconstruction filters remain not delivered.
+- [x] Detailed source, candidate, tag, release and public asset provenance: [`release-engineering/v0.10.0-stable/ARTIFACTS.md`](release-engineering/v0.10.0-stable/ARTIFACTS.md).
+
+## Previous stable release: v0.9.0 (published 2026-11-01)
+- [x] Public release [v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), release ID `430455005`, published `2026-11-01T09:38:36Z`, non-draft, non-prerelease; previous stable, superseded by v0.10.0.
 - [x] Source identity: PR #124 merge and annotated tag `v0.9.0` resolve to `1eebfda363a580591abdb3b109b8af5df5b82a90`; tag object `1c4e3fdabbc7c2a97f93685abb5758263595b46b` binds the exact signed candidate run/artifact/archive digest.
 - [x] Stable metadata: package `com.weekssa.opraeqforuapp`, versionName `0.9.0`, versionCode `20`.
 - [x] Signed candidate [run 41288639063](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/41288639063) succeeded from exact source; artifact ID `13076990020`; archive SHA-256 `ba5937e0191175539115df9e253c456364b6d3a17eae50ed54f381c1139bb131`.
