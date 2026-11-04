@@ -204,12 +204,12 @@ class V090PublisherTest(unittest.TestCase):
         (self.root / "app").mkdir()
         (self.root / "docs/releases").mkdir(parents=True)
         (self.root / "app/build.gradle.kts").write_text(
-            'android {\n    defaultConfig {\n        versionCode = 15\n        versionName = "0.9.0-beta.1"\n    }\n}\n',
+            'android {\n    defaultConfig {\n        versionCode = 15\n        versionName = "0.9.0-beta.4"\n    }\n}\n',
             encoding="utf-8",
         )
         (self.root / "release-signing-cert.sha256").write_text(SIGNER + "\n", encoding="utf-8")
-        (self.root / "docs/releases/v0.9.0-beta.1.md").write_text(
-            "# EQ Library v0.9.0-beta.1\n\nPublic stable/latest remains v0.8.3. "
+        (self.root / "docs/releases/v0.9.0-beta.4.md").write_text(
+            "# EQ Library v0.9.0-beta.4\n\nPublic stable/latest remains v0.8.3. "
             "Publish only as a prerelease.\n",
             encoding="utf-8",
         )
@@ -384,7 +384,7 @@ class V090PublisherTest(unittest.TestCase):
     def test_published_release_requires_prerelease_and_immutability(self):
         release = {
             "tag_name": profile.BETA_TAG,
-            "name": "EQ Library v0.9.0-beta.1",
+            "name": "EQ Library v0.9.0-beta.4",
             "body": publisher.release_notes(self.root).decode("utf-8"),
             "draft": False,
             "prerelease": True,
@@ -509,7 +509,7 @@ class V090PublisherTest(unittest.TestCase):
             self.assertFalse(any(call[0] in {"POST", "PATCH"} for call in api.calls))
 
             self.write_qualification()
-            (self.root / "docs/releases/v0.9.0-beta.1.md").write_text(
+            (self.root / "docs/releases/v0.9.0-beta.4.md").write_text(
                 "# Wrong release title\n\nPublic stable/latest remains v0.8.3. prerelease.\n",
                 encoding="utf-8",
             )
@@ -521,8 +521,8 @@ class V090PublisherTest(unittest.TestCase):
                 )
             self.assertFalse(any(call[0] in {"POST", "PATCH"} for call in api.calls))
 
-            (self.root / "docs/releases/v0.9.0-beta.1.md").write_text(
-                "# EQ Library v0.9.0-beta.1\n\nPublic stable/latest remains v0.8.3. "
+            (self.root / "docs/releases/v0.9.0-beta.4.md").write_text(
+                "# EQ Library v0.9.0-beta.4\n\nPublic stable/latest remains v0.8.3. "
                 "Publish only as a prerelease.\n",
                 encoding="utf-8",
             )

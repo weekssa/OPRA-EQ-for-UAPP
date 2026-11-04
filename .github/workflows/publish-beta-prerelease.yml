@@ -87,7 +87,7 @@ jobs:
               python3 tools/publish_beta_prerelease.py verify \
                 --project-root . --build-tools "$ANDROID_HOME/build-tools/36.0.0"
               ;;
-            v0.9.0-beta.1)
+            v0.9.0-beta.4)
               test -n "$CANDIDATE_SOURCE_SHA" && test -n "$CANDIDATE_RUN_ID" && test -n "$CANDIDATE_ARTIFACT_ID" &&
                 test -n "$CANDIDATE_ARTIFACT_DIGEST"
               python3 tools/publish_v090_beta_release.py verify \
@@ -142,7 +142,7 @@ jobs:
 
   publish-v090-beta:
     needs: verify-candidate
-    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main' && inputs.tag == 'v0.9.0-beta.1'
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main' && inputs.tag == 'v0.9.0-beta.4'
     environment: beta-release-approval
     runs-on: ubuntu-latest
     timeout-minutes: 40

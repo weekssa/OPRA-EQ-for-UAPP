@@ -20,7 +20,7 @@ class V090ReleaseTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="v090-release-test-")
         self.root = Path(self.temp.name)
         (self.root / "app").mkdir()
-        self.write_version("0.9.0-beta.1", 15)
+        self.write_version("0.9.0-beta.4", 15)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -45,8 +45,8 @@ class V090ReleaseTest(unittest.TestCase):
 
     def test_version_and_exact_beta_tag_are_required(self):
         release.validate_version(self.root)
-        release.validate_candidate_tag("v0.9.0-beta.1")
-        for tag in ("v0.9.0", "v0.9.0-beta.2", "0.9.0-beta.1"):
+        release.validate_candidate_tag("v0.9.0-beta.4")
+        for tag in ("v0.9.0", "v0.9.0-beta.2", "0.9.0-beta.4"):
             with self.subTest(tag=tag), self.assertRaises(release.V090ReleaseError):
                 release.validate_candidate_tag(tag)
 
@@ -54,7 +54,7 @@ class V090ReleaseTest(unittest.TestCase):
         self.write_version("0.9.0", 15)
         with self.assertRaisesRegex(release.V090ReleaseError, "versionName"):
             release.validate_version(self.root)
-        self.write_version("0.9.0-beta.1", 14)
+        self.write_version("0.9.0-beta.4", 14)
         with self.assertRaisesRegex(release.V090ReleaseError, "versionCode"):
             release.validate_version(self.root)
 
