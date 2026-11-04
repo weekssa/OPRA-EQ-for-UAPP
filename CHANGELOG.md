@@ -4,6 +4,16 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version without a prerelease suffix, such as `0.8.0`, is a stable public release.
 
+## [0.10.0] - 2026-11-04
+
+### FiiO JA11 tuning and DEVICE controls
+
+- My DAC -> DEVICE gains a Tuning (Ellyn) toggle that writes KT config registers 0x3A (4 -> 0) and 0x3B (0x0D -> 0x0C), verifies each readback, and persists on write across a genuine power cycle. Register 0x5B, the USB identity, is refused by the transport and a regression test asserts it is never a tuning parameter.
+- DEVICE is organised as Device settings (volume slider, EQ program, Tuning, Startup settings), Microphone, USB & System and About. Startup settings shows Not saved / Save / Saved and makes no claim on a fresh connect; microphone and USB Audio Class confirmations are one line each.
+- Automatic reconnect re-reads device state and clears stale tuning state on disconnect.
+- Runtime volume and EQ program remain session-only until Set as Default (0x19), which commits the startup store and briefly re-enumerates USB. Tuning registers persist on write.
+- Evidence: one Pixel 9 and one JA11 at firmware 2.20. The audible result is an owner report, not an acoustic measurement; other firmware and units are not qualified. Shipped first as the v0.9.0-beta.4 prerelease and confirmed on the device before this stable release.
+
 ## [0.9.0] - 2026-11-01
 
 ### FiiO JA11 saved settings
