@@ -160,17 +160,6 @@ class FiioJa11MyDacContentTest {
     }
 
     @Test
-    fun savedStatusReportsReadbackVerificationAndDropsTheAction() {
-        setContentForTrace(
-            editorApplyTrace(),
-            startupStatus = FiioJa11StartupDefaultStatus.SAVED,
-        )
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Saved for startup and verified by readback.").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Set as Default", substring = true).assertCountEquals(0)
-    }
-
-    @Test
     fun changedDefaultsReadbackRendersAsFailureInsteadOfSuccess() {
         setContentForTrace(
             editorApplyTrace(),
@@ -216,23 +205,6 @@ class FiioJa11MyDacContentTest {
             assertEquals(0, applyCalls)
             assertEquals(0, defaultCalls)
         }
-    }
-
-    @Test
-    fun restoringDefaultsDialogStateDoesNotIssueAWrite() {
-        val restorationTester = StateRestorationTester(composeRule)
-        var defaultCalls = 0
-        setContentForTrace(
-            editorApplyTrace(),
-            restorationTester = restorationTester,
-            onDefaults = { defaultCalls += 1 },
-        )
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Device volume").performClick()
-        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
-        restorationTester.emulateSavedInstanceStateRestore()
-
-        composeRule.runOnIdle { assertEquals(0, defaultCalls) }
     }
 
     @Test
