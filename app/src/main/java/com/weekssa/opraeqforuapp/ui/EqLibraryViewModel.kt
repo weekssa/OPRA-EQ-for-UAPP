@@ -551,6 +551,7 @@ class EqLibraryViewModel(
                 if (!written || readback != target) ok = false
             }
             mutableJa11DcrTuningState.value = if (ok) {
+                scheduleJa11AutoSave()
                 mutableJa11DcrTuningState.value.read(if (enabled) Ja11DcrTuning.ELLYN else Ja11DcrTuning.STOCK)
             } else {
                 mutableJa11DcrTuningState.value.failed(
