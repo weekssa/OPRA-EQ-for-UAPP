@@ -90,7 +90,7 @@ class FakePublishingApi:
             "prerelease": False,
             "immutable": True,
             "assets": [{
-                "name": "EQ-Library-v0.8.3.apk",
+                "name": "EQ-Library-v0.9.0.apk",
                 "digest": f"sha256:{profile.STABLE_LATEST_APK_SHA256}",
             }],
         }
@@ -209,7 +209,7 @@ class V090PublisherTest(unittest.TestCase):
         )
         (self.root / "release-signing-cert.sha256").write_text(SIGNER + "\n", encoding="utf-8")
         (self.root / "docs/releases/v0.9.0-beta.4.md").write_text(
-            "# EQ Library v0.9.0-beta.4\n\nPublic stable/latest remains v0.8.3. "
+            "# EQ Library v0.9.0-beta.4\n\nPublic stable/latest remains v0.9.0. "
             "Publish only as a prerelease.\n",
             encoding="utf-8",
         )
@@ -510,7 +510,7 @@ class V090PublisherTest(unittest.TestCase):
 
             self.write_qualification()
             (self.root / "docs/releases/v0.9.0-beta.4.md").write_text(
-                "# Wrong release title\n\nPublic stable/latest remains v0.8.3. prerelease.\n",
+                "# Wrong release title\n\nPublic stable/latest remains v0.9.0. prerelease.\n",
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(publisher.stable.PromotionError, "release notes"):
@@ -522,7 +522,7 @@ class V090PublisherTest(unittest.TestCase):
             self.assertFalse(any(call[0] in {"POST", "PATCH"} for call in api.calls))
 
             (self.root / "docs/releases/v0.9.0-beta.4.md").write_text(
-                "# EQ Library v0.9.0-beta.4\n\nPublic stable/latest remains v0.8.3. "
+                "# EQ Library v0.9.0-beta.4\n\nPublic stable/latest remains v0.9.0. "
                 "Publish only as a prerelease.\n",
                 encoding="utf-8",
             )

@@ -263,7 +263,7 @@ def release_notes(project_root: Path) -> bytes:
     require(notes.startswith(b"# EQ Library v0.9.0-beta.4\n"),
             "v0.9.0-beta.4 release notes have an unexpected title")
     text = notes.decode("utf-8", errors="strict")
-    require("v0.8.3" in text and "prerelease" in text.lower() and "latest" in text.lower(),
+    require(profile.STABLE_LATEST_TAG in text and "prerelease" in text.lower() and "latest" in text.lower(),
             "v0.9.0-beta.4 release notes omit stable-latest or prerelease policy")
     return notes
 

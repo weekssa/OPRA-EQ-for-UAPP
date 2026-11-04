@@ -28,9 +28,9 @@ PACKAGE_ID = "com.weekssa.opraeqforuapp"
 BETA_TAG = "v0.9.0-beta.4"
 BETA_VERSION_NAME = "0.9.0-beta.4"
 BETA_VERSION_CODE = 21
-STABLE_LATEST_TAG = "v0.8.3"
-STABLE_LATEST_VERSION_CODE = 14
-STABLE_LATEST_APK_SHA256 = "396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247"
+STABLE_LATEST_TAG = "v0.9.0"
+STABLE_LATEST_VERSION_CODE = 20
+STABLE_LATEST_APK_SHA256 = "8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029"
 PLAN_SHA256 = "a108a2182a28a82252c64956216d31b6dcba9c67bf522a51d6d86a073d6e729b"
 SEAL_MANIFEST_SHA256 = "b258bc43c156f247cb13ef4372286aafe20e643b52980bd6a7bf4a035f912a6b"
 BASELINE_COMMIT = "35f0c90a0e55e701d4343ed978a440d34aae13aa"
@@ -235,7 +235,7 @@ def validate_latest_snapshot(release: dict[str, Any], profile: BetaProfile = PRO
     apk_name = f"EQ-Library-{profile.stable_latest_tag}.apk"
     apks = [asset for asset in assets if isinstance(asset, dict) and asset.get("name") == apk_name]
     require(len(apks) == 1 and apks[0].get("digest") == f"sha256:{profile.stable_latest_apk_sha256}",
-            "stable latest APK no longer matches the v0.8.3 release identity")
+            f"stable latest APK no longer matches the {profile.stable_latest_tag} release identity")
 
 
 def check_contract(project_root: Path) -> None:
