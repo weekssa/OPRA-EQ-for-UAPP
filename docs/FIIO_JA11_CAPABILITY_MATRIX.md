@@ -451,25 +451,22 @@ A separately connected stock JM12 exposes `31B2:0111`, report IDs `0x4B` and `0x
 reports; it has no JA11 report ID `0x02`. The JA11 command frames therefore cannot be treated as a
 valid stock-JM12 comparison. Its filter capability remains UNSUPPORTED and no JM12 frames were sent.
 
-## DCR / noise-gate runtime channel (2026-11-03, device-confirmed)
+## KT config-register channel (2026-11-03, device-confirmed)
 
 The JA11 answers the KT 11-byte register protocol on HID report `0x4B` (read `0x52`,
-write `0x57`), independent of the FiiO run-mode report `0x02`. The image-to-register
-mapping is `0x11C4 + (register - 0x71) * 4`; it was confirmed against multiple live reads
-(`0x48`/`0x49` = "Jade"/"Audi", `0x66` = `00 02 00 00`,
-`0x71` = `d3 da e2 3c`).
+write `0x57`). Mapping: `0x11C4 + (register - 0x71) * 4`, confirmed against live reads
+(`0x48`/`0x49` = "Jade"/"Audi", `0x66`, `0x71`).
 
-On the tested unit (stock V2.2 / 2.20), the community "Ellyn_GP" deltas are exactly:
+**Register `0x5B` is the USB identity, not DCR.** Stock `0x01022972` = VID `0x2972` /
+PID `0x0102`; the community image writes `0x200331B2` = VID `0x31B2` / PID `0x2003`,
+which re-badges the DAC and can persist across power cycles. The app must never write it; the
+transport now refuses that address and a regression test asserts it is not a tuning parameter.
 
-| Register | Stock | Ellyn |
-| --- | --- | --- |
-| `0x5B` (DCR) | `0x01022972` | `0x200331B2` |
-| `0x3A` (gate side) | `0x00000004` | `0x00000000` |
-| `0x3B` (gate side) | `0x0000000D` | `0x0000000C` |
+The remaining community deltas are `0x3A` (`4 → 0`) and `0x3B` (`0x0D → 0x0C`).
+The private build's DEVICE toggle writes those two with per-register readback and restores stock.
+Their audible effect is **not established**; the gate block `0x71-0x73` is unchanged by the
+community image.
 
-The private build's DEVICE toggle reads all three, writes the Ellyn set or the stock set, and
-requires a matching readback for each before reporting success. Hardware test: ON → "Ellyn tuning ·
-on", OFF → "Stock · off", both verified by readback.
-
-Not established: audible effect, and survival across a physical power cycle. `0x6F` is zero in
-both images and is not a tuning register; an earlier revision targeted it in error and was corrected.
+Incident record: an earlier revision targeted `0x5B` as "DCR" and re-badged a test unit. The
+identity was restored by reflashing stock V2.2 with the vendor tool; register readback then returned
+`0x01022972`, and `0x3A`/`0x3B`/`0x71-0x73` matched stock.
