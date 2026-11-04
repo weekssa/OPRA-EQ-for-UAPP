@@ -82,6 +82,11 @@ class MainActivity : ComponentActivity() {
         if (::viewModel.isInitialized) viewModel.onAppResumed()
     }
 
+    override fun onStop() {
+        if (::viewModel.isInitialized) viewModel.flushJa11PendingSave()
+        super.onStop()
+    }
+
     private fun createUiActions(): EqLibraryActions = EqLibraryActions(
         onConnectDacForMyDac = viewModel::connectDacForMyDac,
         onOpenBlackPearlEditor = viewModel::openBlackPearlEditor,

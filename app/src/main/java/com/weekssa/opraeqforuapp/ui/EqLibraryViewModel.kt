@@ -220,6 +220,7 @@ class EqLibraryViewModel(
     private val mutableJa11DcrTuningState = MutableStateFlow(Ja11DcrTuningUiState())
     private var ja11DcrBaseline: Int? = null
     private var ja11AutoSaveJob: Job? = null
+    private var ja11SavePending = false
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
     private val mutableBlackPearlFlashOutcome = MutableStateFlow<BlackPearlFlashUiOutcome?>(null)
@@ -585,20 +586,27 @@ class EqLibraryViewModel(
      */
     private fun scheduleJa11AutoSave() {
         ja11AutoSaveJob?.cancel()
-        ja11AutoSaveJob = viewModelScope.launch {
-            delay(4_000L)
-            val state = mutableFiioJa11DeviceState.value
-            val snapshot = state.snapshot ?: return@launch
-            if (state.isBusy || !state.isCurrentSession) return@launch
-            setFiioJa11Defaults(
-                FiioJa11DefaultsRequest(
-                    reviewedSnapshot = snapshot,
-                    requestedVolume = snapshot.outputVolume,
-                    requestedProgram = snapshot.eqProgram,
-                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-                ),
-            )
-        }
+        ja11SavePending = true
+    }
+
+    /**
+     * Commits a pending runtime change once, when the owner leaves the screen/app. The FiiO Save
+     * re-enumerates USB, so doing it on exit avoids a reset after every adjustment.
+     */
+    fun flushJa11PendingSave() {
+        if (!ja11SavePending) return
+        val state = mutableFiioJa11DeviceState.value
+        val snapshot = state.snapshot ?: return
+        if (state.isBusy || !state.isCurrentSession) return
+        ja11SavePending = false
+        setFiioJa11Defaults(
+            FiioJa11DefaultsRequest(
+                reviewedSnapshot = snapshot,
+                requestedVolume = snapshot.outputVolume,
+                requestedProgram = snapshot.eqProgram,
+                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+            ),
+        )
     }
 
     fun setFiioJa11Defaults(request: FiioJa11DefaultsRequest) {
