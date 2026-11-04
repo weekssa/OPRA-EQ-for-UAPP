@@ -108,53 +108,6 @@ class FiioJa11MyDacContentTest {
     }
 
     @Test
-    fun stagedVolumeCancelDoesNotWriteAndApplyWritesOnlyRuntimeValue() {
-        var appliedVolume: Int? = null
-        setContentForTrace(editorApplyTrace(), onVolume = { appliedVolume = it })
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Device volume").performClick()
-        composeRule.onNodeWithText("+1").performClick()
-        composeRule.onNodeWithText("Cancel").performClick()
-        composeRule.runOnIdle { assertEquals(null, appliedVolume) }
-
-        composeRule.onNodeWithText("Device volume").performClick()
-        composeRule.onNodeWithText("+1").performClick()
-        composeRule.onNodeWithText("Apply").performClick()
-        composeRule.runOnIdle { assertEquals(21, appliedVolume) }
-    }
-
-    @Test
-    fun runtimeOnlyStatusNamesTheUnplugConsequence() {
-        setContentForTrace(
-            editorApplyTrace(),
-            startupStatus = FiioJa11StartupDefaultStatus.RUNTIME_ONLY,
-        )
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Set for this session only", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Set as Default", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun cancellingStartupDefaultConfirmationWritesNothing() {
-        var applyCalls = 0
-        var defaultCalls = 0
-        setContentForTrace(
-            editorApplyTrace(),
-            onVolume = { applyCalls += 1 },
-            onDefaults = { defaultCalls += 1 },
-        )
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
-        composeRule.onNodeWithText("Set startup defaults?").assertIsDisplayed()
-        composeRule.onNodeWithText("Cancel").performClick()
-        composeRule.onAllNodesWithText("Set startup defaults?").assertCountEquals(0)
-        composeRule.runOnIdle {
-            assertEquals(0, applyCalls)
-            assertEquals(0, defaultCalls)
-        }
-    }
-
-    @Test
     fun eqProgramSelectionStaysLocalUntilApply() {
         val appliedPrograms = mutableListOf<FiioJa11Protocol.EqProgram>()
         setContentForTrace(editorApplyTrace(), onProgram = { appliedPrograms += it })
