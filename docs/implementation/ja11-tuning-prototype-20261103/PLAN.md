@@ -156,7 +156,7 @@ Commands and results, all with `./tools/codex-android`:
 - generated `BuildConfig`: `JA11_TUNING_PROTOTYPE_ENABLED=false` for release, `true` for debug and
   privateBeta.
 - `:app:connectedDebugAndroidTest`-equivalent by explicit serial (`adb -s emulator-5602`):
-  `com.weekssa.opraeqforuapp.ui.screens.Ja11TuningPrototypeTest` 7/7 passed on an isolated API 36
+  `com.weekssa.opraeqforuapp.ui.screens.Ja11TuningPrototypeTest` 8/8 passed on an isolated API 36
   AVD (`opra_api36`, port 5602).
   The contract's gate 3 command would target every attached device, including the physical Pixel 9
   visible on wireless ADB, so it was executed as an explicit-serial instrumentation run instead.
@@ -166,10 +166,12 @@ Commands and results, all with `./tools/codex-android`:
 - the physical Pixel 9 visible on wireless ADB was never targeted; every device command named an
   emulator serial.
 
-Private prototype APK: `EQ-Library-ja11-tuning-prototype-2432fd7.apk`, package
-`com.weekssa.opraeqforuapp.v090beta`, versionName `0.9.0`, versionCode `20`, SHA-256
-`aa2b9cffc2931a6b1720eabdd5d990626bb76dae1cfffde699f75adf8fb47f01`, local test signer SHA-256
-`945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5` (not the pinned release signer).
+Private prototype APK: `EQ-Library-ja11-tuning-prototype-phone.apk`, build type `ja11Tuning`,
+package `com.weekssa.opraeqforuapp.ja11tuning`, versionName `0.9.0-tuningproto`, versionCode `20`,
+SHA-256 `db9201693528704d8f6578ad0af0f8ec30f5a1b6bce807e5748e75edf2d6f08e`, local test signer
+SHA-256 `945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5` (not the pinned release
+signer). The earlier `privateBeta` build (`.v090beta`) could not be installed over the phone's
+beta.3 without uninstalling it, so the dedicated build type was added.
 Known-good rollback APK: public v0.9.0, SHA-256
 `8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`.
 
@@ -207,3 +209,23 @@ The findings and dispositions:
 
 Residual limits: simulated behavior only; no JA11 read, write, firmware, acoustic or persistence
 evidence; the physical Pixel 9 and every DAC remain untouched.
+
+## Owner phone session (2026-11-03)
+
+With the owner's "the pixel is ready for testing", the following was run on the physical Pixel 9
+(Android 17) with the JA11 attached:
+
+- read-only baseline: `com.weekssa.opraeqforuapp` is v0.9.0 / 20 and its on-device `base.apk`
+  SHA-256 is `8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`, the published APK;
+  `com.weekssa.opraeqforuapp.v090beta` is 0.9.0-beta.3 / 17 and was left untouched.
+- installed the separate `com.weekssa.opraeqforuapp.ja11tuning` package, opened My DAC, connected
+  the existing USB session, and opened DEVICE. The Tuning row appears between EQ program and
+  Startup defaults with "Prototype · simulated. No command is sent to JA11."
+- selected Warmer and applied: the dialog reported "Simulated apply verified by readback" and
+  session-only persistence; the row then showed "Warmer · gate off".
+- rotated the device to landscape and back: the verified simulated value and open dialog survived.
+- hardware state before and after: volume 60/60, EQ program Off; no crash-buffer entry. No DAC
+  write, Apply, Save, firmware, microphone or UAC operation occurred.
+
+Screenshots from the phone are in the local owner package (`phone/01-launch.png` …
+`phone/10-final-device.png`). Orientation settings changed for the rotation check were restored.

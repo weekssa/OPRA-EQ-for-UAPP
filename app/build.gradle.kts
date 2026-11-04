@@ -92,6 +92,23 @@ android {
                 "proguard-rules.pro",
             )
         }
+        // JA11 tuning prototype: release-derived minified build with its own package so it can be
+        // installed beside stable and the qualified beta without replacing either. Local test
+        // signer, no public update prompts, and no hardware tuning command exists.
+        create("ja11Tuning") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            applicationIdSuffix = ".ja11tuning"
+            versionNameSuffix = "-tuningproto"
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
+            buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "true")
+            matchingFallbacks += listOf("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
         release {
             isMinifyEnabled = true
             // Save qualification is already physically accepted and is never a production action.

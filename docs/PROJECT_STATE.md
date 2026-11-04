@@ -40,7 +40,17 @@ The exact APK/source tuple proves public release identity. It does **not** prove
 
 ## Installed device state
 
-Current post-publication state: **UNKNOWN / NOT VERIFIED**. No on-device query was performed after v0.9.0 publication, so this release record does not claim v0.9.0 is installed on the owner's phone.
+Current post-publication state: **v0.9.0 verified installed** (2026-11-03, read-only). During the
+JA11 tuning prototype session, a read-only query identified the physical Pixel 9 on Android 17 and
+found package `com.weekssa.opraeqforuapp` at versionName `0.9.0` / versionCode `20`; the on-device
+SHA-256 of its `base.apk` is
+`8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`, exactly the published v0.9.0 APK
+digest. The phone also carries `com.weekssa.opraeqforuapp.v090beta` (`0.9.0-beta.3` / `17`, left
+untouched) and the separate simulated prototype package
+`com.weekssa.opraeqforuapp.ja11tuning` (`0.9.0-tuningproto` / `20`). No DAC write, firmware action
+or production-app change occurred in that session. The prototype package is a private test
+artifact, not a release; see
+[`implementation/ja11-tuning-prototype-20261103/PLAN.md`](implementation/ja11-tuning-prototype-20261103/PLAN.md).
 
 The v0.8.3 release records captured the Pixel's separate debug-signed Beta v1 state on 2026-10-14; that remains a valid historical snapshot. A later owner-authorized, read-only ADB verification on 2026-10-21 identified the connected physical Pixel 9 separately from `emulator-5554` and queried only `com.weekssa.opraeqforuapp`. Package metadata reported versionName `0.8.3`, versionCode `14`, and one installed `base.apk`. Its SHA-256, computed on-device without pulling the APK, exactly matched the public v0.8.3 APK SHA-256: `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`.
 

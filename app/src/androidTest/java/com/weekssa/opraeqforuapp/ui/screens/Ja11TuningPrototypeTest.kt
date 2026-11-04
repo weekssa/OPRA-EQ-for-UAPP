@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -133,6 +134,31 @@ class Ja11TuningPrototypeTest {
     }
 
     @Test
+    fun verifiedSimulatedTuningSurvivesActivityRecreation() {
+        val tester = StateRestorationTester(composeRule)
+        setContent(SimulatedJa11TuningTransport(), restorationTester = tester)
+        composeRule.onNodeWithText("DEVICE").performClick()
+        composeRule.onNodeWithTag(JA11_TUNING_ROW_TAG).performScrollTo().performClick()
+        composeRule.onNodeWithText("Warmer", substring = true).performClick()
+        composeRule.onNodeWithText("Apply (simulated)").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Simulated apply verified by readback.")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        tester.emulateSavedInstanceStateRestore()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Warmer · Current", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Warmer · Current", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText("Stock · Current", substring = true)
+            .fetchSemanticsNodes()
+            .let { assertEquals(0, it.size) }
+    }
+
+    @Test
     fun capturePrototypeScreenshotsForOwnerReview() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val dir = context.getExternalFilesDir("ja11-tuning-screenshots") ?: return
@@ -186,6 +212,7 @@ class Ja11TuningPrototypeTest {
         transport: Ja11TuningTransport,
         fontScale: Float = 1f,
         dark: Boolean = false,
+        restorationTester: StateRestorationTester? = null,
     ) {
         val bundle = requireNotNull(
             HardwareEqSnapshotFactory.fiioJa11(
@@ -235,7 +262,11 @@ class Ja11TuningPrototypeTest {
                 }
             }
         }
-        composeRule.setContent { content() }
+        if (restorationTester == null) {
+            composeRule.setContent { content() }
+        } else {
+            restorationTester.setContent { content() }
+        }
     }
 
     private fun deviceSnapshot() = FiioJa11DeviceSnapshot(

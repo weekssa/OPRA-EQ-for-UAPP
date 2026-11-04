@@ -62,7 +62,36 @@ internal fun Ja11TuningPrototypeSection(
     transportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
     modifier: Modifier = Modifier,
 ) {
-    val controller = remember { Ja11TuningController(transportFactory()) }
+    // The Activity recreates on rotation. Persist the simulated session so a configuration change
+    // never relabels a verified value as Stock or unknown.
+    var savedLevelName by rememberSaveable { mutableStateOf<String?>(null) }
+    var savedGate by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var savedPersistenceName by rememberSaveable {
+        mutableStateOf(Ja11TuningPersistence.UNKNOWN.name)
+    }
+    var savedGeneration by rememberSaveable { mutableStateOf(1L) }
+
+    val controller = remember {
+        val transport = transportFactory()
+        if (
+            transport is SimulatedJa11TuningTransport &&
+            (savedLevelName != null || savedGeneration != 1L)
+        ) {
+            val restoredLevel = savedLevelName?.let { name ->
+                Ja11TuningLevel.entries.firstOrNull { it.name == name }
+            }
+            transport.restoreSession(
+                values = restoredLevel?.let { level ->
+                    Ja11TuningValues(level, savedGate ?: false)
+                },
+                persistence = Ja11TuningPersistence.entries
+                    .firstOrNull { it.name == savedPersistenceName }
+                    ?: Ja11TuningPersistence.UNKNOWN,
+                generation = savedGeneration,
+            )
+        }
+        Ja11TuningController(transport)
+    }
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(Ja11TuningUiState()) }
     var dialogOpen by rememberSaveable { mutableStateOf(false) }
@@ -70,6 +99,13 @@ internal fun Ja11TuningPrototypeSection(
     LaunchedEffect(controller) {
         state = state.beginRead()
         state = state.readOutcome(controller.read())
+    }
+
+    LaunchedEffect(state.level, state.noiseGateEnabled, state.persistence, state.sessionGeneration) {
+        savedLevelName = state.level?.name
+        savedGate = state.noiseGateEnabled
+        savedPersistenceName = state.persistence.name
+        state.sessionGeneration?.let { savedGeneration = it }
     }
 
     fun applyTuning(values: Ja11TuningValues) {

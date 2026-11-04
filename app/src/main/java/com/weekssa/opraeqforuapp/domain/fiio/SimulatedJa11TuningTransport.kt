@@ -89,10 +89,11 @@ class SimulatedJa11TuningTransport(
     private val fault: SimulatedJa11TuningFault = SimulatedJa11TuningFault.NONE,
     initialValues: Ja11TuningValues? = Ja11TuningValues(Ja11TuningLevel.STOCK, noiseGateEnabled = false),
     initialPersistence: Ja11TuningPersistence = Ja11TuningPersistence.UNKNOWN,
+    initialGeneration: Long = 1L,
 ) : Ja11TuningTransport, Ja11TuningPrototypeControls {
     override val isSimulated: Boolean = true
 
-    private var generation: Long = 1L
+    private var generation: Long = initialGeneration
     private var workingValues: Ja11TuningValues? = initialValues
     private var savedValues: Ja11TuningValues? = null
     private var persistence: Ja11TuningPersistence = initialPersistence
@@ -195,6 +196,25 @@ class SimulatedJa11TuningTransport(
     }
 
     fun currentGeneration(): Long = generation
+
+    /**
+     * Restores a simulated session after an Activity recreation. Only valid for the simulation: it
+     * carries the verified values, persistence claim and generation that were on screen, so a
+     * configuration change does not silently relabel the state as Stock or unknown.
+     */
+    fun restoreSession(
+        values: Ja11TuningValues?,
+        persistence: Ja11TuningPersistence,
+        generation: Long,
+    ) {
+        require(generation > 0L) { "generation must be positive" }
+        workingValues = values
+        this.persistence = persistence
+        this.generation = generation
+        savedValues = if (persistence == Ja11TuningPersistence.SAVED) values else null
+        failNextReadAfterWrite = false
+        disconnectingMidWrite = false
+    }
 
     private fun snapshot() = Ja11TuningSnapshot(
         sessionGeneration = generation,
