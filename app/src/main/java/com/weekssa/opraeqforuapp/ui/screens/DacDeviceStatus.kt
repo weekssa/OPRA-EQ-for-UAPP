@@ -373,7 +373,6 @@ private fun FiioJa11DeviceStatus(
                         value = staged.toFloat(),
                         onValueChange = { value -> stagedVolume = value.roundToInt() },
                         valueRange = FiioJa11Protocol.MIN_OUTPUT_VOLUME.toFloat()..FiioJa11Protocol.MAX_OUTPUT_VOLUME.toFloat(),
-                        steps = FiioJa11Protocol.MAX_OUTPUT_VOLUME - FiioJa11Protocol.MIN_OUTPUT_VOLUME - 1,
                     )
                 }
             },
