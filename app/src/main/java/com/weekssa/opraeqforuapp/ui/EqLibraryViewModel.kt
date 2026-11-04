@@ -504,10 +504,17 @@ class EqLibraryViewModel(
     }
 
     fun readFiioJa11DeviceControls() {
-        if (mutableFiioJa11DeviceState.value.isBusy) return
         viewModelScope.launch {
-            refreshFiioJa11DeviceState()
-            refreshJa11DcrTuning()
+            repeat(4) {
+                val idle = !mutableFiioJa11DeviceState.value.isBusy &&
+                    hardwareRepository.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected
+                if (idle) {
+                    refreshFiioJa11DeviceState()
+                    refreshJa11DcrTuning()
+                    return@launch
+                }
+                delay(700)
+            }
         }
     }
 
@@ -692,7 +699,9 @@ class EqLibraryViewModel(
                     }
                     if (
                         controlId == FiioJa11DeviceControls.OUTPUT_VOLUME ||
-                        controlId == FiioJa11DeviceControls.EQ_PROGRAM
+                        controlId == FiioJa11DeviceControls.EQ_PROGRAM ||
+                        controlId == FiioJa11DeviceControls.HEADSET_CONTROL ||
+                        controlId == FiioJa11DeviceControls.UAC_MODE
                     ) {
                         scheduleJa11AutoSave()
                     }
@@ -737,6 +746,7 @@ class EqLibraryViewModel(
                 mutableFiioJa11DeviceState.value =
                     mutableFiioJa11DeviceState.value.verified(result.controlId, result.snapshot)
                 hardwareRepository.readFiioJa11Snapshot()
+                scheduleJa11AutoSave()
             }
             else -> mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(
                 fiioJa11WriteFailureMessage(result),
