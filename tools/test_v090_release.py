@@ -154,7 +154,7 @@ class V090ReleaseTest(unittest.TestCase):
             "prerelease": False,
             "immutable": True,
             "assets": [{
-                "name": "EQ-Library-v0.8.3.apk",
+                "name": "EQ-Library-v0.9.0.apk",
                 "digest": f"sha256:{release.STABLE_LATEST_APK_SHA256}",
             }],
         }
