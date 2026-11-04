@@ -52,6 +52,14 @@ The original foundation phases P0-P10 and P11 are evidenced complete. PR #108, P
 
 ## Active work and known limits
 
+- **JA11 tuning prototype (2026-11-03):** a private, simulated My DAC -> DEVICE tuning model is
+  implemented behind `BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED` (true for `debug`/`privateBeta`,
+  false for `release`/`beta`). It is not a hardware capability: the JA11 run-mode protocol has no
+  DCR/DRC/noise-gate command, installed tuning is unreadable, and community tuning is a firmware
+  workflow outside EQ Library. The prototype sends nothing to USB and has no physical evidence. See
+  [the approved plan](implementation/ja11-tuning-prototype-20261103/PLAN.md) and the tuning section of
+  [`FIIO_JA11_CAPABILITY_MATRIX.md`](FIIO_JA11_CAPABILITY_MATRIX.md). No phone or DAC action is
+  implied by this row.
 - Open draft PR #96 reports `FINAL_EQ_MISMATCH` on JA11 Off-to-User 1 selection after Save; restoration of the original state is not verified. Mutation remains on hold. No replay is authorized by this status summary.
 - Open draft PR #93 investigates JA11 post-Flash state acquisition; root cause and physical reproduction remain unresolved. Its owner phone authorization was revoked in that handoff.
 - JA11 reconstruction filters remain deferred from v0.9.0: **device-specific not supported (vendor-exposed)** on the tested firmware 2.20 tuple. The official vendor-record finding and J034/J035 do not prove silicon impossibility or exclude a hidden/future interface. Reopening requires handoff section H evidence; no filter write is authorized. Preserved local APK provenance requires reconciliation before new sibling findings are treated as authoritative. Classification: INSPECTION-ONLY consolidation of historical DEMONSTRATED results. The tested tuple is one Pixel 9 and one JA11 at firmware 2.20; the statement does not generalize to other units, firmware or products.

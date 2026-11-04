@@ -44,6 +44,9 @@ android {
         // v0.9.0 defers the JA11 digital-filter control: the vendor does not expose it for firmware
         // 2.20. The codec and repository path remain for a future, evidence-backed candidate.
         buildConfigField("boolean", "JA11_FILTER_CONTROL_ENABLED", "false")
+        // Private prototype only: shows the simulated JA11 tuning model on My DAC -> DEVICE.
+        // Production variants leave this false; no hardware tuning command exists.
+        buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "false")
     }
 
     buildTypes {
@@ -55,6 +58,7 @@ android {
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
         debug {
+            buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "true")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
         create("beta") {
@@ -78,6 +82,7 @@ android {
             initWith(getByName("release"))
             isMinifyEnabled = true
             applicationIdSuffix = ".v090beta"
+            buildConfigField("boolean", "JA11_TUNING_PROTOTYPE_ENABLED", "true")
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")

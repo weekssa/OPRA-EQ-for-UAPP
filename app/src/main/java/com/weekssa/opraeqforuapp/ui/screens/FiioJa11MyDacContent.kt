@@ -47,6 +47,8 @@ import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11TuningTransport
+import com.weekssa.opraeqforuapp.domain.fiio.SimulatedJa11TuningTransport
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
@@ -84,6 +86,7 @@ internal fun FiioJa11MyDacContent(
     operationTrace: FiioJa11OperationTrace? = null,
     operationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
     onMessage: (String) -> Unit,
+    ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -238,6 +241,7 @@ internal fun FiioJa11MyDacContent(
                 onSetFiioJa11HeadsetControl = onSetHeadsetControl,
                 onSetFiioJa11UacMode = onSetUacMode,
                 fiioJa11OperationBusy = operationStatus is FiioJa11OperationStatus.Running,
+                ja11TuningTransportFactory = ja11TuningTransportFactory,
             )
         }
     }

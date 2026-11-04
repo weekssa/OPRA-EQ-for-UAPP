@@ -10,6 +10,35 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
+## Tuning — DCR / noise gate (2026-11-03)
+
+Community material describes editing "DCR" and noise-gate values with KT tools and then flashing a
+modified FiiO 2.2 firmware image for a warmer/smoother character and tick fixes. That is a
+**firmware workflow**, not a runtime control, and it publishes no authoritative values.
+
+| Question | Current classification |
+| --- | --- |
+| Read installed tuning at runtime | **Insufficiently evidenced.** The maintained run-mode protocol has no such command. |
+| Write tuning at runtime | **Unsafe / out of scope.** No JA11-specific command, range or readback is established. |
+| Installed tuning visible to the app | **No.** Unknown is never presented as Off or Stock. |
+| Firmware-only community path | Demonstrated by third parties outside EQ Library; not reproduced or qualified here. |
+| DCR versus DRC meaning | **Unresolved.** The two terms are not interchangeable in the examined sources. |
+| Label equivalence: FiiO 2.20, community "V2.2", Ellyn / Ellyn_GP | **Not established.** |
+| JA11 EQ Save (`0x19`) as tuning persistence | **Unrelated.** Save commits the PEQ working area; it says nothing about tuning. |
+
+Corroborating limits: `gxcreator/ktmicro-tools` (pinned `39e620d8cd68c4afb711b91153b4ae91042adc32`)
+documents live NoiseGate registers 71-73 and limiter 78-79 over an 11-byte report `0x4B` protocol at
+`31B2:0111`; that is a different device and transport than JA11's report `0x02`. Its DRC
+compander/expander/AGC handlers are documented stubs. None of those register numbers, frames or
+semantics transfer to JA11, and EQ Library does not adopt them.
+
+**Prototype boundary.** A private, simulated tuning model exists only behind
+`BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED` (true in `debug` and `privateBeta`, false in
+`release` and `beta`). It renders in My DAC -> DEVICE next to device volume and EQ program, uses a
+simulated transport with a session fence, verified readback and no replay, and sends nothing to USB.
+It is not a capability claim and adds no hardware support. See
+[`docs/implementation/ja11-tuning-prototype-20261103/PLAN.md`](implementation/ja11-tuning-prototype-20261103/PLAN.md).
+
 ## v0.9.0-beta.2 recovery boundary (2026-11-01)
 
 The [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) extends native defaults from User 1

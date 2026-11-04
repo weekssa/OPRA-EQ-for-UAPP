@@ -26,12 +26,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
+import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.domain.dac.DacCapabilityCatalog
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacMetadataOrigin
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
+import com.weekssa.opraeqforuapp.domain.fiio.Ja11TuningTransport
+import com.weekssa.opraeqforuapp.domain.fiio.SimulatedJa11TuningTransport
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
@@ -62,6 +65,7 @@ internal fun CapabilityDrivenDeviceStatus(
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit = {},
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
     fiioJa11OperationBusy: Boolean = false,
+    ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
 ) {
     when (deviceId) {
         DacDeviceId.TRN_BLACK_PEARL -> BlackPearlDeviceStatus(
@@ -80,6 +84,7 @@ internal fun CapabilityDrivenDeviceStatus(
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
             operationBusy = fiioJa11OperationBusy,
+            ja11TuningTransportFactory = ja11TuningTransportFactory,
         )
         DacDeviceId.SIMGOT_EW300 -> Text(
             text = "EW300 five-band EQ is managed from My EQs / EQ Library.",
@@ -151,6 +156,7 @@ private fun FiioJa11DeviceStatus(
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
     operationBusy: Boolean,
+    ja11TuningTransportFactory: () -> Ja11TuningTransport = { SimulatedJa11TuningTransport() },
 ) {
     var stagedVolume by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingEqProgram by rememberSaveable { mutableStateOf(false) }
@@ -240,6 +246,12 @@ private fun FiioJa11DeviceStatus(
         enabled = controlsEnabled,
         onClick = { choosingEqProgram = true },
     )
+    if (BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED) {
+        Ja11TuningPrototypeSection(
+            enabled = connected && !state.isBusy && !operationBusy,
+            transportFactory = ja11TuningTransportFactory,
+        )
+    }
     Text(
         text = "Startup defaults",
         style = MaterialTheme.typography.labelLarge,

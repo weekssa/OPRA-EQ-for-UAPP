@@ -4,6 +4,29 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
+## 2026-11-03 JA11 tuning model — private simulated prototype
+
+The owner-approved [plan](implementation/ja11-tuning-prototype-20261103/PLAN.md) requested either a
+firmware-qualified runtime tuning capability or a tested installable My DAC tuning model with precise
+limits. Only the second is reachable: the maintained JA11 run-mode protocol has no DCR, DRC, AGC or
+noise-gate command, community material is a KT-tool **firmware** workflow with no published values,
+and the pinned `ktmicro-tools` NoiseGate registers belong to a different report and device.
+Label equivalence between FiiO 2.20, community "V2.2" and Ellyn/Ellyn_GP remains unproven.
+
+A prototype tuning surface now sits in My DAC -> DEVICE next to device volume and EQ program,
+gated by `BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED` (true only for `debug` and `privateBeta`,
+false for `release` and `beta`). It uses a simulated transport through an exclusive-operation gate
+with a session fence, verified readback and no replay, distinguishes unknown from Off, separates
+session-only from saved and unknown persistence, and states on every value that nothing is sent to
+the DAC. The private APK is `com.weekssa.opraeqforuapp.v090beta`.
+
+Evidence for this candidate: 27 new JVM tests (plus the existing suite), `lintDebug`,
+`assembleDebug`, `assemblePrivateBeta`, `assembleRelease` with R8, and 7/7 API 36 Compose tests
+including light, dark, large-text and screenshot capture. The minified private APK installed and
+launched on API 36 and API 26 emulators; the pre-existing emulator-only `v090beta` install was
+removed first because its signer differed. No phone, DAC, USB or firmware operation was performed.
+This is not a hardware capability, and it changes no canonical EQ, output, protocol or Save behavior.
+
 ## 2026-11-01 v0.9.0 stable publication and closeout — current release
 
 EQ Library v0.9.0 is public stable/latest. Release ID `430455005` was published at `2026-11-01T09:38:36Z` from exact source `1eebfda363a580591abdb3b109b8af5df5b82a90` (PR #124). The official signed-candidate run `41288639063` succeeded and produced artifact `13076990020`; promotion run `41289359379` passed exact-artifact checks, hosted clean install, v0.8.3 upgrade and publication. The annotated `v0.9.0` tag peels to the exact source and binds the candidate provenance. A fresh public APK download independently matched the candidate APK SHA-256. Full hashes and readback evidence are in [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md).
