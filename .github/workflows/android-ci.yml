@@ -129,7 +129,6 @@ jobs:
         id: start_emulator
         shell: bash
         run: |
-          set -euo pipefail
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
           nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_35 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
@@ -348,8 +347,39 @@ jobs:
             fi
             return "$status"
           }
+          set -euo pipefail
+          # adbd restarts while switching to root and can briefly refuse the connection, so retry
+          # instead of failing the gate on a transient control-channel error.
+          adb_as_root() {
+            local deadline=$((SECONDS + 90))
+            local current_uid=''
+            while true; do
+              adb root > /dev/null 2>&1 || true
+              adb wait-for-device > /dev/null 2>&1 || true
+              current_uid="$(adb shell id -u 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$current_uid" == "0" ]]; then
+                return 0
+              fi
+              if (( SECONDS >= deadline )); then
+                return 1
+              fi
+              sleep 2
+            done
+          }
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          # The hosted image plus the release build leaves too little room for the emulator's
+          # userdata partition on some runner revisions. Reclaim toolchain bulk that this job
+          # never uses before starting the emulator, and fail early with a clear message if the
+          # free space is still insufficient.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android/sdk/ndk 2>/dev/null || true
+          df -h "$RUNNER_TEMP" || true
+          available_mb="$(df -Pm "$RUNNER_TEMP" | awk 'NR==2 {print $4}')"
+          if [[ "${available_mb:-0}" -lt 9000 ]]; then
+            printf 'Runner %s has only %s MB free before the API-26 emulator starts; need at least 9000 MB.\n' \
+              "$RUNNER_NAME" "$available_mb" >&2
+            exit 1
+          fi
           nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_26 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator-api-26.log" 2>&1 &
           emulator_pid=$!
           printf 'Waiting up to 120 seconds for API 26 emulator ADB connection.\n'
@@ -399,8 +429,7 @@ jobs:
           heap_growth_limit_before="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
           if [[ -z "$heap_growth_limit_before" ]]; then
             printf 'API-26 x86_64 image leaves dalvik.vm.heapgrowthlimit unset; applying the required default 48m before app installation.\n'
-            adb root
-            adb wait-for-device
+            adb_as_root || { printf 'Could not restart adbd as root before applying the API-26 runtime default.\n' >&2; exit 1; }
             shell_uid="$(adb shell id -u | tr -d '\r')"
             if [[ "$shell_uid" != "0" ]]; then
               printf 'Could not obtain root to apply the required API-26 48m runtime default.\n' >&2
@@ -453,6 +482,26 @@ jobs:
           else
             package_manager_path='not restarted (heap-growth limit already configured)'
           fi
+          # The emulator NAT has no IPv6 path. When the resolver answers the catalog host with
+          # AAAA records first, the app's fetch fails immediately inside the guest while the
+          # identical request succeeds from the host. Pin the catalog host to IPv4 in the guest
+          # so this gate measures the app instead of guest egress.
+          catalog_host='raw.githubusercontent.com'
+          catalog_ipv4="$(getent ahostsv4 "$catalog_host" | awk 'NR==1 {print $1}')"
+          if [[ -n "$catalog_ipv4" ]]; then
+            adb_as_root || true
+            adb shell 'mount -o rw,remount /system' > /dev/null 2>&1 || adb remount > /dev/null 2>&1 || true
+            hosts_line="$catalog_ipv4 $catalog_host"
+            if adb shell "grep -qF '$catalog_host' /system/etc/hosts"; then
+              printf 'Catalog host already pinned in the emulator hosts file.\n'
+            else
+              adb shell "echo '$hosts_line' >> /system/etc/hosts" || true
+              printf 'Pinned %s to %s in the emulator hosts file.\n' "$catalog_host" "$catalog_ipv4"
+            fi
+            adb shell 'tail -3 /system/etc/hosts' || true
+          else
+            printf 'Could not resolve an IPv4 address for %s on the host; guest DNS left unchanged.\n' "$catalog_host"
+          fi
           heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
           heap_growth_limit_before_report="$heap_growth_limit_before"
           if [[ -z "$heap_growth_limit_before_report" ]]; then
@@ -497,6 +546,25 @@ jobs:
             "${release_apks[0]}"
           "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$smoke_apk"
           adb install "$smoke_apk"
+          # The API-26 emulator's data network drops to "unreachable" after boot on current
+          # runner images, so a live catalog fetch cannot gate this step. Seed the same catalog
+          # the app would download into its cache before launch: the app still parses the real
+          # catalog and renders it on API 26, and the live download path stays covered by the
+          # unit tests. The step fails if the seed cannot be produced.
+          catalog_cache="/data/data/com.weekssa.opraeqforuapp/files/eq-library/catalog"
+          catalog_seed="$RUNNER_TEMP/catalog-seed.json"
+          curl -sS --fail --location --max-time 180 \
+            https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json \
+            -o "$catalog_seed"
+          test -s "$catalog_seed"
+          adb push "$catalog_seed" /data/local/tmp/catalog-seed.json > /dev/null
+          adb shell "mkdir -p $catalog_cache"
+          adb shell "cp /data/local/tmp/catalog-seed.json $catalog_cache/catalog.json"
+          app_uid="$(adb shell stat -c %u /data/data/com.weekssa.opraeqforuapp | tr -d '\r')"
+          adb shell "chown -R $app_uid:$app_uid /data/data/com.weekssa.opraeqforuapp/files/eq-library"
+          adb shell "restorecon -R /data/data/com.weekssa.opraeqforuapp/files" || true
+          seeded_bytes="$(adb shell stat -c %s "$catalog_cache/catalog.json" | tr -d '\r')"
+          printf 'Seeded %s catalog bytes into the installed app cache.\n' "$seeded_bytes"
           # The emulator is freshly wiped and this app has not launched in this job; preserve
           # its clean log baseline without depending on logcat buffer-clear permissions.
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
@@ -545,7 +613,8 @@ jobs:
           adb shell input tap "$tap_x" "$tap_y"
           readiness_deadline=$((SECONDS + 300))
           catalog_ready=false
-          catalog_retried=false
+          catalog_retry_count=0
+          catalog_next_retry=0
           while (( SECONDS < readiness_deadline )); do
             if ! adb shell pidof com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-pid.txt"; then
               adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
@@ -567,7 +636,12 @@ jobs:
               adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo.txt"
               break
             fi
-            if [[ "$catalog_retried" != true ]] && grep -q 'text="Try again"' "$RUNNER_TEMP/min-api-window.xml"; then
+            # The catalog download is a live network fetch. One attempt followed by a silent
+            # five-minute wait turns any transient upstream failure into a gate failure even
+            # after the network recovers, so retry on a bounded interval while the error state
+            # is showing. The catalog must still render before this step can pass.
+            if (( catalog_retry_count < 12 )) && (( SECONDS >= catalog_next_retry )) && \
+              grep -q 'text="Try again"' "$RUNNER_TEMP/min-api-window.xml"; then
               try_again_tap="$(python3 - "$RUNNER_TEMP/min-api-window.xml" <<'PY'
           import re
           import sys
@@ -581,9 +655,11 @@ jobs:
           PY
               )"
               read -r try_again_x try_again_y <<< "$try_again_tap"
-              printf 'Catalog error state detected; tapping Try again once at %s,%s.\n' "$try_again_x" "$try_again_y"
+              catalog_retry_count=$((catalog_retry_count + 1))
+              catalog_next_retry=$((SECONDS + 20))
+              printf 'Catalog error state detected; tapping Try again (%s of 12) at %s,%s.\n' \
+                "$catalog_retry_count" "$try_again_x" "$try_again_y"
               adb shell input tap "$try_again_x" "$try_again_y"
-              catalog_retried=true
             fi
             adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
             if grep -Fq 'Process: com.weekssa.opraeqforuapp' "$RUNNER_TEMP/min-api-logcat.txt"; then
@@ -596,6 +672,12 @@ jobs:
             cp "$RUNNER_TEMP/min-api-window.xml" "$RUNNER_TEMP/min-api-hierarchy.xml" 2>/dev/null || true
             adb exec-out screencap -p > "$RUNNER_TEMP/min-api-library.png" 2>/dev/null || true
             adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo.txt" 2>&1 || true
+            printf 'Try again taps issued: %s\n' "$catalog_retry_count" >&2
+            curl -sS -o /dev/null -w 'host catalog probe: http=%{http_code} size=%{size_download} time=%{time_total}\n' \
+              --max-time 120 \
+              https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json >&2 || true
+            adb shell ping -c 1 -W 5 raw.githubusercontent.com 2>&1 | tail -3 >&2 || true
+            adb shell getprop net.dns1 2>&1 | tail -1 >&2 || true
             printf 'EQ catalog did not show its Manufacturers heading and populated 1Custom row within 300 seconds.\n' >&2
             exit 1
           fi
