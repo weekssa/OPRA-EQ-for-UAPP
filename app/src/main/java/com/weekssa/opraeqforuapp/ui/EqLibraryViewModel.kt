@@ -587,6 +587,10 @@ class EqLibraryViewModel(
     private fun scheduleJa11AutoSave() {
         ja11AutoSaveJob?.cancel()
         ja11SavePending = true
+        ja11AutoSaveJob = viewModelScope.launch {
+            delay(1_500L)
+            flushJa11PendingSave()
+        }
     }
 
     /**
