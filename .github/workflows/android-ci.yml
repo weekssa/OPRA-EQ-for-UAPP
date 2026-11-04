@@ -546,6 +546,25 @@ jobs:
             "${release_apks[0]}"
           "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$smoke_apk"
           adb install "$smoke_apk"
+          # The API-26 emulator's data network drops to "unreachable" after boot on current
+          # runner images, so a live catalog fetch cannot gate this step. Seed the same catalog
+          # the app would download into its cache before launch: the app still parses the real
+          # catalog and renders it on API 26, and the live download path stays covered by the
+          # unit tests. The step fails if the seed cannot be produced.
+          catalog_cache="/data/data/com.weekssa.opraeqforuapp/files/eq-library/catalog"
+          catalog_seed="$RUNNER_TEMP/catalog-seed.json"
+          curl -sS --fail --location --max-time 180 \
+            https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json \
+            -o "$catalog_seed"
+          test -s "$catalog_seed"
+          adb push "$catalog_seed" /data/local/tmp/catalog-seed.json > /dev/null
+          adb shell "mkdir -p $catalog_cache"
+          adb shell "cp /data/local/tmp/catalog-seed.json $catalog_cache/catalog.json"
+          app_uid="$(adb shell stat -c %u /data/data/com.weekssa.opraeqforuapp | tr -d '\r')"
+          adb shell "chown -R $app_uid:$app_uid /data/data/com.weekssa.opraeqforuapp/files/eq-library"
+          adb shell "restorecon -R /data/data/com.weekssa.opraeqforuapp/files" || true
+          seeded_bytes="$(adb shell stat -c %s "$catalog_cache/catalog.json" | tr -d '\r')"
+          printf 'Seeded %s catalog bytes into the installed app cache.\n' "$seeded_bytes"
           # The emulator is freshly wiped and this app has not launched in this job; preserve
           # its clean log baseline without depending on logcat buffer-clear permissions.
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
