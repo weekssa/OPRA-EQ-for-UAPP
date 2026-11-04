@@ -62,6 +62,9 @@ The original foundation phases P0-P10 and P11 are evidenced complete. PR #108, P
 
 ## Active work and known limits
 
+- **JA11 custom firmware (planning, 2026-11-03):** separate, unreleased project. Prerequisites and boundaries are recorded in docs/FIIO_JA11_PROTOCOL_NOTES.md: recovery first, then image format, ISA/toolchain, and a static pass for the 0x19 handler and startup store. Not started; needs the vendor boot tool for recovery validation. EQ Library gains no flashing path.
+
+
 - **JA11 tuning (2026-11-03):** DEVICE has a Tuning (Ellyn) toggle writing KT config registers 0x3A/0x3B (audible, persisted on write) plus runtime volume/program with an explicit Set as Default 0x19 save. Register 0x5B is the USB identity and is never written; an earlier write re-badged a test unit and required a stock reflash. Full register map, persistence measurements and the incident are in docs/FIIO_JA11_PROTOCOL_NOTES.md.
 
 
