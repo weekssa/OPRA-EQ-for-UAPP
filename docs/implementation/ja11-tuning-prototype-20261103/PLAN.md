@@ -84,6 +84,7 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
     "docs/implementation/ja11-tuning-prototype-20261103/GATES.md",
     "docs/implementation/ja11-tuning-prototype-20261103/GATES.md.sha",
     "app/build.gradle.kts",
+    "gradle.properties",
     "app/src/main/java/com/weekssa/opraeqforuapp/domain/fiio/Ja11TuningModel.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/domain/fiio/Ja11TuningController.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/domain/fiio/SimulatedJa11TuningTransport.kt",
