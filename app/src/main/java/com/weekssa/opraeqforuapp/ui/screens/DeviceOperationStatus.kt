@@ -40,7 +40,7 @@ internal fun deviceOperationStatusPresentation(
             pendingMessage = "Reconnect the DAC so EQ Library can verify the change.",
         )
         isReading -> DeviceOperationStatusPresentation(heading = "Refreshing device…")
-        isCurrentSession -> DeviceOperationStatusPresentation(heading = "Current device state")
+        isCurrentSession -> DeviceOperationStatusPresentation(heading = "Device settings")
         hasSnapshot -> DeviceOperationStatusPresentation(
             heading = "Last read",
             staleMessage = "Reconnect or refresh to update these values.",
@@ -157,7 +157,7 @@ internal fun DeviceOperationStatusHeader(
         presentation.pendingMessage != null -> presentation.pendingMessage
         presentation.staleMessage != null -> presentation.staleMessage
         isWriting || isReading -> "Checking device settings…"
-        isCurrentSession -> "Values verified from the connected DAC."
+        isCurrentSession -> ""
         else -> "Connect a DAC to read its settings."
     }
 
@@ -175,7 +175,7 @@ internal fun DeviceOperationStatusHeader(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
+            if (supportingText.isNotBlank()) Text(
                 text = supportingText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -38,7 +38,9 @@ OWNS: GATES.md,
   app/src/test/java/com/weekssa/opraeqforuapp/ui/Ja11DcrTuningUiStateTest.kt,
   app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/BlackPearlDeviceResetLifecycleTest.kt,
   app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/FiioJa11MyDacContentTest.kt,
-  app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/UiModernizationFlowsTest.kt
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/UiModernizationFlowsTest.kt,
+  app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/DeviceOperationStatus.kt,
+  app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/DeviceOperationStatusTest.kt
 
 ## Gates
 

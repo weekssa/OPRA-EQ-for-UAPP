@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +49,7 @@ import com.weekssa.opraeqforuapp.ui.fiioJa11DefaultsEqReadbackText
 import com.weekssa.opraeqforuapp.ui.fiioJa11DefaultsReportIsVerified
 import com.weekssa.opraeqforuapp.ui.fiioJa11DefaultsReportText
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 internal fun CapabilityDrivenDeviceStatus(
@@ -254,23 +256,40 @@ private fun FiioJa11DeviceStatus(
         }
     }
 
-    SimpleDeviceSettingRow(
-        label = "Startup defaults",
-        value = if (state.startupDefaultStatus == FiioJa11StartupDefaultStatus.SAVED) {
-            "Saved for startup"
-        } else {
-            "Runtime only"
-        },
-        enabled = controlsEnabled && state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED,
-        onClick = {
-            defaultsReview = FiioJa11DefaultsRequest(
-                reviewedSnapshot = snapshot,
-                requestedVolume = snapshot.outputVolume,
-                requestedProgram = snapshot.eqProgram,
-                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-            )
-        },
-    )
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Startup settings", style = MaterialTheme.typography.labelLarge)
+            when (state.startupDefaultStatus) {
+                FiioJa11StartupDefaultStatus.SAVED -> Text(
+                    "Saved",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                FiioJa11StartupDefaultStatus.RUNTIME_ONLY -> Text(
+                    "Not saved",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                FiioJa11StartupDefaultStatus.UNKNOWN -> Unit
+            }
+        }
+        if (state.startupDefaultStatus == FiioJa11StartupDefaultStatus.RUNTIME_ONLY) {
+            TextButton(
+                onClick = {
+                    onSetDefaults(
+                        FiioJa11DefaultsRequest(
+                            reviewedSnapshot = snapshot,
+                            requestedVolume = snapshot.outputVolume,
+                            requestedProgram = snapshot.eqProgram,
+                            targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                        ),
+                    )
+                },
+                enabled = controlsEnabled,
+            ) { Text("Save") }
+        }
+    }
 
     DeviceSectionTitle("Microphone")
     Row(
@@ -350,31 +369,11 @@ private fun FiioJa11DeviceStatus(
                         text = "$staged / ${FiioJa11Protocol.MAX_OUTPUT_VOLUME}",
                         fontWeight = FontWeight.SemiBold,
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        TextButton(
-                            onClick = {
-                                stagedVolume = (staged - 1).coerceAtLeast(FiioJa11Protocol.MIN_OUTPUT_VOLUME)
-                            },
-                            enabled = staged > FiioJa11Protocol.MIN_OUTPUT_VOLUME,
-                        ) { Text("−1") }
-                        TextButton(
-                            onClick = { stagedVolume = snapshot.outputVolume },
-                            enabled = staged != snapshot.outputVolume,
-                        ) { Text("Current") }
-                        TextButton(
-                            onClick = {
-                                stagedVolume = (staged + 1).coerceAtMost(FiioJa11Protocol.MAX_OUTPUT_VOLUME)
-                            },
-                            enabled = staged < FiioJa11Protocol.MAX_OUTPUT_VOLUME,
-                        ) { Text("+1") }
-                    }
-                    Text(
-                        text = "This is the JA11's native 0–60 hardware level. Nothing is sent until you apply.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Slider(
+                        value = staged.toFloat(),
+                        onValueChange = { value -> stagedVolume = value.roundToInt() },
+                        valueRange = FiioJa11Protocol.MIN_OUTPUT_VOLUME.toFloat()..FiioJa11Protocol.MAX_OUTPUT_VOLUME.toFloat(),
+                        steps = FiioJa11Protocol.MAX_OUTPUT_VOLUME - FiioJa11Protocol.MIN_OUTPUT_VOLUME - 1,
                     )
                 }
             },
@@ -434,35 +433,12 @@ private fun FiioJa11DeviceStatus(
         )
     }
 
-    defaultsReview?.let { request ->
-        AlertDialog(
-            onDismissRequest = { defaultsReview = null },
-            title = { Text("Set startup defaults?") },
-            text = { Text(fiioJa11DefaultsConfirmationText(request)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        defaultsReview = null
-                        stagedVolume = null
-                        choosingEqProgram = false
-                        stagedEqProgramName = null
-                        onSetDefaults(request)
-                    },
-                    enabled = controlsEnabled,
-                ) { Text("Save as Default") }
-            },
-            dismissButton = {
-                TextButton(onClick = { defaultsReview = null }) { Text("Cancel") }
-            },
-        )
-    }
-
     pendingHeadsetValue?.let { requested ->
         AlertDialog(
             onDismissRequest = { pendingHeadsetValue = null },
             title = { Text("Change headset / mic remote?") },
             text = {
-                Text("JA11 may briefly disconnect and reconnect. EQ Library verifies the new session before showing the change as current.")
+                Text("JA11 will reconnect.")
             },
             confirmButton = {
                 TextButton(
@@ -486,7 +462,7 @@ private fun FiioJa11DeviceStatus(
             text = {
                 Column {
                     Text(
-                        text = "Changing this mode interrupts USB audio while JA11 reconnects.",
+                        text = "USB audio reconnects.",
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
                     FiioJa11Protocol.UacMode.entries.forEach { mode ->

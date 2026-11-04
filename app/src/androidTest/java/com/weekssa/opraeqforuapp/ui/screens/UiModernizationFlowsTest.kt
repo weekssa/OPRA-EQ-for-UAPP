@@ -276,7 +276,7 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Edit EQ").assertDoesNotExist()
         composeRule.onNodeWithText("User 1 is active, but a verified five-band EQ read is not available yet.").assertDoesNotExist()
         composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Current device state").assertIsDisplayed()
+        composeRule.onNodeWithText("Device settings").assertIsDisplayed()
         composeRule.onNodeWithText("User 1").performScrollTo().assertIsDisplayed()
         composeRule.runOnIdle {
             assertEquals(1, transport.commands.count { it == 0x19 })

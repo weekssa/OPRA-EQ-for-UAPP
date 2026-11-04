@@ -113,7 +113,9 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
     "app/src/test/java/com/weekssa/opraeqforuapp/ui/Ja11DcrTuningUiStateTest.kt",
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/BlackPearlDeviceResetLifecycleTest.kt",
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/FiioJa11MyDacContentTest.kt",
-    "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/UiModernizationFlowsTest.kt"
+    "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/UiModernizationFlowsTest.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/DeviceOperationStatus.kt",
+    "app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/DeviceOperationStatusTest.kt"
   ],
   "excluded": [
     "JA11 hardware writes, writes of any tuning register, Apply or Save on physical hardware",
