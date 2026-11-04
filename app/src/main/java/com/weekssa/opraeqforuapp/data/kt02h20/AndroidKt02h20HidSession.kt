@@ -55,6 +55,7 @@ internal class AndroidKt02h20HidSession(
     private val hidInterfaceMatcher: (UsbInterface) -> Boolean = { true },
     private val additionalFingerprintFields: (UsbDevice) -> List<Pair<String, String>> = { emptyList() },
     private val requireUniqueCandidate: Boolean = false,
+    private val autoReattach: Boolean = false,
 ) : Closeable {
     init {
         require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
@@ -156,7 +157,7 @@ internal class AndroidKt02h20HidSession(
                     if (requireUniqueCandidate && currentDevice == null && supportedCandidateCount > 1) {
                         failClosedForAmbiguousCandidates()
                     } else if (currentDevice != null && usbManager.hasPermission(currentDevice) &&
-                        (mutableState.value is Kt02h20ConnectionState.Connecting || hadSession)
+                        (mutableState.value is Kt02h20ConnectionState.Connecting || (autoReattach && hadSession))
                     ) {
                         openAsync(currentDevice)
                     }

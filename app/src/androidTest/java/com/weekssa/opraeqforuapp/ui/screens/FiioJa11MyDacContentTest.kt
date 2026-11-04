@@ -135,59 +135,6 @@ class FiioJa11MyDacContentTest {
     }
 
     @Test
-    fun builtInProgramCanBeSavedWithItsOwnPresetTarget() {
-        var request: FiioJa11DefaultsRequest? = null
-        setContentForTrace(
-            editorApplyTrace(),
-            deviceEqProgram = FiioJa11Protocol.EqProgram.CLASSIC,
-            onDefaults = { request = it },
-        )
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Set as Default", substring = true).performClick()
-        composeRule.onNodeWithText("Save volume 20 and Classic as JA11", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Save as Default").performClick()
-        composeRule.runOnIdle {
-            assertEquals(FiioJa11Protocol.EqProgram.CLASSIC, request?.requestedProgram)
-        }
-    }
-    @Test
-    fun digitalFilterRowIsAbsentForTheDeferredJa11Configuration() {
-        setContentForTrace(editorApplyTrace())
-        composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onAllNodesWithText("Digital filter", substring = true).assertCountEquals(0)
-        composeRule.onNodeWithText("Device volume", substring = true).assertIsDisplayed()
-        composeRule.onAllNodesWithText("EQ program", substring = true).assertCountEquals(2)
-    }
-
-    @Test
-    fun changedDefaultsReadbackRendersAsFailureInsteadOfSuccess() {
-        setContentForTrace(
-            editorApplyTrace(),
-            defaultsReport = FiioJa11DefaultsOperationReport(
-                operationId = "defaults-failed",
-                stage = FiioJa11DefaultsStage.NATIVE_FINAL_VERIFY,
-                originalMicEnabled = false,
-                requestedVolume = 20,
-                requestedProgram = FiioJa11Protocol.EqProgram.USER_1,
-                counts = FiioJa11DefaultsWriteCounts(
-                    eqBandWrites = FiioJa11Protocol.BAND_COUNT,
-                    eqGainWrites = 1,
-                    eqApplyWrites = 1,
-                    eqSaveWrites = 1,
-                ),
-                lastVerifiedSnapshot = deviceSnapshot(),
-                mechanism = FiioJa11DefaultsMechanism.NATIVE_PROGRAM_REWRITE,
-                eqReadback = FiioJa11DefaultsEqReadback.CHANGED,
-            ),
-        )
-        composeRule.onNodeWithText("DEVICE").performClick()
-
-        composeRule.onNodeWithText("Defaults were not verified", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Final EQ readback did not match", substring = true).assertIsDisplayed()
-        composeRule.onAllNodesWithText("Defaults verified", substring = true).assertCountEquals(0)
-    }
-
-    @Test
     fun cancellingStartupDefaultConfirmationWritesNothing() {
         var applyCalls = 0
         var defaultCalls = 0

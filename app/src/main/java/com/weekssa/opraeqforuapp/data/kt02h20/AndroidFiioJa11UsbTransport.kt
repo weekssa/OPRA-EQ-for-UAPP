@@ -20,6 +20,7 @@ class AndroidFiioJa11UsbTransport(
         deviceLabel = "FiiO JA11",
         permissionSuffix = "FIIO_JA11",
         requireUniqueCandidate = true,
+        autoReattach = true,
     )
 
     private var savePreviousGeneration = 0L
