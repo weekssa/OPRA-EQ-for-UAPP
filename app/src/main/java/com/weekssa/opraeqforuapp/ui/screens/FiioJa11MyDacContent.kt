@@ -94,6 +94,9 @@ internal fun FiioJa11MyDacContent(
     var confirmReset by remember { mutableStateOf(false) }
     var dismissedEditorApplyOperationId by rememberSaveable { mutableStateOf<String?>(null) }
     val connected = connectionState is Kt02h20ConnectionState.Connected
+    LaunchedEffect(connected, selectedTab) {
+        if (connected && selectedTab == 1) onReadDeviceControls()
+    }
     val editorApplyTrace = when (val status = operationStatus) {
         is FiioJa11OperationStatus.Completed -> operationTrace?.takeIf { trace ->
             trace.operation == "EDITOR_APPLY" && trace.operationId == status.trace.operationId
