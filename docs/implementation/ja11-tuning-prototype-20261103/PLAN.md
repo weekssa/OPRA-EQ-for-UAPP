@@ -87,6 +87,7 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
     "gradle.properties",
     ".github/workflows/publish-beta-prerelease.yml",
     ".github/workflows/github-release.yml",
+    ".github/workflows/android-ci.yml",
     "tools/publish_v090_beta_release.py",
     "tools/test_publish_v090_beta_release.py",
     "tools/test_v090_release.py",
