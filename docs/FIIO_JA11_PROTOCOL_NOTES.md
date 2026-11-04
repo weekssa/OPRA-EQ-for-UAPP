@@ -703,3 +703,8 @@ and 0x71-0x73 matched stock. Transport now refuses 0x5B; a test asserts it is no
 App behavior: runtime edits apply with no save; Set as Default performs the single 0x19 save (one
 re-enumeration). DEVICE reads on open/connect; disconnect clears cached tuning state. The KT tool's
 KTM and FC FA frames did not answer; 0x4B/0x52/0x57 do.
+
+Extended scan (2026-11-03): reading 0x100-0x3FF does not expose a register file; replies are echoed
+or misaligned (values contain the request frame bytes, e.g. 4b0b...). There is no readable mirror of
+the FiiO startup volume/program store above 0xFF. Volume and program persistence therefore requires
+the 0x19 save, with its USB re-enumeration; only the DSP config registers (e.g. 0x3A/0x3B) persist on write.
