@@ -718,3 +718,32 @@ frames, not a register file. Conclusion: the startup volume/program store is dev
 not present in the firmware image or the KT register bank; only the 0x19 save writes it, and that
 command's USB re-enumeration is device behavior. A restart-free persistence path would require the
 vendor tool's SAVE protocol, which did not answer on the JA11 HID channel.
+
+## Custom firmware: scope and prerequisites (2026-11-03, planning only)
+
+Question: could a modified firmware improve persistence (volume/program without the USB reset) or add
+functionality? Technically yes: the community "Ellyn" images prove the 67,312-byte image is patchable
+and flashable. It is a separate project from EQ Library.
+
+Prerequisites, in order:
+
+1. Recovery first. Prove the vendor boot tool (KT_BOOT_TOOL, Windows/Wine) can always restore the
+   stock image over USB. No modified image should be flashed before a restore cycle is demonstrated.
+2. Image format. Confirm entry point/vector table, config block location and whether the bootloader
+   validates a checksum or signature.
+3. Architecture/toolchain. Identify the core, ISA and any matching toolchain. Without one, changes are
+   binary patches rather than firmware development.
+4. Targeted change. Locate the 0x19 handler, the USB re-enumeration trigger and the startup
+   volume/program store. Candidate patches: write the store without resetting USB, or expose the
+   startup store as a register the app can write.
+5. Validation on the owned unit: save semantics, audio, EQ, microphone, UAC, and recovery.
+
+Boundaries: modified vendor firmware is proprietary; personal use on owned hardware only, no
+distribution. EQ Library gains no firmware flashing or bootloader path.
+
+Known facts to build on: official image SHA-256 65fea4995a4425064bc737c7bc8ec64e212c8b6297c6b9dfcc2b90a5814103de;
+community delta is 7 bytes; KT config mapping 0x11C4 + (n - 0x71) * 4; startup volume/program are not
+in the image or 0x00-0xFF registers, and only 0x19 writes them.
+
+Status: planning only, not started. First actions are recovery validation and a static pass for the
+0x19 handler/startup store. Open dependency: Windows availability for the vendor boot tool.
