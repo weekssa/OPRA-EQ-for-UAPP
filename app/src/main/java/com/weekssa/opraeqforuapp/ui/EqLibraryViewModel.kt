@@ -103,6 +103,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -217,6 +219,7 @@ class EqLibraryViewModel(
     private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
     private val mutableJa11DcrTuningState = MutableStateFlow(Ja11DcrTuningUiState())
     private var ja11DcrBaseline: Int? = null
+    private var ja11AutoSaveJob: Job? = null
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
     private val mutableBlackPearlFlashOutcome = MutableStateFlow<BlackPearlFlashUiOutcome?>(null)
@@ -562,6 +565,28 @@ class EqLibraryViewModel(
         DacControlValue.Discrete(program.name.lowercase()),
     )
 
+    /**
+     * Debounced persistence for volume/program changes: a burst of adjustments produces one Save
+     * after the user stops, instead of a re-enumeration per step.
+     */
+    private fun scheduleJa11AutoSave() {
+        ja11AutoSaveJob?.cancel()
+        ja11AutoSaveJob = viewModelScope.launch {
+            delay(1_500L)
+            val state = mutableFiioJa11DeviceState.value
+            val snapshot = state.snapshot ?: return@launch
+            if (state.isBusy || !state.isCurrentSession) return@launch
+            setFiioJa11Defaults(
+                FiioJa11DefaultsRequest(
+                    reviewedSnapshot = snapshot,
+                    requestedVolume = snapshot.outputVolume,
+                    requestedProgram = snapshot.eqProgram,
+                    targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                ),
+            )
+        }
+    }
+
     fun setFiioJa11Defaults(request: FiioJa11DefaultsRequest) {
         val state = mutableFiioJa11DeviceState.value
         if (state.isBusy || !state.isCurrentSession) return
@@ -662,14 +687,7 @@ class EqLibraryViewModel(
                         controlId == FiioJa11DeviceControls.OUTPUT_VOLUME ||
                         controlId == FiioJa11DeviceControls.EQ_PROGRAM
                     ) {
-                        setFiioJa11Defaults(
-                            FiioJa11DefaultsRequest(
-                                reviewedSnapshot = result.snapshot,
-                                requestedVolume = result.snapshot.outputVolume,
-                                requestedProgram = result.snapshot.eqProgram,
-                                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-                            ),
-                        )
+                        scheduleJa11AutoSave()
                     }
                 }
                 is FiioJa11ControlWriteResult.ReconnectRequired -> {
