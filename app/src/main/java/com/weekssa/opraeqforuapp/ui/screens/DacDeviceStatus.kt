@@ -254,32 +254,23 @@ private fun FiioJa11DeviceStatus(
         }
     }
 
-    DeviceSectionTitle("Startup defaults")
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = fiioJa11StartupStatusText(state.startupDefaultStatus)
-                ?: "Runtime only. Save to keep volume and program after unplug.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        if (state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED) {
-            TextButton(
-                onClick = {
-                    defaultsReview = FiioJa11DefaultsRequest(
-                        reviewedSnapshot = snapshot,
-                        requestedVolume = snapshot.outputVolume,
-                        requestedProgram = snapshot.eqProgram,
-                        targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
-                    )
-                },
-                enabled = controlsEnabled,
-            ) { Text("Save") }
-        }
-    }
+    SimpleDeviceSettingRow(
+        label = "Startup defaults",
+        value = if (state.startupDefaultStatus == FiioJa11StartupDefaultStatus.SAVED) {
+            "Saved for startup"
+        } else {
+            "Runtime only"
+        },
+        enabled = controlsEnabled && state.startupDefaultStatus != FiioJa11StartupDefaultStatus.SAVED,
+        onClick = {
+            defaultsReview = FiioJa11DefaultsRequest(
+                reviewedSnapshot = snapshot,
+                requestedVolume = snapshot.outputVolume,
+                requestedProgram = snapshot.eqProgram,
+                targetControlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+            )
+        },
+    )
 
     DeviceSectionTitle("Microphone")
     Row(
