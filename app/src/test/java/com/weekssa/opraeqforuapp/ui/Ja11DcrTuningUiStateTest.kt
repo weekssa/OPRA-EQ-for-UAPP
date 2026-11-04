@@ -16,10 +16,15 @@ class Ja11DcrTuningUiStateTest {
     }
 
     @Test
-    fun capturedDeviceBaselineIsReportedAsStockNotEllyn() {
-        val state = Ja11DcrTuningUiState(baseline = 0).read(0)
-        assertEquals("Stock · off (device value)", ja11DcrRowValue(state))
+    fun stockRowIsNotReportedAsEllyn() {
+        val state = Ja11DcrTuningUiState().read(Ja11DcrTuning.STOCK)
+        assertEquals("Stock · off", ja11DcrRowValue(state))
         assertFalse(state.tuningEnabled)
+    }
+
+    @Test
+    fun usbIdentityRegisterIsNeverATuningParameter() {
+        assertFalse(Ja11DcrTuning.parameters.any { it.register == Ja11DcrTuning.USB_IDENTITY_REGISTER })
     }
 
     @Test

@@ -262,7 +262,7 @@ private fun FiioJa11DeviceStatus(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("DCR tuning (Ellyn)", style = MaterialTheme.typography.labelLarge)
+                Text("Tuning (Ellyn)", style = MaterialTheme.typography.labelLarge)
                 Text(
                     text = ja11DcrRowValue(dcrTuningState),
                     style = MaterialTheme.typography.bodyMedium,
@@ -276,7 +276,7 @@ private fun FiioJa11DeviceStatus(
                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
                 Text(
-                    text = "Writes the DCR register the modified firmware changes, then verifies readback.",
+                    text = "Writes the gate-side registers the modified firmware changes, then verifies readback. The USB identity register is never touched.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
