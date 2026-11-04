@@ -109,6 +109,8 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
     "docs/PROJECT_STATE.md",
     "docs/releases/v0.9.0-beta.4.md",
     "docs/releases/v0.9.0/QUALIFICATION.json",
+    "docs/releases/v0.10.0.md",
+    "docs/release-engineering/v0.10.0-stable/ARTIFACTS.md",
     "CHANGELOG.md",
     "app/src/main/java/com/weekssa/opraeqforuapp/MainActivity.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/EqLibraryActions.kt",

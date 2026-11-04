@@ -2,19 +2,18 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-## v0.9.0-beta.4 candidate (2026-11-04)
+## v0.10.0 stable candidate (2026-11-04)
 
-Candidate build: **v0.9.0-beta.4**, versionCode `21`.
+Candidate build: **v0.10.0**, versionCode `22`.
 
-Published beta prerelease: [EQ Library v0.9.0-beta.4](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0-beta.4), marked prerelease with make_latest disabled, published 2026-11-04T14:05:57Z. versionName 0.9.0-beta.4, versionCode 21, package
-com.weekssa.opraeqforuapp. It ships the JA11 Tuning (Ellyn) toggle, the DEVICE page redesign,
-runtime edits with explicit Set as Default, and automatic reconnect/refresh. Evidence limits and
-the identity-guard history are in docs/FIIO_JA11_PROTOCOL_NOTES.md and
-docs/releases/v0.9.0-beta.4.md. v0.9.0 remains public stable and current latest.
+Promotes the JA11 tuning and DEVICE work the owner confirmed working on the device in
+v0.9.0-beta.4. This is a new version identity only (versionName 0.10.0, versionCode 22, package
+com.weekssa.opraeqforuapp) with release notes in docs/releases/v0.10.0.md. v0.9.0 remains public
+stable and current latest until this candidate is promoted.
 
-- Exact source: 6cb3deb9825fdfa4ee32ce7fd05deb0cfc402d4a; signed candidate run 41842322131, artifact 13330113132, archive SHA-256 b6f1839c65ecde89fe16da2cbb5543c7c6e7cb2a1a2ddf83cab46fb538e88f01.
-- APK SHA-256 daee1ed6c0599f12d0fd3ff05dfb8cd71abc23af32639954adf94b46b6b3a606; signer SHA-256 65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747, the pinned release signer. The public APK was downloaded and independently matched to both.
-- Promotion run 41843816477 published the prerelease from qualification record docs/releases/v0.9.0/QUALIFICATION.json, which binds this candidate and cites the maintained computer, hardware and restoration records.
+- Predecessor prerelease: [EQ Library v0.9.0-beta.4](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0-beta.4), prerelease with make_latest disabled, published 2026-11-04T14:05:57Z; versionName 0.9.0-beta.4, versionCode 21.
+- v0.9.0-beta.4 signed candidate run 41842322131, artifact 13330113132, archive SHA-256 b6f1839c65ecde89fe16da2cbb5543c7c6e7cb2a1a2ddf83cab46fb538e88f01, APK SHA-256 daee1ed6c0599f12d0fd3ff05dfb8cd71abc23af32639954adf94b46b6b3a606, signer 65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747; promotion run 41843816477. The public beta APK was downloaded and matched.
+- Evidence limits and the identity-guard history are in docs/FIIO_JA11_PROTOCOL_NOTES.md and the release notes.
 
 ## Current stable release: v0.9.0 (published 2026-11-01)
 

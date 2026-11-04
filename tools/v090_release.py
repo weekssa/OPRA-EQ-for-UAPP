@@ -238,8 +238,42 @@ def validate_latest_snapshot(release: dict[str, Any], profile: BetaProfile = PRO
             f"stable latest APK no longer matches the {profile.stable_latest_tag} release identity")
 
 
+def validate_frozen_beta_record(project_root: Path, profile: BetaProfile = PROFILE) -> None:
+    """Validate the published beta evidence after the live tree has moved on.
+
+    The pinned identity is a published record, so the contract checks the frozen notes and the
+    qualification binding rather than requiring the app to keep building that released beta.
+    """
+    notes = project_root / "docs" / "releases" / f"{profile.tag}.md"
+    require(notes.is_file(), f"pinned release notes {profile.tag}.md are missing")
+    require(notes.read_text(encoding="utf-8").startswith(f"# EQ Library {profile.tag}\n"),
+            f"pinned release notes {profile.tag}.md have an unexpected title")
+    qualification = project_root / "docs" / "releases" / "v0.9.0" / "QUALIFICATION.json"
+    require(qualification.is_file(), "v0.9.0 beta qualification record is missing")
+    try:
+        record = json.loads(qualification.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise V090ReleaseError("v0.9.0 beta qualification record is not valid UTF-8 JSON") from exc
+    require(isinstance(record, dict) and record.get("releaseTag") == profile.tag,
+            f"qualification record is not bound to the pinned beta tag {profile.tag}")
+    candidate = record.get("candidate")
+    require(isinstance(candidate, dict), "qualification record candidate binding is missing")
+    source = candidate.get("sourceSha")
+    require(isinstance(source, str) and SOURCE_SHA_RE.fullmatch(source) is not None,
+            "qualification record lost its signed candidate source binding")
+    version_name, version_code = parse_android_version(project_root)
+    if version_name == profile.version_name:
+        require(version_code == profile.version_code,
+                f"Android versionCode must be {profile.version_code}, found {version_code}")
+        return
+    require(version_code > profile.version_code,
+            f"the live app must advance past the published {profile.tag} versionCode {profile.version_code}")
+    require(re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", version_name) is not None,
+            f"the live app versionName must be strict SemVer after the beta line, found {version_name}")
+
+
 def check_contract(project_root: Path) -> None:
-    validate_version(project_root)
+    validate_frozen_beta_record(project_root)
     candidate_workflow = (project_root / CANDIDATE_WORKFLOW_PATH).read_text(encoding="utf-8")
     publisher_workflow = (project_root / PUBLISHER_WORKFLOW_PATH).read_text(encoding="utf-8")
     required_candidate = (
