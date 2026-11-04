@@ -249,6 +249,7 @@ fun EqLibraryApp(
     val onSetFiioJa11Defaults = actions.onSetFiioJa11Defaults
     val onSetFiioJa11HeadsetControl = actions.onSetFiioJa11HeadsetControl
     val onSetFiioJa11UacMode = actions.onSetFiioJa11UacMode
+    val onSetJa11DcrTuning = actions.onSetJa11DcrTuning
     val onFlashFiioJa11FromMyDac = actions.onFlashFiioJa11FromMyDac
     val onResetFiioJa11FromMyDac = actions.onResetFiioJa11FromMyDac
     val onFlashEw300FromMyDac = actions.onFlashEw300FromMyDac
@@ -1126,6 +1127,7 @@ fun EqLibraryApp(
                             fiioJa11OperationStatus = state.fiioJa11OperationStatus,
                             blackPearlQualificationState = state.blackPearlQualificationState,
                             fiioJa11DeviceState = state.fiioJa11DeviceState,
+                            ja11DcrTuningState = state.ja11DcrTuningState,
                             ew300PlaybackGainState = state.ew300PlaybackGainState,
                             onConnectDac = onConnectDacForMyDac,
                             onOpenBlackPearlEditor = onOpenBlackPearlEditor,
@@ -1174,6 +1176,7 @@ fun EqLibraryApp(
                             onSetFiioJa11Defaults = onSetFiioJa11Defaults,
                             onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
                             onSetFiioJa11UacMode = onSetFiioJa11UacMode,
+                            onSetJa11DcrTuning = onSetJa11DcrTuning,
                             onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
                             onResetEw300FromMyDac = onResetEw300FromMyDac,
                             onRestoreEw300Baseline = onRestoreEw300Baseline,

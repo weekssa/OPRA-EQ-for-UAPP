@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Validate the explicit OPRA EQ Library v0.9.0 beta release profile.
 
-This module owns only the v0.9.0-beta.1 release identity and candidate metadata
+This module owns only the v0.9.0-beta.4 release identity and candidate metadata
 contract. It does not build, sign, dispatch workflows, or publish releases.
 
-The pinned release profile stays frozen at v0.9.0-beta.1 while a recovery candidate
+The pinned release profile stays frozen at v0.9.0-beta.4 while a recovery candidate
 advances the Android version for private testing. Such a candidate is accepted only
 when it is declared verbatim in docs/PROJECT_STATE.md, advances the versionCode, and
 stays inside the 0.9.0 beta line. The publisher still accepts only the pinned beta
@@ -25,9 +25,9 @@ from typing import Any
 
 REPOSITORY = "weekssa/OPRA-EQ-for-UAPP"
 PACKAGE_ID = "com.weekssa.opraeqforuapp"
-BETA_TAG = "v0.9.0-beta.1"
-BETA_VERSION_NAME = "0.9.0-beta.1"
-BETA_VERSION_CODE = 15
+BETA_TAG = "v0.9.0-beta.4"
+BETA_VERSION_NAME = "0.9.0-beta.4"
+BETA_VERSION_CODE = 21
 STABLE_LATEST_TAG = "v0.8.3"
 STABLE_LATEST_VERSION_CODE = 14
 STABLE_LATEST_APK_SHA256 = "396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247"

@@ -4,6 +4,7 @@ import android.content.Context
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11TransportEvent
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Timing
+import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Transport
 import com.weekssa.opraeqforuapp.domain.kt02h20.toJa11TraceHex
 import java.io.Closeable
@@ -19,6 +20,7 @@ class AndroidFiioJa11UsbTransport(
         deviceLabel = "FiiO JA11",
         permissionSuffix = "FIIO_JA11",
         requireUniqueCandidate = true,
+        autoReattach = true,
     )
 
     private var savePreviousGeneration = 0L
@@ -66,6 +68,30 @@ class AndroidFiioJa11UsbTransport(
         }
 
     fun connect() = hid.connect()
+
+    /** Reads one KT config register over report 0x4B. Read-only. */
+    suspend fun readKtRegister(address: Int): Int? {
+        val reply = hid.exchange(
+            report = JcallyJm12Protocol.readRegisterReport(address),
+            minResponseBytes = JcallyJm12Protocol.REPORT_SIZE,
+            timeoutMillis = 900,
+        ) { JcallyJm12Protocol.readRegisterValue(address, it) != null }
+        return reply?.let { JcallyJm12Protocol.readRegisterValue(address, it) }
+    }
+
+    /** Writes one KT config register and verifies it with one readback. */
+    suspend fun writeKtRegister(address: Int, value: Int): Boolean {
+        if (!com.weekssa.opraeqforuapp.domain.kt02h20.Ja11DcrTuning.canWriteRegister(address)) {
+            return false
+        }
+        val ack = hid.exchange(
+            report = JcallyJm12Protocol.writeRegisterReport(address, value),
+            minResponseBytes = JcallyJm12Protocol.REPORT_SIZE,
+            timeoutMillis = 900,
+        ) { JcallyJm12Protocol.writeAcknowledged(address, it) }
+        if (ack == null) return false
+        return readKtRegister(address) == value
+    }
 
     suspend fun readOutputVolume(): Int? = exchangeOneByte(
         request = FiioJa11Protocol.readOutputVolumeReport(),

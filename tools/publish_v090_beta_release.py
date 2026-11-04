@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify and promote the exact v0.9.0-beta.1 signed candidate.
+"""Verify and promote the exact v0.9.0-beta.4 signed candidate.
 
 This publisher is separate from the pinned v0.8.0-beta publisher. It never
 builds, signs, or substitutes an APK, and it publishes only a prerelease that
@@ -257,14 +257,14 @@ def validate_stable_latest(api: stable.GitHubApi) -> dict[str, Any]:
 
 
 def release_notes(project_root: Path) -> bytes:
-    path = project_root / "docs/releases/v0.9.0-beta.1.md"
-    require(path.is_file(), "curated v0.9.0-beta.1 release notes are missing")
+    path = project_root / "docs/releases/v0.9.0-beta.4.md"
+    require(path.is_file(), "curated v0.9.0-beta.4 release notes are missing")
     notes = path.read_bytes()
-    require(notes.startswith(b"# EQ Library v0.9.0-beta.1\n"),
-            "v0.9.0-beta.1 release notes have an unexpected title")
+    require(notes.startswith(b"# EQ Library v0.9.0-beta.4\n"),
+            "v0.9.0-beta.4 release notes have an unexpected title")
     text = notes.decode("utf-8", errors="strict")
     require("v0.8.3" in text and "prerelease" in text.lower() and "latest" in text.lower(),
-            "v0.9.0-beta.1 release notes omit stable-latest or prerelease policy")
+            "v0.9.0-beta.4 release notes omit stable-latest or prerelease policy")
     return notes
 
 
@@ -510,7 +510,7 @@ def _metadata_publisher_run_id(
 
 def check_release(release: dict[str, Any], notes: str, *, published: bool) -> None:
     require(release.get("tag_name") == profile.BETA_TAG and
-            release.get("name") == "EQ Library v0.9.0-beta.1" and
+            release.get("name") == "EQ Library v0.9.0-beta.4" and
             stable.normalize_release_body(release.get("body", "")) == stable.normalize_release_body(notes),
             "v0.9 beta release title, tag, or notes do not match")
     require(release.get("draft") is (not published) and release.get("prerelease") is True,
@@ -612,7 +612,7 @@ def publish(
         validate_stable_latest(api)
         release = api.json("POST", api.repo_path + "/releases", {
             "tag_name": profile.BETA_TAG,
-            "name": "EQ Library v0.9.0-beta.1",
+            "name": "EQ Library v0.9.0-beta.4",
             "body": notes,
             "draft": True,
             "prerelease": True,

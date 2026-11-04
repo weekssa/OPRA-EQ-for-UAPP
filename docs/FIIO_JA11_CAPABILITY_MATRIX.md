@@ -10,6 +10,35 @@ All 2026-10-08 serial-required recommendations below are historical candidate-sp
 The current operational policy is the Model D row and matrix rule; do not use older stop text as a
 gate for the new candidate.
 
+## Tuning — DCR / noise gate (2026-11-03)
+
+Community material describes editing "DCR" and noise-gate values with KT tools and then flashing a
+modified FiiO 2.2 firmware image for a warmer/smoother character and tick fixes. That is a
+**firmware workflow**, not a runtime control, and it publishes no authoritative values.
+
+| Question | Current classification |
+| --- | --- |
+| Read installed tuning at runtime | **Insufficiently evidenced.** The maintained run-mode protocol has no such command. |
+| Write tuning at runtime | **Unsafe / out of scope.** No JA11-specific command, range or readback is established. |
+| Installed tuning visible to the app | **No.** Unknown is never presented as Off or Stock. |
+| Firmware-only community path | Demonstrated by third parties outside EQ Library; not reproduced or qualified here. |
+| DCR versus DRC meaning | **Unresolved.** The two terms are not interchangeable in the examined sources. |
+| Label equivalence: FiiO 2.20, community "V2.2", Ellyn / Ellyn_GP | **Not established.** |
+| JA11 EQ Save (`0x19`) as tuning persistence | **Unrelated.** Save commits the PEQ working area; it says nothing about tuning. |
+
+Corroborating limits: `gxcreator/ktmicro-tools` (pinned `39e620d8cd68c4afb711b91153b4ae91042adc32`)
+documents live NoiseGate registers 71-73 and limiter 78-79 over an 11-byte report `0x4B` protocol at
+`31B2:0111`; that is a different device and transport than JA11's report `0x02`. Its DRC
+compander/expander/AGC handlers are documented stubs. None of those register numbers, frames or
+semantics transfer to JA11, and EQ Library does not adopt them.
+
+**Prototype boundary.** A private, simulated tuning model exists only behind
+`BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED` (true in `debug` and `privateBeta`, false in
+`release` and `beta`). It renders in My DAC -> DEVICE next to device volume and EQ program, uses a
+simulated transport with a session fence, verified readback and no replay, and sends nothing to USB.
+It is not a capability claim and adds no hardware support. See
+[`docs/implementation/ja11-tuning-prototype-20261103/PLAN.md`](implementation/ja11-tuning-prototype-20261103/PLAN.md).
+
 ## v0.9.0-beta.2 recovery boundary (2026-11-01)
 
 The [recovery amendment](releases/v0.9.0/RECOVERY_AMENDMENT.md) extends native defaults from User 1
@@ -421,3 +450,24 @@ The J034 replay authority is exhausted; filter UI remains disabled.
 A separately connected stock JM12 exposes `31B2:0111`, report IDs `0x4B` and `0x54`, and 11-byte
 reports; it has no JA11 report ID `0x02`. The JA11 command frames therefore cannot be treated as a
 valid stock-JM12 comparison. Its filter capability remains UNSUPPORTED and no JM12 frames were sent.
+
+## KT config-register channel (2026-11-03, device-confirmed)
+
+The JA11 answers the KT 11-byte register protocol on HID report `0x4B` (read `0x52`,
+write `0x57`). Mapping: `0x11C4 + (register - 0x71) * 4`, confirmed against live reads
+(`0x48`/`0x49` = "Jade"/"Audi", `0x66`, `0x71`).
+
+**Register `0x5B` is the USB identity, not DCR.** Stock `0x01022972` = VID `0x2972` /
+PID `0x0102`; the community image writes `0x200331B2` = VID `0x31B2` / PID `0x2003`,
+which re-badges the DAC and can persist across power cycles. The app must never write it; the
+transport now refuses that address and a regression test asserts it is not a tuning parameter.
+
+The remaining community deltas are `0x3A` (`4 → 0`) and `0x3B` (`0x0D → 0x0C`).
+The private build's DEVICE toggle writes those two with per-register readback and restores stock.
+The FiiO `0x19` Save commits the startup volume/program store and re-enumerates USB. The DSP registers `0x3A/0x3B` are written straight to non-volatile config: they survived a genuine power cycle with no `0x19` save. Volume 55 without a save reverted to 56, so volume/program are runtime-only until the explicit Set as Default action; the app does not auto-save. A full `0x00-0xFF` dump before/after a save was identical, and the space above `0xFF` is not a register file.
+Owner-reported audible effect: the change was heard on the tested unit (subjective, not measured). The gate block `0x71-0x73` is unchanged by the
+community image.
+
+Incident record: an earlier revision targeted `0x5B` as "DCR" and re-badged a test unit. The
+identity was restored by reflashing stock V2.2 with the vendor tool; register readback then returned
+`0x01022972`, and `0x3A`/`0x3B`/`0x71-0x73` matched stock.

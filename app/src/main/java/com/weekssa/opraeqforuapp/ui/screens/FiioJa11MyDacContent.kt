@@ -84,6 +84,9 @@ internal fun FiioJa11MyDacContent(
     operationTrace: FiioJa11OperationTrace? = null,
     operationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
     onMessage: (String) -> Unit,
+    dcrTuningState: com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState =
+        com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState(),
+    onSetDcrTuning: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -91,6 +94,10 @@ internal fun FiioJa11MyDacContent(
     var confirmReset by remember { mutableStateOf(false) }
     var dismissedEditorApplyOperationId by rememberSaveable { mutableStateOf<String?>(null) }
     val connected = connectionState is Kt02h20ConnectionState.Connected
+    LaunchedEffect(connected, selectedTab) {
+        if (!connected || selectedTab != 1) return@LaunchedEffect
+        onReadDeviceControls()
+    }
     val editorApplyTrace = when (val status = operationStatus) {
         is FiioJa11OperationStatus.Completed -> operationTrace?.takeIf { trace ->
             trace.operation == "EDITOR_APPLY" && trace.operationId == status.trace.operationId
@@ -238,6 +245,8 @@ internal fun FiioJa11MyDacContent(
                 onSetFiioJa11HeadsetControl = onSetHeadsetControl,
                 onSetFiioJa11UacMode = onSetUacMode,
                 fiioJa11OperationBusy = operationStatus is FiioJa11OperationStatus.Running,
+                ja11DcrTuningState = dcrTuningState,
+                onSetJa11DcrTuning = onSetDcrTuning,
             )
         }
     }

@@ -4,6 +4,17 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
+## 2026-11-03/04 JA11 tuning: real register path, persistence and DEVICE UX
+
+The JA11 answers the KT 11-byte register protocol on report 0x4B. The community firmware's deltas
+are register 0x3A (4 -> 0) and 0x3B (0x0D -> 0x0C), both audible on the tested unit, plus register
+0x5B, which is the USB identity (2972:0102 -> 31B2:2003). The app never writes 0x5B; an earlier
+revision did and re-badged a test unit, which was restored by reflashing stock V2.2.
+
+Persistence is split. Registers `0x3A/0x3B` go straight to non-volatile config and survive a genuine power cycle with no `0x19` save. Runtime volume and program do not; only the explicit Set as Default (`0x19`) commits them, and that save re-enumerates USB. The final UI keeps runtime edits plus Set as Default and does not auto-save. The Ellyn toggle is enabled in every build type for the 0.9.0-beta.4 candidate (BuildConfig.JA11_TUNING_ENABLED). Evidence is one Pixel 9 and one JA11; the audible result is an owner report, not a measurement. Full register map: docs/FIIO_JA11_PROTOCOL_NOTES.md.
+
+DEVICE UX (2026-11-04): header "Device settings" plus Refresh; Audio = Device volume, EQ program, Tuning (Ellyn), Startup settings; Microphone; USB & System; About. Startup settings reads "Not saved" with a Save button after a change, "Saved" after the save, and makes no claim on a fresh connect. Volume uses a slider; microphone and UAC confirmations are one line each. The obsolete simulated tuning surface, controller, transport and tests were removed.
+
 ## 2026-11-01 v0.9.0 stable publication and closeout — current release
 
 EQ Library v0.9.0 is public stable/latest. Release ID `430455005` was published at `2026-11-01T09:38:36Z` from exact source `1eebfda363a580591abdb3b109b8af5df5b82a90` (PR #124). The official signed-candidate run `41288639063` succeeded and produced artifact `13076990020`; promotion run `41289359379` passed exact-artifact checks, hosted clean install, v0.8.3 upgrade and publication. The annotated `v0.9.0` tag peels to the exact source and binds the candidate provenance. A fresh public APK download independently matched the candidate APK SHA-256. Full hashes and readback evidence are in [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md).

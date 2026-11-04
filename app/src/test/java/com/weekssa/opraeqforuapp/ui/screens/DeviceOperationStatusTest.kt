@@ -102,7 +102,7 @@ class DeviceOperationStatusTest {
             controlName = { "volume" },
         )
 
-        assertThat(presentation.heading).isEqualTo("Current device state")
+        assertThat(presentation.heading).isEqualTo("Device settings")
         assertThat(presentation.staleMessage).isNull()
     }
 }

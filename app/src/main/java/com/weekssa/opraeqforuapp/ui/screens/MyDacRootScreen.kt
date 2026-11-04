@@ -114,6 +114,9 @@ fun MyDacRootScreen(
     onSetFiioJa11Defaults: (FiioJa11DefaultsRequest) -> Unit = {},
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
+    ja11DcrTuningState: com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState =
+        com.weekssa.opraeqforuapp.ui.Ja11DcrTuningUiState(),
+    onSetJa11DcrTuning: (Boolean) -> Unit = {},
     onResetFiioJa11FromMyDac: suspend () -> String,
     onResetEw300FromMyDac: suspend () -> String = { "Reset is not available." },
     onRestoreEw300Baseline: suspend () -> String = { "EW300 baseline restoration is not available." },
@@ -230,6 +233,8 @@ fun MyDacRootScreen(
             onSetDefaults = onSetFiioJa11Defaults,
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
+            dcrTuningState = ja11DcrTuningState,
+            onSetDcrTuning = onSetJa11DcrTuning,
             onResetEq = onResetFiioJa11FromMyDac,
             onOpenEditor = onOpenFiioJa11Editor,
             onCloseEditor = onCloseFiioJa11Editor,

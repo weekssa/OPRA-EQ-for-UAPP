@@ -276,7 +276,7 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Edit EQ").assertDoesNotExist()
         composeRule.onNodeWithText("User 1 is active, but a verified five-band EQ read is not available yet.").assertDoesNotExist()
         composeRule.onNodeWithText("DEVICE").performClick()
-        composeRule.onNodeWithText("Current device state").assertIsDisplayed()
+        composeRule.onNodeWithText("Device settings").assertIsDisplayed()
         composeRule.onNodeWithText("User 1").performScrollTo().assertIsDisplayed()
         composeRule.runOnIdle {
             assertEquals(1, transport.commands.count { it == 0x19 })
@@ -2884,6 +2884,7 @@ private fun noOpEqLibraryActions(
         onSetFiioJa11Defaults = {},
         onSetFiioJa11HeadsetControl = {},
         onSetFiioJa11UacMode = {},
+            onSetJa11DcrTuning = {},
         onFlashFiioJa11FromMyDac = { error("Hardware writes are not part of the app-shell test") },
         onResetFiioJa11FromMyDac = { error("Hardware writes are not part of the app-shell test") },
         onFlashEw300FromMyDac = {},

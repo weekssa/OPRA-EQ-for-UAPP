@@ -371,6 +371,7 @@ class BlackPearlDeviceResetLifecycleTest {
         onSetFiioJa11Defaults = {},
         onSetFiioJa11HeadsetControl = {},
         onSetFiioJa11UacMode = {},
+            onSetJa11DcrTuning = {},
         onFlashFiioJa11FromMyDac = { error("Unused lifecycle-test callback") },
         onResetFiioJa11FromMyDac = { error("Unused lifecycle-test callback") },
         onFlashEw300FromMyDac = {},

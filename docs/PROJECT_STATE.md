@@ -2,6 +2,16 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
+## v0.9.0-beta.4 candidate (2026-11-04)
+
+Candidate build: **v0.9.0-beta.4**, versionCode `21`.
+
+Beta candidate, not published: versionName 0.9.0-beta.4, versionCode 21, package
+com.weekssa.opraeqforuapp. It ships the JA11 Tuning (Ellyn) toggle, the DEVICE page redesign,
+runtime edits with explicit Set as Default, and automatic reconnect/refresh. Evidence limits and
+the identity-guard history are in docs/FIIO_JA11_PROTOCOL_NOTES.md and
+docs/releases/0.9.0-beta.4.md. v0.9.0 remains public stable until this candidate is promoted.
+
 ## Current stable release: v0.9.0 (published 2026-11-01)
 
 - Release: [EQ Library v0.9.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.9.0), public, immutable, non-draft, non-prerelease, current latest; release ID `430455005`, published `2026-11-01T09:38:36Z`.
@@ -40,7 +50,17 @@ The exact APK/source tuple proves public release identity. It does **not** prove
 
 ## Installed device state
 
-Current post-publication state: **UNKNOWN / NOT VERIFIED**. No on-device query was performed after v0.9.0 publication, so this release record does not claim v0.9.0 is installed on the owner's phone.
+Current post-publication state: **v0.9.0 verified installed** (2026-11-03, read-only). During the
+JA11 tuning prototype session, a read-only query identified the physical Pixel 9 on Android 17 and
+found package `com.weekssa.opraeqforuapp` at versionName `0.9.0` / versionCode `20`; the on-device
+SHA-256 of its `base.apk` is
+`8930dfd4dac7bf97b68bbedb14e89f2cf88da0bcf927be10be8333038c0f8029`, exactly the published v0.9.0 APK
+digest. The phone also carries `com.weekssa.opraeqforuapp.v090beta` (`0.9.0-beta.3` / `17`, left
+untouched) and the separate simulated prototype package
+`com.weekssa.opraeqforuapp.ja11tuning` (`0.9.0-tuningproto` / `20`). No DAC write, firmware action
+or production-app change occurred in that session. The prototype package is a private test
+artifact, not a release; see
+[`implementation/ja11-tuning-prototype-20261103/PLAN.md`](implementation/ja11-tuning-prototype-20261103/PLAN.md).
 
 The v0.8.3 release records captured the Pixel's separate debug-signed Beta v1 state on 2026-10-14; that remains a valid historical snapshot. A later owner-authorized, read-only ADB verification on 2026-10-21 identified the connected physical Pixel 9 separately from `emulator-5554` and queried only `com.weekssa.opraeqforuapp`. Package metadata reported versionName `0.8.3`, versionCode `14`, and one installed `base.apk`. Its SHA-256, computed on-device without pulling the APK, exactly matched the public v0.8.3 APK SHA-256: `396244ffc26cec108b64c523a49779261656b41ab02f1bc2b63197327c576247`.
 
@@ -52,6 +72,18 @@ The original foundation phases P0-P10 and P11 are evidenced complete. PR #108, P
 
 ## Active work and known limits
 
+- **JA11 custom firmware (planning, 2026-11-03):** separate, unreleased project. Prerequisites and boundaries are recorded in docs/FIIO_JA11_PROTOCOL_NOTES.md: recovery first, then image format, ISA/toolchain, and a static pass for the 0x19 handler and startup store. Not started; needs the vendor boot tool for recovery validation. EQ Library gains no flashing path.
+
+
+- **JA11 tuning (2026-11-04):** DEVICE has a Tuning (Ellyn) toggle writing KT registers 0x3A/0x3B (audible; persisted on write), plus runtime volume/program with explicit Set as Default (0x19) persistence. Register 0x5B is the USB identity and is never written. The page uses plain rows, a volume slider, and a Startup settings save action. Details: docs/FIIO_JA11_PROTOCOL_NOTES.md.
+- **JA11 tuning prototype (2026-11-03):** a private, simulated My DAC -> DEVICE tuning model is
+  implemented behind `BuildConfig.JA11_TUNING_PROTOTYPE_ENABLED` (true for `debug`/`privateBeta`,
+  false for `release`/`beta`). It is not a hardware capability: the JA11 run-mode protocol has no
+  DCR/DRC/noise-gate command, installed tuning is unreadable, and community tuning is a firmware
+  workflow outside EQ Library. The prototype sends nothing to USB and has no physical evidence. See
+  [the approved plan](implementation/ja11-tuning-prototype-20261103/PLAN.md) and the tuning section of
+  [`FIIO_JA11_CAPABILITY_MATRIX.md`](FIIO_JA11_CAPABILITY_MATRIX.md). No phone or DAC action is
+  implied by this row.
 - Open draft PR #96 reports `FINAL_EQ_MISMATCH` on JA11 Off-to-User 1 selection after Save; restoration of the original state is not verified. Mutation remains on hold. No replay is authorized by this status summary.
 - Open draft PR #93 investigates JA11 post-Flash state acquisition; root cause and physical reproduction remain unresolved. Its owner phone authorization was revoked in that handoff.
 - JA11 reconstruction filters remain deferred from v0.9.0: **device-specific not supported (vendor-exposed)** on the tested firmware 2.20 tuple. The official vendor-record finding and J034/J035 do not prove silicon impossibility or exclude a hidden/future interface. Reopening requires handoff section H evidence; no filter write is authorized. Preserved local APK provenance requires reconciliation before new sibling findings are treated as authoritative. Classification: INSPECTION-ONLY consolidation of historical DEMONSTRATED results. The tested tuple is one Pixel 9 and one JA11 at firmware 2.20; the statement does not generalize to other units, firmware or products.

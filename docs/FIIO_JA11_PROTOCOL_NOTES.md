@@ -668,3 +668,82 @@ the target, retry indefinitely, or send Save on this evidence alone.
 The owner-provided technical JSON export is malformed (`{,` at each nested object boundary), so
 the readable report is the authoritative artifact for this operation. The serializer defect is
 separate from the hardware mismatch and must be fixed and parse-tested before the next report.
+
+## KT config register channel and persistence (2026-11-03, device-confirmed)
+
+HID collection class 3, 22-byte reports, report 0x4B, independent of FiiO run-mode 0x02:
+- read frame: 4B <addr32 LE at 1..4> 00 00 52 00 00 00 00 00; reply 4B <addr> .. 52 <value32 LE at 7..10>
+- write frame: 4B <addr> 00 00 00 57 00 <value32 LE>; ack 0x57 with value 3; verify with one readback.
+
+Image mapping: register n at file offset 0x11C4 + (n - 0x71) * 4 (official V2.2, 67,312 bytes).
+Confirmed live: 0x48/0x49 = "Jade"/"Audi"; 0x66 = 00 02 00 00; 0x71 = d3 da e2 3c.
+
+| Register | Stock V2.2 | Ellyn_GP | Meaning |
+| --- | --- | --- | --- |
+| 0x5B | 0x01022972 | 0x200331B2 | USB identity 2972:0102 vs 31B2:2003; never write |
+| 0x3A | 4 | 0 | audible tuning delta |
+| 0x3B | 0x0D | 0x0C | audible tuning delta |
+| 0x71-0x73 | d3 da e2 3c / 0a 00 14 00 / 0a 00 f4 01 | same | noise gate |
+| 0x78-0x7A | fd 00 00 00 / 0a 00 2c 01 / 0a 00 64 00 | same | limiter |
+
+Stock vs Ellyn_GP differs in 7 image bytes: 0x1090, 0x10E8, 0x10EC, 0x116C-0x116F.
+
+Persistence measured:
+- 0x3A/0x3B persist on write: Ellyn survived a genuine power cycle with no 0x19 save.
+- Runtime volume 0x02 does not persist: 55 reverted to 56 after a power cycle.
+- 0x19 commits the FiiO startup volume/program store and re-enumerates USB. It does not change the
+  0x00-0xFF KT bank: full 256-register dumps before/after a save that committed volume 56->55 were identical.
+- Program 0x16 shares that startup store: Classic persisted after 0x19 and a power cycle.
+- Mic/UAC writes force a session restart; routing them through 0x19 is implemented, not power-cycle verified.
+
+Incident: writing 0x5B re-badged a unit to 31B2:2003; the strict FiiO matcher refused it; a RAM restore
+read back 2972 but flash kept 31B2; recovered by reflashing official V2.2. Post-reflash 0x5B, 0x3A, 0x3B
+and 0x71-0x73 matched stock. Transport now refuses 0x5B; a test asserts it is not a tuning parameter.
+
+App behavior: runtime edits apply with no save; Set as Default performs the single 0x19 save (one
+re-enumeration). DEVICE reads on open/connect; disconnect clears cached tuning state. The KT tool's
+KTM and FC FA frames did not answer; 0x4B/0x52/0x57 do.
+
+Extended scan (2026-11-03): reading 0x100-0x3FF does not expose a register file; replies are echoed
+or misaligned (values contain the request frame bytes, e.g. 4b0b...). There is no readable mirror of
+the FiiO startup volume/program store above 0xFF. Volume and program persistence therefore requires
+the 0x19 save, with its USB re-enumeration; only the DSP config registers (e.g. 0x3A/0x3B) persist on write.
+
+Firmware deep dive (2026-11-03): the factory image supplied by the owner is byte-identical to the
+official FiiO V2.2 image (SHA-256 65fea4995a4425064bc737c7bc8ec64e212c8b6297c6b9dfcc2b90a5814103de).
+The only 0x3C (60) byte in the config region is part of the gate coefficient d3 da e2 3c; there is no
+zero-hit for a 60-volume default in the config block, and no readable register changes between a saved
+volume of 56 and 55 (full 0x00-0xFF dumps identical). Reading above 0xFF returns echoed/misaligned
+frames, not a register file. Conclusion: the startup volume/program store is device-side user data,
+not present in the firmware image or the KT register bank; only the 0x19 save writes it, and that
+command's USB re-enumeration is device behavior. A restart-free persistence path would require the
+vendor tool's SAVE protocol, which did not answer on the JA11 HID channel.
+
+## Custom firmware: scope and prerequisites (2026-11-03, planning only)
+
+Question: could a modified firmware improve persistence (volume/program without the USB reset) or add
+functionality? Technically yes: the community "Ellyn" images prove the 67,312-byte image is patchable
+and flashable. It is a separate project from EQ Library.
+
+Prerequisites, in order:
+
+1. Recovery first. Prove the vendor boot tool (KT_BOOT_TOOL, Windows/Wine) can always restore the
+   stock image over USB. No modified image should be flashed before a restore cycle is demonstrated.
+2. Image format. Confirm entry point/vector table, config block location and whether the bootloader
+   validates a checksum or signature.
+3. Architecture/toolchain. Identify the core, ISA and any matching toolchain. Without one, changes are
+   binary patches rather than firmware development.
+4. Targeted change. Locate the 0x19 handler, the USB re-enumeration trigger and the startup
+   volume/program store. Candidate patches: write the store without resetting USB, or expose the
+   startup store as a register the app can write.
+5. Validation on the owned unit: save semantics, audio, EQ, microphone, UAC, and recovery.
+
+Boundaries: modified vendor firmware is proprietary; personal use on owned hardware only, no
+distribution. EQ Library gains no firmware flashing or bootloader path.
+
+Known facts to build on: official image SHA-256 65fea4995a4425064bc737c7bc8ec64e212c8b6297c6b9dfcc2b90a5814103de;
+community delta is 7 bytes; KT config mapping 0x11C4 + (n - 0x71) * 4; startup volume/program are not
+in the image or 0x00-0xFF registers, and only 0x19 writes them.
+
+Status: planning only, not started. First actions are recovery validation and a static pass for the
+0x19 handler/startup store. Open dependency: Windows availability for the vendor boot tool.

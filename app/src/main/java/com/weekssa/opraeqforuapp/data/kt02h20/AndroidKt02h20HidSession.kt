@@ -55,6 +55,7 @@ internal class AndroidKt02h20HidSession(
     private val hidInterfaceMatcher: (UsbInterface) -> Boolean = { true },
     private val additionalFingerprintFields: (UsbDevice) -> List<Pair<String, String>> = { emptyList() },
     private val requireUniqueCandidate: Boolean = false,
+    private val autoReattach: Boolean = false,
 ) : Closeable {
     init {
         require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
@@ -72,6 +73,9 @@ internal class AndroidKt02h20HidSession(
 
     @Volatile
     private var session: UsbSession? = null
+
+    @Volatile
+    private var hadSession = false
     @Volatile
     private var currentSessionGeneration: Long = 0L
     @Volatile
@@ -152,8 +156,8 @@ internal class AndroidKt02h20HidSession(
                     mutablePresent.value = if (requireUniqueCandidate) supportedCandidateCount > 0 else true
                     if (requireUniqueCandidate && currentDevice == null && supportedCandidateCount > 1) {
                         failClosedForAmbiguousCandidates()
-                    } else if (mutableState.value is Kt02h20ConnectionState.Connecting &&
-                        currentDevice != null && usbManager.hasPermission(currentDevice)
+                    } else if (currentDevice != null && usbManager.hasPermission(currentDevice) &&
+                        (mutableState.value is Kt02h20ConnectionState.Connecting || (autoReattach && hadSession))
                     ) {
                         openAsync(currentDevice)
                     }
@@ -185,6 +189,7 @@ internal class AndroidKt02h20HidSession(
         if (session != null &&
             (!requireUniqueCandidate || isCurrentSession(currentSessionGeneration, detachSequence))
         ) {
+            hadSession = true
             mutableState.value = Kt02h20ConnectionState.Connected
             return
         }
@@ -453,6 +458,7 @@ internal class AndroidKt02h20HidSession(
                 // it alone instead of closing and replacing a live handle.
                 if (session != null) {
                     if (!requireUniqueCandidate || isCurrentSession(currentSessionGeneration, detachSequence)) {
+                        hadSession = true
                         mutableState.value = Kt02h20ConnectionState.Connected
                         return@withLock
                     }
@@ -502,7 +508,8 @@ internal class AndroidKt02h20HidSession(
                 )
                 lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
                 currentSessionGeneration = lastSessionGeneration
-                mutableState.value = Kt02h20ConnectionState.Connected
+                hadSession = true
+            mutableState.value = Kt02h20ConnectionState.Connected
             }
         }
     }
