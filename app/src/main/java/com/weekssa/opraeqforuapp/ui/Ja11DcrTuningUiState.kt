@@ -60,5 +60,5 @@ internal fun ja11DcrRowValue(state: Ja11DcrTuningUiState): String = when {
     state.phase == Ja11DcrTuningPhase.OTHER -> "Unrecognised value"
     state.phase == Ja11DcrTuningPhase.READING || state.phase == Ja11DcrTuningPhase.APPLYING -> "Checking…"
     state.phase == Ja11DcrTuningPhase.ERROR -> "Not current"
-    else -> "Unknown"
+    else -> "Tap Refresh to read"
 }

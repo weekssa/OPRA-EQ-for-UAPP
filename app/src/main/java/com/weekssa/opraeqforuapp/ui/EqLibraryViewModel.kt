@@ -469,7 +469,6 @@ class EqLibraryViewModel(
                     Kt02h20ConnectionState.Connected -> {
                         val pending = mutableFiioJa11DeviceState.value.pendingRestartWrite
                         if (pending == null) refreshFiioJa11DeviceState()
-                        refreshJa11DcrTuning()
                     }
                     else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
                 }
@@ -500,7 +499,10 @@ class EqLibraryViewModel(
 
     fun readFiioJa11DeviceControls() {
         if (mutableFiioJa11DeviceState.value.isBusy) return
-        viewModelScope.launch { refreshFiioJa11DeviceState() }
+        viewModelScope.launch {
+            refreshFiioJa11DeviceState()
+            refreshJa11DcrTuning()
+        }
     }
 
     fun setFiioJa11OutputVolume(level: Int) = writeFiioJa11Control(
@@ -513,25 +515,37 @@ class EqLibraryViewModel(
         if (state.isBusy) return
         mutableJa11DcrTuningState.value = state.beginRead()
         viewModelScope.launch {
-            val value = hardwareRepository.readJa11KtRegister(Ja11DcrTuning.REGISTER)
-            if (ja11DcrBaseline == null && value != null) ja11DcrBaseline = value
-            android.util.Log.i("Ja11Dcr", "reg=0x" + Ja11DcrTuning.REGISTER.toString(16) + " value=" + (value?.let { "0x" + it.toUInt().toString(16) } ?: "null"))
-            mutableJa11DcrTuningState.value =
-                mutableJa11DcrTuningState.value.read(value).copy(baseline = ja11DcrBaseline)
+            val read = Ja11DcrTuning.parameters.associate { it.register to hardwareRepository.readJa11KtRegister(it.register) }
+            if (ja11DcrBaseline == null && read.values.all { it != null }) {
+                ja11DcrBaseline = read[0x5B]
+            }
+            val allEllyn = Ja11DcrTuning.parameters.all { read[it.register] == it.ellyn }
+            val allStock = Ja11DcrTuning.parameters.all { read[it.register] == it.stock }
+            val primary = read[0x5B]
+            val state = mutableJa11DcrTuningState.value
+            mutableJa11DcrTuningState.value = when {
+                allEllyn -> state.read(Ja11DcrTuning.ELLYN)
+                allStock -> state.read(Ja11DcrTuning.STOCK)
+                else -> state.read(primary)
+            }.copy(baseline = ja11DcrBaseline)
         }
     }
 
     fun setJa11DcrTuning(enabled: Boolean) {
         val state = mutableJa11DcrTuningState.value
         if (state.isBusy) return
-        val target = if (enabled) Ja11DcrTuning.ELLYN else (ja11DcrBaseline ?: Ja11DcrTuning.STOCK)
-        if (state.value == target) return
+        if (enabled == state.tuningEnabled) return
         mutableJa11DcrTuningState.value = state.beginApply()
         viewModelScope.launch {
-            val written = hardwareRepository.writeJa11KtRegister(Ja11DcrTuning.REGISTER, target)
-            val readback = hardwareRepository.readJa11KtRegister(Ja11DcrTuning.REGISTER)
-            mutableJa11DcrTuningState.value = if (written && readback == target) {
-                mutableJa11DcrTuningState.value.read(readback)
+            var ok = true
+            for (parameter in Ja11DcrTuning.parameters) {
+                val target = if (enabled) parameter.ellyn else parameter.stock
+                val written = hardwareRepository.writeJa11KtRegister(parameter.register, target)
+                val readback = hardwareRepository.readJa11KtRegister(parameter.register)
+                if (!written || readback != target) ok = false
+            }
+            mutableJa11DcrTuningState.value = if (ok) {
+                mutableJa11DcrTuningState.value.read(if (enabled) Ja11DcrTuning.ELLYN else Ja11DcrTuning.STOCK)
             } else {
                 mutableJa11DcrTuningState.value.failed(
                     "The JA11 did not confirm the tuning change. Read the current value before retrying.",

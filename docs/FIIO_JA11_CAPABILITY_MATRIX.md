@@ -454,14 +454,22 @@ valid stock-JM12 comparison. Its filter capability remains UNSUPPORTED and no JM
 ## DCR / noise-gate runtime channel (2026-11-03, device-confirmed)
 
 The JA11 answers the KT 11-byte register protocol on HID report `0x4B` (read `0x52`,
-write `0x57`), independent of the FiiO run-mode report `0x02`. On the tested unit:
+write `0x57`), independent of the FiiO run-mode report `0x02`. The image-to-register
+mapping is `0x11C4 + (register - 0x71) * 4`; it was confirmed against multiple live reads
+(`0x48`/`0x49` = "Jade"/"Audi", `0x66` = `00 02 00 00`,
+`0x71` = `d3 da e2 3c`).
 
-- registers `0x71-0x73` (noise gate) and `0x78-0x7A` (limiter) read back and match the
-  official 2.2 image at offset `0x1174 + (register - 0x71) * 4`;
-- register `0x6F`, the DCR parameter changed by the community firmware, reads `0x00000000`
-  on the tested 2.20 firmware, while the 2.2-based Ellyn image holds `0x200331B2`.
+On the tested unit (stock V2.2 / 2.20), the community "Ellyn_GP" deltas are exactly:
 
-A private device toggle now reads `0x6F`, writes the Ellyn value or restores the captured
-baseline, and requires a matching readback. The write path is verified on hardware; the audible
-effect and persistence across power removal are **not established**, and the 2.2-derived value is
-not claimed to be correct for 2.20.
+| Register | Stock | Ellyn |
+| --- | --- | --- |
+| `0x5B` (DCR) | `0x01022972` | `0x200331B2` |
+| `0x3A` (gate side) | `0x00000004` | `0x00000000` |
+| `0x3B` (gate side) | `0x0000000D` | `0x0000000C` |
+
+The private build's DEVICE toggle reads all three, writes the Ellyn set or the stock set, and
+requires a matching readback for each before reporting success. Hardware test: ON → "Ellyn tuning ·
+on", OFF → "Stock · off", both verified by readback.
+
+Not established: audible effect, and survival across a physical power cycle. `0x6F` is zero in
+both images and is not a tuning register; an earlier revision targeted it in error and was corrected.
