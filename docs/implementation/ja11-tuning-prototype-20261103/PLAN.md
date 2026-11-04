@@ -105,6 +105,7 @@ spawned and reported in `docs/implementation/ja11-tuning-prototype-20261103/GATE
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/MyDacRootScreen.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/data/kt02h20/AndroidFiioJa11UsbTransport.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/data/kt02h20/AndroidKt02h20HidSession.kt",
+    "docs/FIIO_JA11_PROTOCOL_NOTES.md",
     "app/src/main/java/com/weekssa/opraeqforuapp/data/dac/DacSessionRepository.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/data/hardware/HardwareEqRepository.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/domain/kt02h20/Ja11DcrTuning.kt",
