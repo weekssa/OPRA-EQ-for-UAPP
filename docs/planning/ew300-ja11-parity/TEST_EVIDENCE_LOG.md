@@ -296,3 +296,59 @@ Add entries below in chronological order.
 - Result: G2-headset **CHIP-LIMITED on the USB surface**; internal detection is present in family firmware but not exposed as a switch.
 - Next experiment only if exact EW300 firmware/config is obtained: locate the GPIO/key matrix field for headset disable; do not perform a blind register sweep.
 
+### T-015 — Pixel Plan A read-only
+
+- Date: 2026-11-05
+- Device: Pixel 9 tokay, Android 17, wireless ADB adb-46141FDAQ003KZ-3AwgSo
+- APK: parity 0.10.0-ew300parity/22; installed and on-device hash matched (initial 20993f8b; after UAC claim fix dda0c90c)
+- EW300: exact 31B2:0111 / LE XIAN / SIMGOT EW300 DSP / 1.01; USB permission granted
+- Read-only: EQ flat; five bands 1 kHz/0/Q1; output gain 0 dB; UAC1 current rate 96000 Hz; microphone mute Live; UAC mode UAC 1.0; About model.
+- Actual stream check: AudioFlinger mixer reported 48000 Hz while the UAC endpoint reported 96000; both are recorded, no descriptor-supported-rate substitution.
+- Result: Plan A PASS for UI/permission/identity/readback; Pixel exposes a real 96 kHz UAC endpoint value.
+
+### T-016 — Pixel Plan B runtime writes (zero Save)
+
+- Date: 2026-11-05
+- APK: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825
+- Runtime target: Low Shelf 250 Hz, -6.0 dB, Q 0.707, type 3; output gain 58/60 = -2.0 dB
+- UI readback: 1 active shelf, graph -6.0..0.0 dB, "Experimental native shelf response · predicted · unmeasured"; output gain -2.0 dB
+- Zero Save: parity Apply is runtime-only; no Save action used
+- Pending: physical unplug/replug to prove the runtime state did not persist; restore/verify original flat/0 dB state
+
+### T-017 — Pixel Plan C one Save
+
+- Date: 2026-11-05
+- APK: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825
+- Target: Low Shelf 250 Hz, -6.0 dB, Q 0.707, type 3; output gain 0 dB
+- Runtime readback: 1 active shelf, graph -6.0..0.0 dB, predicted/unmeasured
+- Save: exactly one "Save EQ and output gain"; UI reported "Saved in this session · final readback matched"; no second Save
+- Pending: genuine power removal and persistence readback; then one restoration Save to flat/0 dB and exact verification
+
+### T-018 — Pixel Plan C persistence after power removal
+
+- Date: 2026-11-05
+- After one target Save, owner unplugged/replugged the EW300; app reconnected exact 31B2:0111.
+- Readback: Low Shelf 250 Hz, -6.0 dB, Q 0.707 persisted; output gain 0 dB.
+- Result: PASS for the tested Save/power-cycle/readback transaction.
+
+### T-019 — Pixel restoration Save
+
+- Date: 2026-11-05
+- Restoration: editor changed band 1 back to Peak 1000 Hz/0 dB/Q1; one separate Save sent.
+- Final readback: Flat, 0 active bands, all five Peak 1 kHz/0 dB/Q1; "Saved in this session · final readback matched."
+- Result: PASS for the tested restoration transaction. Reset-button confirmation did not execute reliably in this build, so the restoration used editor + one Save.
+
+### T-020 — Pixel UAC interface claim fix
+
+- Date: 2026-11-05
+- Finding: initial Android UAC GET_CUR failed because the audio driver owned the AS/AC interfaces; the app did not select the alt setting.
+- Fix: force-claim the exact interface, select the UsbInterface alt object, GET_CUR, restore alt 0, release.
+- Pixel readback after fix: current rate 96000 Hz (UAC endpoint); microphone mute Live; UAC 1.0; no writes.
+- APK: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825; on-device hash matched.
+
+### T-021 — Plan D listening pending
+
+- Fixed targets: Low Shelf 250 Hz/-6 dB/Q0.707/type 3; High Shelf 4000 Hz/-6 dB/Q0.707/type 4.
+- Randomized flat-vs-filter trials, 12 per shelf, >=10 correct plus consistent direction/region.
+- Status: owner listening pending; no acoustic claim yet.
+

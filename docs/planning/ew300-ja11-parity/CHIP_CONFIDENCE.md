@@ -55,3 +55,10 @@ The exact EW300 descriptor matches KT0211L’s UAC1-only profile: one UAC1 confi
 - **G4** unchanged: UAC1 GET_CUR 48000/80BB00; Pixel active-stream check pending.
 - **G5** unchanged: native shelves and reversible Mac evidence; owner listening pending.
 
+## 2026-11-05 Pixel device results
+
+- Plan A: exact Pixel 9 / Android 17 / EW300; APK installed and on-device hash matched; UAC1 GET_CUR 96000 Hz; microphone mute Live; UAC 1.0; no writes.
+- Plan B: runtime Low Shelf 250 Hz/-6 dB/Q0.707 + output gain -2.0 dB verified; physical replug returned flat/0 dB. Runtime-only claim qualified.
+- Plan C: one Save persisted the Low Shelf across a genuine power removal; one separate restoration Save returned flat/0 dB with final readback matched.
+- Plan D: owner listening pending at the fixed 250 Hz/4 kHz targets.
+

@@ -141,6 +141,111 @@ internal class AndroidKt02h20HidSession(
         }
     }
 
+    /**
+     * Android's audio driver normally owns the UAC streaming/control interfaces. A class request
+     * therefore needs a forced claim of the exact interface, the active alternate setting for an
+     * AS endpoint, and a restore to alt 0 before release. This is read-only for GET_CUR paths.
+     */
+    suspend fun controlTransferInOnInterface(
+        interfaceId: Int,
+        altSetting: Int?,
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        length: Int,
+    ): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock null
+            if (length !in 1..4096) return@withLock null
+            val interfaces = (0 until current.device.interfaceCount)
+                .map(current.device::getInterface)
+            val alt0 = interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == 0 }
+                ?: return@withLock null
+            val target = if (altSetting == null) {
+                alt0
+            } else {
+                interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == altSetting }
+                    ?: alt0
+            }
+            val claimed = runCatching { current.connection.claimInterface(alt0, true) }
+                .getOrDefault(false)
+            if (!claimed) return@withLock null
+            try {
+                if (target !== alt0) {
+                    runCatching { current.connection.setInterface(target) }
+                }
+                val buffer = ByteArray(length)
+                val read = runCatching {
+                    current.connection.controlTransfer(
+                        requestType,
+                        request,
+                        value,
+                        index,
+                        buffer,
+                        length,
+                        TRANSFER_TIMEOUT_MILLIS,
+                    )
+                }.getOrDefault(-1)
+                if (read <= 0) null else buffer.copyOf(read)
+            } finally {
+                if (target !== alt0) {
+                    runCatching { current.connection.setInterface(alt0) }
+                }
+                runCatching { current.connection.releaseInterface(alt0) }
+            }
+        }
+    }
+
+    suspend fun controlTransferOutOnInterface(
+        interfaceId: Int,
+        altSetting: Int?,
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        data: ByteArray,
+    ): Boolean = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock false
+            val interfaces = (0 until current.device.interfaceCount)
+                .map(current.device::getInterface)
+            val alt0 = interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == 0 }
+                ?: return@withLock false
+            val target = if (altSetting == null) {
+                alt0
+            } else {
+                interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == altSetting }
+                    ?: alt0
+            }
+            val claimed = runCatching { current.connection.claimInterface(alt0, true) }
+                .getOrDefault(false)
+            if (!claimed) return@withLock false
+            try {
+                if (target !== alt0) {
+                    runCatching { current.connection.setInterface(target) }
+                }
+                val written = runCatching {
+                    current.connection.controlTransfer(
+                        requestType,
+                        request,
+                        value,
+                        index,
+                        data,
+                        data.size,
+                        TRANSFER_TIMEOUT_MILLIS,
+                    )
+                }.getOrDefault(-1)
+                written == data.size
+            } finally {
+                if (target !== alt0) {
+                    runCatching { current.connection.setInterface(alt0) }
+                }
+                runCatching { current.connection.releaseInterface(alt0) }
+            }
+        }
+    }
+
     /** Explicit control-transfer write used only by an evidence-backed microphone mute path. */
     suspend fun controlTransferOut(
         requestType: Int,
@@ -557,6 +662,7 @@ internal class AndroidKt02h20HidSession(
                 val serial = sessionSerial(currentDevice, connection)
                 session = UsbSession(
                     connection = connection,
+                    device = currentDevice,
                     usbInterface = descriptor.usbInterface,
                     endpointIn = descriptor.endpointIn,
                     endpointOut = descriptor.endpointOut,
@@ -716,6 +822,7 @@ internal class AndroidKt02h20HidSession(
 
     private data class UsbSession(
         val connection: UsbDeviceConnection,
+        val device: UsbDevice,
         val usbInterface: UsbInterface,
         val endpointIn: UsbEndpoint,
         val endpointOut: UsbEndpoint,

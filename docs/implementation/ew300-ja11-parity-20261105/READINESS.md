@@ -9,14 +9,14 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
 - Code candidate head: 6c276b098a92e4bf169f06abe410e6ea99821eac
-- Frozen evidence head: 51d2b9901cda05f0d57f300042c0e714f7519842
+- Frozen evidence head: 165d4461140f9ab28824c8da835a445526fba2a6
 - Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
 
 ## APK
 
 - Path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
 - File: app-ew300Parity.apk
-- SHA-256: 20993f8bc96066572cee9007d8632f07c6bbd136ecf8acf0644372a7ec24ebb3
+- SHA-256: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825
 - Package: com.weekssa.opraeqforuapp.ew300parity
 - versionName: 0.10.0-ew300parity
 - versionCode: 22
@@ -31,7 +31,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 | G1 0–60 volume | DONE | Device row/slider; 60 = 0 dB, 0 = −60 dB, 1 dB/step; Mac 0x66 bytes 88880000 / C4C40000 / 00000000 and exact restore; zero Save; JVM/emulator tests. |
 | G2 mic/headset switches | MIC DONE / HEADSET CHIP-LIMITED | Exact die KT0211L (CHP 0211LC02). UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 → SET 1 → verify 1 → restore 0; mic volume 0xCE00..0x0000/0x8000. No headset feature unit; HID 0x01 failed; 0x54 ambiguous. Family firmware has OMTP/CTIA/key strings but no USB/HID disable control. |
 | G3 UAC mode switching | CHIP-LIMITED | KT0211L is UAC1.0 / 24-bit / 96 kHz with a mono ADC; exact EW300 descriptor is one UAC1 config, 44.1/48/96 kHz, 16/24-bit. No UAC2 silicon path. Descriptor sha256 e955ae8c…. |
-| G4 current sample rate | DONE (implementation/tests; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Mac returned 48000 Hz (80BB00). A zero result is treated as not read, not 0 Hz. |
+| G4 current sample rate | DONE (Pixel) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Pixel returned 96000 Hz with an active stream; AudioFlinger mixer 48000 Hz recorded separately. A zero result is treated as not read. |
 | G5 native shelves | DONE (implementation/tests; owner listening pending) | LS/HS editor/capture/Flash; type 3/4 bytes C4FFFA00/C3020300 and C4FFA00F/C3020400; Mac reversible and exact restore; graph says predicted/unmeasured. |
 
 ## Exact-device evidence
@@ -66,7 +66,7 @@ for a GPIO/key disable field. UAC mode is CHIP-LIMITED, not blocked.
 - Headset-remote disable: CHIP-LIMITED on the USB surface. KT0211L family firmware has OMTP/CTIA/lradc and key strings, but the exact EW300 exposes no USB/HID disable control. Next only with exact firmware/config: locate a GPIO/key matrix field; no blind sweep.
 - UAC mode switching: CHIP-LIMITED by KT0211L (UAC1.0 / 24-bit / 96 kHz); exact descriptor matches. No UAC2 switch exists to chase.
 - Sample-rate Pixel validation: play a known-rate stream and compare UAC1 GET_CUR with the actual stream; a zero result must remain “not read.”
-- Pixel session: no Pixel is connected in this environment; wireless/USB plans A–E remain ready. This is the one external dependency.
+- Pixel session: Plan A read-only PASS; Plan B runtime zero-Save + replug reversion PASS; Plan C one Save + power-cycle persistence + one restoration Save PASS. Plan D owner listening pending.
 - Pixel plans: docs/implementation/ew300-ja11-parity-20261105/PIXEL_SESSION.md
 - Owner listening: fixed 250 Hz Low Shelf and 4 kHz High Shelf, −6 dB, Q 0.707; owner performs the scored listening test.
 - Physical persistence: one target Save and one restoration Save only after the owner approves the bounded session.

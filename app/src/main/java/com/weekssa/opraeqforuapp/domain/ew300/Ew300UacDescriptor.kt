@@ -94,8 +94,11 @@ object Ew300UacDescriptorParser {
                                 audioControlInterface = currentInterface
                             }
                             AUDIO_STREAMING_SUBCLASS -> {
-                                streams.getOrPut(currentInterface) {
-                                    MutableStream(currentInterface, currentAlternate)
+                                val existing = streams[currentInterface]
+                                if (existing == null) {
+                                    streams[currentInterface] = MutableStream(currentInterface, currentAlternate)
+                                } else if (currentAlternate > existing.alternateSetting) {
+                                    existing.alternateSetting = currentAlternate
                                 }
                             }
                         }
@@ -189,7 +192,7 @@ object Ew300UacDescriptorParser {
 
     private data class MutableStream(
         val interfaceNumber: Int,
-        val alternateSetting: Int,
+        var alternateSetting: Int,
         var endpointAddress: Int? = null,
         var terminalLink: Int? = null,
         var formatTag: Int? = null,

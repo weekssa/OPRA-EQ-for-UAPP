@@ -124,7 +124,9 @@ class AndroidEw300UsbTransport(
                 val endpointRequest = com.weekssa.opraeqforuapp.domain.ew300.Ew300UacRequests
                     .currentSampleRateEndpoint(stream)
                 val endpointValue = endpointRequest?.let { request ->
-                    hid.controlTransferIn(
+                    hid.controlTransferInOnInterface(
+                        stream.interfaceNumber,
+                        stream.alternateSetting,
                         request.requestType,
                         request.request,
                         request.value,
@@ -148,7 +150,9 @@ class AndroidEw300UsbTransport(
             val muted = if (mic != null && controlInterface != null) {
                 val request = com.weekssa.opraeqforuapp.domain.ew300.Ew300UacRequests
                     .microphoneMuteGet(mic.unitId, controlInterface)
-                hid.controlTransferIn(
+                hid.controlTransferInOnInterface(
+                    controlInterface,
+                    null,
                     request.requestType,
                     request.request,
                     request.value,
@@ -198,7 +202,9 @@ class AndroidEw300UsbTransport(
             audioControlInterface = controlInterface,
             muted = muted,
         )
-        if (!hid.controlTransferOut(
+        if (!hid.controlTransferOutOnInterface(
+                controlInterface,
+                null,
                 request.requestType,
                 request.request,
                 request.value,
@@ -212,7 +218,9 @@ class AndroidEw300UsbTransport(
             mic.unitId,
             controlInterface,
         )
-        val value = hid.controlTransferIn(
+        val value = hid.controlTransferInOnInterface(
+            controlInterface,
+            null,
             verify.requestType,
             verify.request,
             verify.value,
