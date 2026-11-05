@@ -23,12 +23,43 @@ object Ew300Protocol {
     const val GLOBAL_GAIN_MIN_STEPS = -128
     const val GLOBAL_GAIN_MAX_STEPS = 127
     const val GLOBAL_GAIN_STEPS_PER_DB = 2.0
+    const val MIN_FREQUENCY_HZ = 20.0
+    const val MAX_FREQUENCY_HZ = 20_000.0
+    const val MIN_GAIN_DB = -12.0
+    const val MAX_GAIN_DB = 12.0
+    const val MIN_Q = 0.1
+    const val MAX_Q = 10.0
+
+    /** Wire type codes documented by family evidence; only Peak is production-exposed here. */
+    const val TYPE_PEAK = 0
+    const val TYPE_LOW_SHELF = 3
+    const val TYPE_HIGH_SHELF = 4
+
+    /** Fixed prequalification envelope for the dormant native-shelf research path. */
+    const val EXPERIMENTAL_SHELF_MIN_GAIN_DB = -6.0
+    const val EXPERIMENTAL_SHELF_MAX_GAIN_DB = 0.0
+    const val EXPERIMENTAL_SHELF_Q = 0.707
+    const val EXPERIMENTAL_LOW_SHELF_HZ = 250.0
+    const val EXPERIMENTAL_HIGH_SHELF_HZ = 4_000.0
 
     private const val SINGLE_DAC_FLAG = 0x0200
 
     enum class GlobalGainLayout { SINGLE_DAC, STEREO }
 
-    private val bandTypes = mapOf("peak_dip" to 0)
+    private val bandTypes = mapOf(
+        "peak_dip" to TYPE_PEAK,
+        "low_shelf" to TYPE_LOW_SHELF,
+        "high_shelf" to TYPE_HIGH_SHELF,
+    )
+
+    fun bandTypeCode(type: String): Int? = bandTypes[type]
+
+    fun bandTypeName(code: Int): String? = when (code) {
+        TYPE_PEAK -> "peak_dip"
+        TYPE_LOW_SHELF -> "low_shelf"
+        TYPE_HIGH_SHELF -> "high_shelf"
+        else -> null
+    }
 
     fun bandRegister(index: Int): Int {
         require(index in 0 until BAND_COUNT)
@@ -124,12 +155,26 @@ object Ew300Protocol {
         return report.copyOfRange(7, REPORT_SIZE)
     }
 
-    fun encodeBand(band: Kt02h20Band): Pair<ByteArray, ByteArray> {
+    fun encodeBand(
+        band: Kt02h20Band,
+        allowExperimentalShelf: Boolean = false,
+    ): Pair<ByteArray, ByteArray> {
         val type = bandTypes[band.type]
             ?: error("EW300 does not support ${band.type} filter fields.")
-        require(band.frequencyHz in 20.0..20_000.0)
-        require(band.gainDb in -12.0..12.0)
-        require(band.q in 0.1..10.0)
+        if (!allowExperimentalShelf) {
+            check(type == TYPE_PEAK) {
+                "EW300 native shelf writes remain dormant until the owner listening qualification."
+            }
+        } else {
+            require(type in setOf(TYPE_PEAK, TYPE_LOW_SHELF, TYPE_HIGH_SHELF))
+            if (type != TYPE_PEAK) {
+                require(band.gainDb in EXPERIMENTAL_SHELF_MIN_GAIN_DB..EXPERIMENTAL_SHELF_MAX_GAIN_DB)
+                require(band.q == EXPERIMENTAL_SHELF_Q)
+            }
+        }
+        require(band.frequencyHz in MIN_FREQUENCY_HZ..MAX_FREQUENCY_HZ)
+        require(band.gainDb in MIN_GAIN_DB..MAX_GAIN_DB)
+        require(band.q in MIN_Q..MAX_Q)
         val gain = (band.gainDb * 10.0).roundToInt().signed16()
         val frequency = band.frequencyHz.roundToInt().coerceIn(20, 20_000)
         val q = (band.q * 1000.0).roundToInt().coerceIn(100, 10_000)
@@ -145,12 +190,7 @@ object Ew300Protocol {
 
     fun decodeBand(index: Int, gainField: ByteArray, qField: ByteArray): Kt02h20Band? {
         if (index !in 0 until BAND_COUNT || gainField.size != 4 || qField.size != 4) return null
-        val type = when (qField[2].u8()) {
-            0 -> "peak_dip"
-            3 -> "low_shelf"
-            4 -> "high_shelf"
-            else -> return null
-        }
+        val type = bandTypeName(qField[2].u8()) ?: return null
         val gainRaw = signed16(gainField[0].u8(), gainField[1].u8())
         val frequency = unsigned16(gainField[2].u8(), gainField[3].u8())
         val qRaw = unsigned16(qField[0].u8(), qField[1].u8())

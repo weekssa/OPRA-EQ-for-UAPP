@@ -184,6 +184,7 @@ class MainActivity : ComponentActivity() {
         onRunEw300CapabilityBatch = viewModel::runEw300CapabilityBatch,
         onAdvanceEw300PersistenceQualification = viewModel::advanceEw300PersistenceQualification,
         onSetEw300PlaybackGain = viewModel::setEw300PlaybackGain,
+        onSaveEw300Runtime = viewModel::saveEw300Runtime,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())

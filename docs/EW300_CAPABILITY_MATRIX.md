@@ -103,5 +103,20 @@ microphone gain/control path. Lack of evidence is never converted to `HARDWARE_D
 | Readable/JSON operation evidence | SUPPORTED_AND_IMPLEMENTED | DEVICE surface shares privacy-safe `Ew300OperationTrace`; replay and competing-job counters are explicitly `unmeasured`/`null` when the build does not instrument them, not reported as measured zero. |
 | Read-only EW300 Device tab state surface | SUPPORTED_AND_IMPLEMENTED | Shows verified playback/global-gain state, active Peak-band count, connection freshness, and readable/JSON operation status. It does not claim or copy Black Pearl DEVICE controls. |
 
+## 2026-11-05 local parity experiment addendum
+
+These rows describe the separate `com.weekssa.opraeqforuapp.ew300parity` package only. Production
+flags remain false and the existing persistent Apply/Flash/Reset policy is unchanged.
+
+| Capability | Decision | Evidence / product behavior |
+| --- | --- | --- |
+| Runtime editor Apply (`APPLY_RUNTIME`) | SUPPORTED_AND_IMPLEMENTED (experimental; physical pending) | Product-allowlisted volatile writes plus same-session readback; zero Save asserted by JVM tests. No physical session has run this candidate. |
+| Runtime output gain (`SET_GAIN_RUNTIME`) | SUPPORTED_AND_IMPLEMENTED (experimental; physical pending) | Stereo `0x66` write within -64.0..0.0 dB / 0.5 dB, readback verified, zero Save; the tracked EQ delta is rebased. Independent physical gain validation remains pending. |
+| Explicit Save (`SAVE_RUNTIME`) | SUPPORTED_AND_IMPLEMENTED (experimental; physical pending) | Fresh live comparison, exactly one `0x53`, replacement-session handling, final readback; uncertain Save is not replayed. |
+| Truthful saved-session state | SUPPORTED_AND_IMPLEMENTED | Runtime only / Saving / Saved in this session / Save not verified / Unknown are session-scoped and never inferred from an old artifact. |
+| Read-only About metadata | SUPPORTED_AND_IMPLEMENTED | Model, firmware `1.0.0` from bounded reads, USB identity, validation class and explicit unknown-control note. Serial is omitted from shareable records. |
+| Native Low/High Shelf editor and persistence | INSUFFICIENT_EVIDENCE | Type-byte transport is historical evidence; acoustic meaning is unmeasured. Ordinary editor exposure and shelf capture/Flash remain dormant. The fixed research targets are for a future approved listening session only. |
+| Healthy reconnect after verified runtime work | SUPPORTED_AND_IMPLEMENTED | A verified no-Save completion releases a later automatic reconnect; a failed pre-verification operation stays fenced. |
+
 Decision vocabulary is intentionally explicit: `SUPPORTED_AND_IMPLEMENTED`,
 `HARDWARE_DOES_NOT_PROVIDE`, `INSUFFICIENT_EVIDENCE`, and `UNSAFE_OR_OUT_OF_SCOPE`.

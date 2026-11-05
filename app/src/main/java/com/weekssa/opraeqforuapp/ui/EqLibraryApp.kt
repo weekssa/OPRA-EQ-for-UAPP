@@ -258,6 +258,7 @@ fun EqLibraryApp(
     val onRunEw300CapabilityBatch = actions.onRunEw300CapabilityBatch
     val onAdvanceEw300PersistenceQualification = actions.onAdvanceEw300PersistenceQualification
     val onSetEw300PlaybackGain = actions.onSetEw300PlaybackGain
+    val onSaveEw300Runtime = actions.onSaveEw300Runtime
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -1129,6 +1130,8 @@ fun EqLibraryApp(
                             fiioJa11DeviceState = state.fiioJa11DeviceState,
                             ja11DcrTuningState = state.ja11DcrTuningState,
                             ew300PlaybackGainState = state.ew300PlaybackGainState,
+                            ew300RuntimePersistence = state.ew300RuntimePersistence,
+                            ew300RuntimeSaveState = state.ew300RuntimeSaveState,
                             onConnectDac = onConnectDacForMyDac,
                             onOpenBlackPearlEditor = onOpenBlackPearlEditor,
                             onCloseBlackPearlEditor = onCloseMyDacEditor,
@@ -1183,6 +1186,7 @@ fun EqLibraryApp(
                             onRunEw300CapabilityBatch = onRunEw300CapabilityBatch,
                             onAdvanceEw300PersistenceQualification = onAdvanceEw300PersistenceQualification,
                             onSetEw300PlaybackGain = onSetEw300PlaybackGain,
+                            onSaveEw300Runtime = onSaveEw300Runtime,
                             onMessage = ::showMessage,
                             onOperationStatus = ::showOperationStatus,
                                 modifier = Modifier.fillMaxSize(),

@@ -173,6 +173,51 @@ class Ew300EditorApplyTest {
         assertThat(transport.commitCount).isEqualTo(0)
     }
 
+    @Test
+    fun runtimeApplyVerifiesEveryWriteAndSendsZeroSave() = runBlocking {
+        val bundle = requireNotNull(
+            HardwareEqSnapshotFactory.ew300(
+                nativeBands = stockBands(),
+                globalGainDb = -29.0,
+                sessionGeneration = 1L,
+                verifiedAtEpochMillis = 1L,
+            ),
+        )
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = HardwareEqSnapshotState().publishCurrent(bundle),
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 2_500.0,
+            gainDb = 4.0,
+            q = 1.4,
+        )
+        val working = HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.SIMGOT_EW300)
+        val transport = FakeTransport(bundle)
+
+        val result = Ew300EditorApplier(transport).applyRuntime(
+            workingCopy = working,
+            allowCautions = false,
+            isSessionCurrent = { it == 1L },
+        )
+
+        assertTrue(result is Ew300RuntimeApplyResult.Verified)
+        assertThat(transport.writeCount).isGreaterThan(0)
+        assertThat(transport.commitCount).isEqualTo(0)
+        val target = (result as Ew300RuntimeApplyResult.Verified).target
+        assertThat(target.deviceFingerprintKey).isEqualTo(transport.deviceFingerprintKey)
+        assertThat(target.registers.keys).containsAtLeast(
+            Ew300Protocol.bandRegister(0),
+            Ew300Protocol.bandRegister(0) + 1,
+            Ew300Protocol.GLOBAL_GAIN_REGISTER,
+        )
+        Unit
+    }
+
     private fun stockBands(): List<Kt02h20Band> = listOf(
         Kt02h20Band("peak_dip", 2_500.0, 4.5, 1.4),
         Kt02h20Band("peak_dip", 120.0, 0.0, 1.0),

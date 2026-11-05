@@ -40,6 +40,8 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.ui.Ew300PlaybackGainUiState
+import com.weekssa.opraeqforuapp.ui.Ew300RuntimeSaveUiState
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 
@@ -71,6 +73,8 @@ fun MyDacRootScreen(
     blackPearlQualificationState: BlackPearlQualificationUiState,
     fiioJa11DeviceState: FiioJa11DeviceUiState,
     ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
+    ew300RuntimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
+    ew300RuntimeSaveState: Ew300RuntimeSaveUiState = Ew300RuntimeSaveUiState(),
     onConnectDac: (DacDeviceId) -> Unit,
     onOpenBlackPearlEditor: () -> Unit,
     onCloseBlackPearlEditor: () -> Unit,
@@ -123,6 +127,7 @@ fun MyDacRootScreen(
     onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     onSetEw300PlaybackGain: (Double) -> Unit = {},
+    onSaveEw300Runtime: () -> Unit = {},
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -258,6 +263,8 @@ fun MyDacRootScreen(
             operationTrace = ew300OperationTrace,
             operationStatus = ew300OperationStatus,
             playbackGainState = ew300PlaybackGainState,
+            runtimePersistence = ew300RuntimePersistence,
+            runtimeSaveState = ew300RuntimeSaveState,
             catalogState = catalogState,
             managedHeadphones = blackPearlManagedHeadphones,
             savedEqs = blackPearlSavedEqs,
@@ -268,6 +275,7 @@ fun MyDacRootScreen(
             onRunCapabilityBatch = onRunEw300CapabilityBatch,
             onAdvancePersistenceQualification = onAdvanceEw300PersistenceQualification,
             onSetPlaybackGain = onSetEw300PlaybackGain,
+            onSaveRuntime = onSaveEw300Runtime,
             onCaptureDacEq = onCaptureEw300DacEq,
             onOpenEditor = onOpenEw300Editor,
             onCloseEditor = onCloseEw300Editor,

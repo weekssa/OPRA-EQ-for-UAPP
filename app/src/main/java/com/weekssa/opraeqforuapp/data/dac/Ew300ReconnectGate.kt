@@ -20,11 +20,13 @@ class Ew300ReconnectGate {
     val automaticReconnectAllowed: StateFlow<Boolean> = mutableAutomaticReconnectAllowed.asStateFlow()
     private var mutationDepth = 0
     private var replacementReconnectReleased = false
+    private var runtimeVerifiedCompletion = false
 
     @Synchronized
     fun beginMutation() {
         mutationDepth += 1
         replacementReconnectReleased = false
+        runtimeVerifiedCompletion = false
         mutableAutomaticReconnectAllowed.value = false
     }
 
@@ -36,11 +38,25 @@ class Ew300ReconnectGate {
         }
     }
 
+    /**
+     * A runtime-only operation that verified its hardware readback completed every write safely
+     * and may release a subsequent automatic reconnect. A failure before this point stays fenced:
+     * the app must not immediately launch another Android permission prompt for an uncertain write.
+     */
+    @Synchronized
+    fun markRuntimeVerified() {
+        if (mutationDepth > 0) {
+            runtimeVerifiedCompletion = true
+            mutableAutomaticReconnectAllowed.value = true
+        }
+    }
+
     /** Re-arms automatic reconnect only after an explicit owner connect action. */
     @Synchronized
     fun beginManualConnect() {
         if (mutationDepth == 0) {
             replacementReconnectReleased = false
+            runtimeVerifiedCompletion = false
             mutableAutomaticReconnectAllowed.value = true
         }
     }
@@ -56,19 +72,22 @@ class Ew300ReconnectGate {
 
     @Synchronized
     fun endMutation() {
-        val saveSent = replacementReconnectReleased
+        val healthyCompletion = replacementReconnectReleased || runtimeVerifiedCompletion
         mutationDepth = (mutationDepth - 1).coerceAtLeast(0)
         if (mutationDepth == 0) {
             replacementReconnectReleased = false
-            mutableAutomaticReconnectAllowed.value = saveSent
+            runtimeVerifiedCompletion = false
+            mutableAutomaticReconnectAllowed.value = healthyCompletion
         }
     }
 
     @Synchronized
-    internal fun snapshot(): Snapshot = Snapshot(mutationDepth, replacementReconnectReleased)
+    internal fun snapshot(): Snapshot =
+        Snapshot(mutationDepth, replacementReconnectReleased, runtimeVerifiedCompletion)
 
     internal data class Snapshot(
         val mutationDepth: Int,
         val replacementReconnectReleased: Boolean,
+        val runtimeVerifiedCompletion: Boolean = false,
     )
 }

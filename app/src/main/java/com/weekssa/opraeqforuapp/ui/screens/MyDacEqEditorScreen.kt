@@ -48,6 +48,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqDifferenceField
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditIssue
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditIssueSeverity
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
@@ -72,6 +73,10 @@ internal fun DacEqEditorScreen(
     onApply: (Boolean) -> Unit,
     dacLabel: String = "TRN Black Pearl",
 ) {
+    val supportedTypes = state.workingCopy?.baselineSnapshot?.deviceId
+        ?.let(HardwareEqEditSpecs::forDevice)
+        ?.supportedFilterTypes
+        ?: setOf(EqFilterType.PEAK)
     when {
         state.isOpening -> {
             Text(
@@ -107,6 +112,7 @@ internal fun DacEqEditorScreen(
     when (state.stage) {
         MyDacEditorStage.EDIT -> EditorMain(
             state = state,
+            supportedTypes = supportedTypes,
             onSelectBand = onSelectBand,
             onShowAllBands = onShowAllBands,
             onShowReview = onShowReview,
@@ -168,6 +174,7 @@ private fun EditorHeader(
 @Composable
 private fun EditorMain(
     state: MyDacEditorUiState,
+    supportedTypes: Set<EqFilterType>,
     onSelectBand: (Int) -> Unit,
     onShowAllBands: () -> Unit,
     onShowReview: () -> Unit,
@@ -218,6 +225,7 @@ private fun EditorMain(
     state.selectedBand?.let { selected ->
         SelectedBandEditor(
             filter = selected,
+            supportedTypes = supportedTypes,
             onUpdate = onUpdateBand,
             downFocusRequester = safeGainFocusRequester.takeIf { safeGainAvailable },
             downBringIntoViewRequester = safeGainBringIntoViewRequester.takeIf { safeGainAvailable },
@@ -295,6 +303,7 @@ private fun BandChips(
 @Composable
 private fun SelectedBandEditor(
     filter: HardwareEqFilter,
+    supportedTypes: Set<EqFilterType>,
     onUpdate: (Int, EqFilterType, Double, Double, Double) -> Unit,
     downFocusRequester: FocusRequester?,
     downBringIntoViewRequester: BringIntoViewRequester?,
@@ -348,11 +357,16 @@ private fun SelectedBandEditor(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                listOf(
-                    EqFilterType.PEAK,
-                    EqFilterType.LOW_SHELF,
-                    EqFilterType.HIGH_SHELF,
-                ).forEach { candidate ->
+                supportedTypes
+                    .sortedBy { type ->
+                        when (type) {
+                            EqFilterType.PEAK -> 0
+                            EqFilterType.LOW_SHELF -> 1
+                            EqFilterType.HIGH_SHELF -> 2
+                            else -> 3
+                        }
+                    }
+                    .forEach { candidate ->
                     FilterChip(
                         selected = filter.type == candidate,
                         onClick = { publishIfValid(candidate) },

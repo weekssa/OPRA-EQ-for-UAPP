@@ -90,6 +90,13 @@ object HardwareEqEditSpecs {
         minimumVerifiedHeadroomGainDb = null,
     )
 
+    fun forDevice(deviceId: DacDeviceId): HardwareEqEditSpec? = when (deviceId) {
+        DacDeviceId.TRN_BLACK_PEARL -> TRN_BLACK_PEARL
+        DacDeviceId.SIMGOT_EW300 -> SIMGOT_EW300
+        DacDeviceId.FIIO_JA11 -> FIIO_JA11
+        else -> null
+    }
+
     private fun fromFiniteHardwareSpec(
         deviceId: DacDeviceId,
         spec: FiveBandDeviceSpec,

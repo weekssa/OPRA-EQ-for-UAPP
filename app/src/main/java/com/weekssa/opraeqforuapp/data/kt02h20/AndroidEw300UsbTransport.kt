@@ -96,6 +96,10 @@ class AndroidEw300UsbTransport(
         return hid.awaitOptionalReconnectAfterMutation(previousGeneration, previousDetachGeneration)
     }
 
+    override fun markRuntimeVerified() {
+        reconnectGate.markRuntimeVerified()
+    }
+
     override fun close() = hid.close()
 }
 

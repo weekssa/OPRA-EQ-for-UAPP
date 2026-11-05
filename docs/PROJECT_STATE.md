@@ -76,6 +76,8 @@ The original foundation phases P0-P10 and P11 are evidenced complete. PR #108, P
 
 ## Active work and known limits
 
+- **EW300 parity local experiment (2026-11-05):** separate local `com.weekssa.opraeqforuapp.ew300parity` package on `codex/ew300-ja11-parity` from base `180f4a96`. Runtime Apply/output gain, explicit one-Save persistence, About, band rows, and dormant shelf research are implemented and locally verified by 109 EW300 JVM tests plus 4 explicit-emulator Compose tests. Physical EW300 qualification, shelf listening, Pixel install, and restoration are pending. Production flags and existing persistent Peak behavior are unchanged. No public release or support claim.
+
 - **JA11 custom firmware (planning, 2026-11-03):** separate, unreleased project. Prerequisites and boundaries are recorded in docs/FIIO_JA11_PROTOCOL_NOTES.md: recovery first, then image format, ISA/toolchain, and a static pass for the 0x19 handler and startup store. Not started; needs the vendor boot tool for recovery validation. EQ Library gains no flashing path.
 
 

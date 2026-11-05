@@ -307,3 +307,31 @@ A full PASS qualifies Save, Peak persistence, playback-gain persistence, and exa
 for the connected exact fingerprint. A first-cycle exact baseline result is reported as safely not
 persistent and leaves persistent features locked. No outcome qualifies shelf acoustics, firmware,
 bootloader, erase, calibration, recovery, cross-flash, or arbitrary KT02H20-family behavior.
+
+## 2026-11-05 experimental runtime/save boundary and read-only probe
+
+The local EW300 parity experiment adds an opt-in runtime path; it does not change the production
+Peak-only policy or the exact fingerprint.
+
+- `APPLY_RUNTIME` and `SET_GAIN_RUNTIME` write product-allowlisted band/gain registers, verify a
+  same-session readback, send zero `0x53` commands, and record a session-scoped pending target.
+- `SAVE_RUNTIME` re-reads the live EQ/gain, requires an exact match with that pending target, sends
+  exactly one `0x53`, tolerates expected re-enumeration, and verifies the final readback. Any
+  uncertainty clears the pending target and is not replayed.
+- A verified runtime operation is a healthy no-Save completion: the reconnect gate may release a
+  later automatic reconnect. A failed pre-verification operation stays fenced.
+- Explicit absolute runtime gain rebases the tracked EQ delta to zero and records the new user
+  baseline, preventing a later profile Flash from subtracting stale compensation twice.
+- The new `tools/ew300_readonly_probe.py` accepts only `0x52`. Its self-test proves it rejects
+  `0x57`, `0x53`, `0x43`, `0x08`, and `0x54`, and a missing/foreign reply stops the capture.
+
+The 2026-11-05 live capture is a read-only snapshot, not a new physical transaction. Identity
+`31B2:0111`, manufacturer `LE XIAN`, product `SIMGOT EW300 DSP`, HID interface 3; firmware bytes
+decode `1.0.0`; all 256 registers were read; every emitted command was `0x52`; the unit currently
+reports flat five-band Peak EQ and 0 gain. Capture file SHA-256
+`030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71`; internal capture SHA-256
+`f54de03cd8ff0a6a104b54936f130346dd0d086cf7ecebe5178d1bfe094bf17a`.
+
+Native Low Shelf / High Shelf type bytes remain transport evidence only. The fixed 250 Hz and
+4 kHz, -6 dB, Q 0.707 research targets are hypotheses for the future owner listening session; no
+acoustic, Q-semantics, or persistence claim follows from a type echo.

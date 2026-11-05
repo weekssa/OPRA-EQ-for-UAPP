@@ -39,6 +39,10 @@ android {
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
+        // Experimental EW300 parity is opt-in only. Release variants keep every flag false.
+        buildConfigField("boolean", "EW300_PARITY_EXPERIMENT_ENABLED", "false")
+        buildConfigField("boolean", "EW300_SHELF_QUALIFICATION_ENABLED", "false")
+        buildConfigField("boolean", "EW300_SHELF_EDITOR_ENABLED", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "true")
         // v0.9.0 defers the JA11 digital-filter control: the vendor does not expose it for firmware
@@ -60,6 +64,22 @@ android {
         debug {
             buildConfigField("boolean", "JA11_TUNING_ENABLED", "true")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        }
+        // Local experimental EW300 parity package. Debug-derived, separately installable, local
+        // test signer, no update prompts. Runtime Apply/Save and the DEVICE parity surface live
+        // only here; release remains Peak-only with the existing persistent Apply policy.
+        create("ew300Parity") {
+            initWith(getByName("debug"))
+            isDebuggable = true
+            applicationIdSuffix = ".ew300parity"
+            versionNameSuffix = "-ew300parity"
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
+            buildConfigField("boolean", "EW300_PARITY_EXPERIMENT_ENABLED", "true")
+            buildConfigField("boolean", "EW300_SHELF_QUALIFICATION_ENABLED", "false")
+            buildConfigField("boolean", "EW300_SHELF_EDITOR_ENABLED", "false")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+            matchingFallbacks += listOf("debug")
         }
         create("beta") {
             initWith(getByName("release"))
@@ -154,6 +174,15 @@ kotlin {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().withBuildType("ew300Parity")) { builder ->
+        (builder as? com.android.build.api.variant.HasAndroidTestBuilder)?.enableAndroidTest = true
+    }
+    beforeVariants(selector().withBuildType("release")) { builder ->
+        (builder as? com.android.build.api.variant.HasUnitTestBuilder)?.enableUnitTest = true
+    }
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
     val lifecycleVersion = "2.10.0"
@@ -180,6 +209,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     add("betaImplementation", "androidx.compose.ui:ui-test-manifest")
+    add("ew300ParityImplementation", "androidx.compose.ui:ui-test-manifest")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")

@@ -10,6 +10,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface Ew300Transport {
@@ -32,6 +33,17 @@ interface Ew300Transport {
     suspend fun readRegister(register: Int): ByteArray?
     suspend fun writeRegister(register: Int, data: ByteArray): Boolean
     suspend fun commit(): Boolean
+
+    /** Confirms a successful no-Save runtime transaction so its session may reconnect safely. */
+    fun markRuntimeVerified() = Unit
+}
+
+enum class Ew300RuntimePersistenceState {
+    UNKNOWN,
+    RUNTIME_ONLY,
+    SAVING,
+    SAVED_THIS_SESSION,
+    SAVE_NOT_VERIFIED,
 }
 
 /** Guarded five-band EW300 transaction using the shared finite-target response optimizer. */
@@ -52,6 +64,10 @@ class Ew300Flasher(
 
     val lastOperationTrace: StateFlow<Ew300OperationTrace?> = traceStore.lastTrace
     val operationStatus: StateFlow<Ew300OperationStatus> = traceStore.status
+    private val mutableRuntimePersistence = MutableStateFlow(Ew300RuntimePersistenceState.UNKNOWN)
+    val runtimePersistence: StateFlow<Ew300RuntimePersistenceState> = mutableRuntimePersistence
+    @Volatile
+    private var pendingRuntimeTarget: Ew300RuntimeTarget? = null
 
     suspend fun applyEditorWorkingCopy(
         workingCopy: com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy,
@@ -103,6 +119,210 @@ class Ew300Flasher(
                 }
             },
         )
+    }
+
+    /**
+     * Experimental runtime-only editor Apply. Every write is read back in the same session and
+     * zero Save commands are sent. The verified target remains pending for an explicit Save.
+     */
+    suspend fun applyEditorRuntime(
+        workingCopy: com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy,
+        allowCautions: Boolean,
+        isSessionCurrent: (Long) -> Boolean,
+    ): Ew300RuntimeApplyResult = record("APPLY_RUNTIME") { trace ->
+        lastSuccessfulFlashBaseline = null
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return@record Ew300RuntimeApplyResult.DeviceUnavailable(
+                "The exact EW300 device fingerprint is unavailable.",
+            )
+        if (!mutationAuthorized(deviceKey)) {
+            return@record Ew300RuntimeApplyResult.InvalidPlan(
+                "EW300 editor Apply is unavailable for this device identity or hardware profile.",
+            )
+        }
+        trace.stage(Ew300OperationStage.BASELINE_CAPTURED)
+        val result = Ew300EditorApplier(transport).applyRuntime(
+            workingCopy = workingCopy,
+            allowCautions = allowCautions,
+            isSessionCurrent = isSessionCurrent,
+            beforeFirstWrite = {
+                trace.markBeforeFirstWrite(transport.permissionRequestCount)
+                trace.stage(Ew300OperationStage.WRITING)
+            },
+        )
+        when (result) {
+            is Ew300RuntimeApplyResult.Verified -> {
+                pendingRuntimeTarget = result.target
+                mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
+                trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+                trace.stage(Ew300OperationStage.FINAL_READBACK)
+                transport.markRuntimeVerified()
+            }
+            else -> pendingRuntimeTarget = null
+        }
+        result
+    }
+
+    /**
+     * Runtime-only absolute output-gain change. It never sends Save; the pending EQ/gain target is
+     * offered to the explicit Save action. The tracked EQ delta is rebased so a later profile Flash
+     * cannot subtract stale compensation twice.
+     */
+    suspend fun setPlaybackGainRuntime(gainDb: Double): Ew300PlaybackGainResult = record("SET_GAIN_RUNTIME") { trace ->
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "The exact EW300 device fingerprint is unavailable; no gain write was sent.",
+            )
+        if (!mutationAuthorized(deviceKey)) {
+            return@record Ew300PlaybackGainResult.NotSuitable(
+                "EW300 output gain is unavailable for this exact device identity.",
+            )
+        }
+        val requestedSteps = runCatching {
+            Ew300DeviceControls.playbackGainDescriptor.validateForWrite(
+                com.weekssa.opraeqforuapp.domain.dac.DacControlValue.Numeric(gainDb),
+            )
+        }.getOrElse {
+            return@record Ew300PlaybackGainResult.NotSuitable(
+                "The requested EW300 output gain is not representable safely.",
+            )
+        }.let { validation ->
+            if (validation !is com.weekssa.opraeqforuapp.domain.dac.DacControlValidation.Valid) {
+                return@record Ew300PlaybackGainResult.NotSuitable(
+                    "Choose an EW300 output gain from -64.0 dB through 0.0 dB in 0.5 dB steps.",
+                )
+            }
+            Ew300Protocol.gainDbToSteps(gainDb)
+        }
+        val baseline = transactionCoordinator.captureBaseline()
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Could not read the complete EW300 state before changing output gain.",
+            )
+        trace.recordBaseline(baseline)
+        val currentGain = baseline.value(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Could not read the EW300 output gain before changing it.",
+            )
+        val protocolFlags = baseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Could not read the EW300 protocol layout before changing output gain.",
+            )
+        val currentSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags)
+            ?: return@record Ew300PlaybackGainResult.NotSuitable(
+                "EW300 stereo output-gain channels are unequal. Refresh or reconnect before changing gain.",
+            )
+        val targetGain = Ew300Protocol.withGlobalGainSteps(currentGain, requestedSteps, protocolFlags)
+        if (currentGain.contentEquals(targetGain)) {
+            trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+            trace.stage(Ew300OperationStage.FINAL_READBACK)
+            return@record Ew300PlaybackGainResult.Success(requestedSteps / Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB)
+        }
+        trace.markBeforeFirstWrite(transport.permissionRequestCount)
+        trace.stage(Ew300OperationStage.WRITING)
+        if (!transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, targetGain)) {
+            return@record Ew300PlaybackGainResult.TransferFailed(
+                "EW300 did not accept the output-gain change. No Save command was sent.",
+            )
+        }
+        val volatileGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        if (volatileGain == null || !volatileGain.contentEquals(targetGain)) {
+            return@record Ew300PlaybackGainResult.VerificationFailed(
+                "EW300 output-gain readback did not match the requested value.",
+            )
+        }
+        pendingRuntimeTarget = runtimeTargetFromBaseline(baseline, targetGain, requestedSteps)
+        gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+        gainStateStore.writeUserBaselineGainSteps(deviceKey, requestedSteps)
+        mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
+        trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        trace.stage(Ew300OperationStage.FINAL_READBACK)
+        transport.markRuntimeVerified()
+        return@record Ew300PlaybackGainResult.Success(requestedSteps / Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB)
+    }
+
+    /**
+     * Explicit one-Save persistence of the exact runtime target verified in this session.
+     * A fresh comparison precedes the single Save; an uncertain Save is never replayed.
+     */
+    suspend fun saveRuntime(): Ew300RuntimeSaveResult = record("SAVE_RUNTIME") { trace ->
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        val target = pendingRuntimeTarget
+            ?: return@record Ew300RuntimeSaveResult.NotSuitable(
+                "No verified runtime change is pending in this session. Read the DAC and reapply before saving.",
+            )
+        val deviceKey = transport.deviceFingerprintKey
+        if (deviceKey == null || deviceKey != target.deviceFingerprintKey ||
+            transport.sessionGeneration != target.sessionGeneration
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.UNKNOWN
+            return@record Ew300RuntimeSaveResult.NotSuitable(
+                "The runtime target belongs to an earlier USB session. Read the DAC again; no Save was sent.",
+            )
+        }
+        val currentBands = readWireBands()
+        val currentGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        val protocolFlags = transport.readRegister(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+        val expectedBands = expectedRuntimeBands(target)
+        if (currentBands != expectedBands || currentGain == null || protocolFlags == null ||
+            !Ew300Protocol.globalGainMatches(currentGain, target.gainSteps, protocolFlags)
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
+            return@record Ew300RuntimeSaveResult.NotSuitable(
+                "The live EW300 state changed after the runtime Apply. No Save was sent; read the DAC again.",
+            )
+        }
+        trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVING
+        val sessionGenerationBeforeSave = transport.sessionGeneration
+        val detachGenerationBeforeSave = transport.detachGeneration
+        if (!transport.commit()) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED
+            return@record Ew300RuntimeSaveResult.TransferFailed(
+                "EW300 Save was not confirmed. It may have completed; reconnect and read the DAC before any retry.",
+            )
+        }
+        trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
+        if (!recordCommitBoundary(
+                trace = trace,
+                expectedFingerprint = deviceKey,
+                sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+                detachGenerationBeforeSave = detachGenerationBeforeSave,
+            )
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED
+            return@record Ew300RuntimeSaveResult.VerificationFailed(
+                "EW300 Save returned on an unverified USB session. The Save may have completed; stop and read before any later write.",
+            )
+        }
+        trace.stage(Ew300OperationStage.FINAL_READBACK)
+        val finalBands = Ew300ReadbackRetry.read(
+            read = { readWireBands() },
+            matches = { it == expectedBands },
+        )
+        val finalGain = Ew300ReadbackRetry.read(
+            read = { transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER) },
+            matches = { gain -> gain != null && Ew300Protocol.globalGainMatches(gain, target.gainSteps, protocolFlags) },
+        )
+        if (finalBands != expectedBands || finalGain == null ||
+            !Ew300Protocol.globalGainMatches(finalGain, target.gainSteps, protocolFlags)
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED
+            return@record Ew300RuntimeSaveResult.VerificationFailed(
+                "EW300 Save could not be verified by final readback. Read the DAC before any later action.",
+            )
+        }
+        pendingRuntimeTarget = null
+        gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+        gainStateStore.writeUserBaselineGainSteps(deviceKey, target.gainSteps)
+        mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVED_THIS_SESSION
+        return@record Ew300RuntimeSaveResult.Verified
     }
 
     suspend fun flash(profile: OpraEqProfile): Kt02h20FlashResult = record("FLASH") { trace ->
@@ -690,6 +910,8 @@ class Ew300Flasher(
                 Ew300EditorApplyResult.Verified,
                 Ew300RestorationResult.Verified,
                 is Ew300PlaybackGainResult.Success,
+                is Ew300RuntimeApplyResult.Verified,
+                Ew300RuntimeSaveResult.Verified,
                 -> true
                 else -> false
             }
@@ -717,6 +939,55 @@ class Ew300Flasher(
                 ),
             )
         }
+    }
+
+    private fun runtimeTargetFromBaseline(
+        baseline: Ew300RawBaseline,
+        gain: ByteArray,
+        gainSteps: Int,
+    ): Ew300RuntimeTarget {
+        require(baseline.isComplete())
+        val registers = buildMap {
+            baseline.bands().forEachIndexed { index, (bandGain, q) ->
+                put(Ew300Protocol.bandRegister(index), bandGain.copyOf())
+                put(Ew300Protocol.bandRegister(index) + 1, q.copyOf())
+            }
+            put(Ew300Protocol.GLOBAL_GAIN_REGISTER, gain.copyOf())
+        }
+        return Ew300RuntimeTarget(
+            deviceFingerprintKey = baseline.deviceFingerprintKey,
+            sessionGeneration = transport.sessionGeneration,
+            detachGeneration = transport.detachGeneration,
+            registers = registers,
+            gainSteps = gainSteps,
+        )
+    }
+
+    private fun expectedRuntimeBands(target: Ew300RuntimeTarget): List<Ew300WireBandPair> = buildList {
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            val gain = target.registers[Ew300Protocol.bandRegister(index)] ?: return emptyList()
+            val q = target.registers[Ew300Protocol.bandRegister(index) + 1] ?: return emptyList()
+            add(Ew300WireBandPair(gain.copyOf(), q.copyOf()))
+        }
+    }
+
+    private suspend fun readWireBands(): List<Ew300WireBandPair>? = buildList {
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            val gain = transport.readRegister(Ew300Protocol.bandRegister(index)) ?: return null
+            val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1) ?: return null
+            if (gain.size != 4 || q.size != 4) return null
+            add(Ew300WireBandPair(gain, q))
+        }
+    }
+
+    private data class Ew300WireBandPair(
+        val gain: ByteArray,
+        val q: ByteArray,
+    ) {
+        override fun equals(other: Any?): Boolean = other is Ew300WireBandPair &&
+            gain.contentEquals(other.gain) && q.contentEquals(other.q)
+
+        override fun hashCode(): Int = 31 * gain.contentHashCode() + q.contentHashCode()
     }
 
     private fun expectedRegisters(
@@ -771,6 +1042,17 @@ class Ew300Flasher(
         is Ew300PlaybackGainResult.DeviceUnavailable -> reason
         is Ew300PlaybackGainResult.TransferFailed -> reason
         is Ew300PlaybackGainResult.VerificationFailed -> reason
+        is Ew300RuntimeApplyResult.InvalidPlan -> reason
+        is Ew300RuntimeApplyResult.StaleBaseline -> reason
+        is Ew300RuntimeApplyResult.DeviceUnavailable -> reason
+        is Ew300RuntimeApplyResult.TransferFailed -> reason
+        is Ew300RuntimeApplyResult.VerificationFailed -> reason
+        is Ew300RuntimeApplyResult.ConfirmationRequired ->
+            "The reviewed EQ has ${cautionCount} caution(s); confirm before applying."
+        is Ew300RuntimeSaveResult.NotSuitable -> reason
+        is Ew300RuntimeSaveResult.DeviceUnavailable -> reason
+        is Ew300RuntimeSaveResult.TransferFailed -> reason
+        is Ew300RuntimeSaveResult.VerificationFailed -> reason
         else -> null
     }
 
@@ -779,7 +1061,9 @@ class Ew300Flasher(
         is Kt02h20FlatResetResult.Success,
         Ew300EditorApplyResult.Verified,
         Ew300RestorationResult.Verified,
-        is Ew300PlaybackGainResult.Success -> Ew300OperationOutcome.SUCCESS
+        is Ew300PlaybackGainResult.Success,
+        is Ew300RuntimeApplyResult.Verified,
+        Ew300RuntimeSaveResult.Verified -> Ew300OperationOutcome.SUCCESS
         is Kt02h20FlashResult.NotSuitable,
         is Kt02h20FlatResetResult.NotSuitable,
         is Ew300EditorApplyResult.InvalidPlan,
@@ -807,6 +1091,20 @@ class Ew300Flasher(
         is Ew300PlaybackGainResult.DeviceUnavailable -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
         is Ew300PlaybackGainResult.TransferFailed -> Ew300OperationOutcome.TRANSFER_FAILED
         is Ew300PlaybackGainResult.VerificationFailed -> Ew300OperationOutcome.VERIFICATION_FAILED
+        is Ew300RuntimeApplyResult.InvalidPlan,
+        is Ew300RuntimeSaveResult.NotSuitable,
+        -> Ew300OperationOutcome.NOT_SUITABLE
+        is Ew300RuntimeApplyResult.DeviceUnavailable,
+        is Ew300RuntimeSaveResult.DeviceUnavailable,
+        -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
+        is Ew300RuntimeApplyResult.TransferFailed,
+        is Ew300RuntimeSaveResult.TransferFailed,
+        -> Ew300OperationOutcome.TRANSFER_FAILED
+        is Ew300RuntimeApplyResult.VerificationFailed,
+        is Ew300RuntimeSaveResult.VerificationFailed,
+        -> Ew300OperationOutcome.VERIFICATION_FAILED
+        is Ew300RuntimeApplyResult.StaleBaseline -> Ew300OperationOutcome.STALE_BASELINE
+        is Ew300RuntimeApplyResult.ConfirmationRequired -> Ew300OperationOutcome.CONFIRMATION_REQUIRED
         else -> Ew300OperationOutcome.UNKNOWN
     }
 

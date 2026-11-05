@@ -90,6 +90,64 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun runtimeGainSendsZeroSaveAndExplicitSaveSendsExactlyOne() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0x96, 0, 0))
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val runtime = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertEquals(Ew300PlaybackGainResult.Success(-40.0), runtime)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-80, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.RUNTIME_ONLY, flasher.runtimePersistence.value)
+
+        val saved = flasher.saveRuntime()
+
+        assertEquals(Ew300RuntimeSaveResult.Verified, saved)
+        assertEquals(1, transport.commitCount)
+        assertEquals(Ew300RuntimePersistenceState.SAVED_THIS_SESSION, flasher.runtimePersistence.value)
+
+        val repeated = flasher.saveRuntime()
+        assertTrue(repeated is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun runtimeSaveRejectsAnExternallyChangedLiveStateWithoutSave() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0x96, 0, 0))
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        assertTrue(flasher.setPlaybackGainRuntime(-40.0) is Ew300PlaybackGainResult.Success)
+        transport.state[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0xA0, 0xA0, 0, 0)
+
+        val result = flasher.saveRuntime()
+
+        assertTrue(result is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun uncertainRuntimeSaveIsNotReplayed() = runBlocking {
+        val transport = FakeTransport(
+            initialGain = bytes(0x96, 0x96, 0, 0),
+            commitSucceeds = false,
+        )
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+        assertTrue(flasher.setPlaybackGainRuntime(-40.0) is Ew300PlaybackGainResult.Success)
+
+        val result = flasher.saveRuntime()
+
+        assertTrue(result is Ew300RuntimeSaveResult.TransferFailed)
+        assertEquals(1, transport.commitCount)
+        assertEquals(Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED, flasher.runtimePersistence.value)
+        assertTrue(flasher.saveRuntime() is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
     fun playbackGainStopsOnUnequalStereoBaselineBeforeAnyWriteOrSave() = runBlocking {
         val transport = FakeTransport(initialGain = bytes(0x96, 0xF8, 0, 0))
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })

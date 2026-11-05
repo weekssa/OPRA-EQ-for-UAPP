@@ -1,5 +1,5 @@
 # Gates
 
-active: docs/implementation/ja11-tuning-prototype-20261103/GATES.md
+active: docs/implementation/ew300-ja11-parity-20261105/GATES.md
 
 The active task's gate file is the contract. tools/scope-guard resolves this pointer.

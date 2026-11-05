@@ -109,3 +109,14 @@ Current physical evidence includes E037-E040 on source 381 and E043-E046 on exac
 At report time, signed candidate E047 and its six gates passed on source 7599dd5. The documentation-only closeout produces a new branch SHA, so the older artifact/checks are no longer current-head provenance; verify fresh gates and signature in PR #23. No physical retest is justified because only documentation changes. E001 Save qualification and all reported mutations must not be repeated; uncertain mutation is never automatically retried.
 
 | Historical candidate snapshot (legacy duplicate label E041; not hardware evidence) | Source `02f2697e20dda0c33f72973cb140a3be5d592cef`; signed workflow [#1314](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35761742008); artifact `EQ-Library-signed-beta-02f2697e20dda0c33f72973cb140a3be5d592cef` (artifact id `10710314946`, digest `sha256:0b2460e79d09d915c770f6d609e80706772ed86c0dea3856a36c4188da7e623e`); APK `EQ-Library-v0.7.0-beta-02f2697.apk` (SHA-256 `39737d9a2aeddc6c2db1e4724c3875286bf2c2236cf858f88f5b98e854ed8314`); signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Historical exact-head software/security/signing/install/launch/publication gates passed for the public My DAC UX alignment and validation-control visibility coverage. This checkpoint does not alter EW300 transport or mutation sequencing. | Historical only; superseded by later candidate sources and live PR #23 head. It does not authorize another owner session or release. |
+
+## 2026-11-05 local parity candidate — software evidence only
+
+This is not a new physical ledger entry. No E-number is assigned and no hardware mutation occurred.
+
+- Base `180f4a962a53d22d294311121dd49d92a570d89a`; branch `codex/ew300-ja11-parity`; local only.
+- Package `com.weekssa.opraeqforuapp.ew300parity`, versionName `0.10.0-ew300parity`, versionCode 22, local debug signer `945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5`, APK SHA-256 `63c71d85195f01f2f07c7cb341efbc55ba21c6dcc1e61c2a0a2003101c8689a7`.
+- JVM evidence: 109 EW300 tests; Compose evidence: 4 explicit-emulator tests. These prove the app contract, not the DAC.
+- Read-only live capture: 256/256 registers, only command `0x52`; file SHA-256 `030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71`; internal capture SHA-256 `f54de03cd8ff0a6a104b54936f130346dd0d086cf7ecebe5178d1bfe094bf17a`.
+- Accepted physical records E001 and E037-E046 remain tied to their original sources and artifacts. This candidate did not repeat or extend them.
+- Physical qualification, shelf listening, Save persistence on this candidate, Pixel install/launch, and restoration are **pending**. No public support claim or release is authorized.

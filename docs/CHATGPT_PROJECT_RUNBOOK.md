@@ -4,6 +4,22 @@ This is the maintained operational source of truth for work on **OPRA EQ for UAP
 
 For a concise current release and device-evidence summary, start with [`PROJECT_STATE.md`](PROJECT_STATE.md). Approved intent is summarized in [`GOALS_AND_SCOPE.md`](GOALS_AND_SCOPE.md), and standard development/release steps are in [`OPERATING_RUNBOOK.md`](OPERATING_RUNBOOK.md). The dated entries below are an append-only chronology: statements such as “current” describe that entry's date and are superseded by later records and current project state.
 
+## 2026-11-05 EW300 parity local experiment (unreleased)
+
+The owner-approved EW300/JA11 parity plan is implemented on local branch `codex/ew300-ja11-parity`
+from exact base `180f4a962a53d22d294311121dd49d92a570d89a`. It adds a separate debug-derived
+`com.weekssa.opraeqforuapp.ew300parity` package with runtime editor Apply and runtime output gain
+(zero `0x53`), an explicit one-Save persistence action, truthful session-scoped saved state,
+five-band value rows, read-only About metadata, capability-driven editor type chips, and dormant
+native shelf research. Production variants keep every experimental flag false and retain Peak-only,
+persistent Apply/Flash/Reset behavior.
+
+Evidence is local only: 109 EW300 JVM tests, 4 explicit-emulator parity Compose tests, a 256-register
+read-only Mac capture using command `0x52` only, and a hashed APK. No physical EW300 mutation,
+Pixel install, shelf listening, persistence Save on this candidate, or restoration has run. Accepted
+E001 and E037-E046 remain tied to their original sources/artifacts. Physical qualification is
+pending. No push, PR, merge, publication, signing change, or public hardware claim occurred.
+
 ## 2026-11-04 v0.10.0 stable publication and closeout — current release
 
 EQ Library v0.10.0 is public stable/latest. The owner confirmed the v0.9.0-beta.4 build working on the device and asked for it as the official .10 release, so the same feature set was cut as a new identity: versionName `0.10.0`, versionCode `22`, package `com.weekssa.opraeqforuapp`.

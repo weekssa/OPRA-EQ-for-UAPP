@@ -67,6 +67,9 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResul
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PlaybackGainResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeApplyResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeSaveResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
@@ -152,7 +155,15 @@ private data class HardwareConnectionUiState(
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
     val ja11DcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
     val ew300PlaybackGainState: Ew300PlaybackGainUiState,
+    val ew300RuntimePersistence: Ew300RuntimePersistenceState,
+    val ew300RuntimeSaveState: Ew300RuntimeSaveUiState,
     val blackPearlFlashOutcome: BlackPearlFlashUiOutcome?,
+)
+
+data class Ew300RuntimeSaveUiState(
+    val running: Boolean = false,
+    val message: String? = null,
+    val error: String? = null,
 )
 
 data class BlackPearlFlashUiOutcome(
@@ -190,6 +201,8 @@ data class EqLibraryUiState(
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
     val ja11DcrTuningState: Ja11DcrTuningUiState = Ja11DcrTuningUiState(),
     val ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
+    val ew300RuntimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
+    val ew300RuntimeSaveState: Ew300RuntimeSaveUiState = Ew300RuntimeSaveUiState(),
     val blackPearlFlashOutcome: BlackPearlFlashUiOutcome? = null,
 )
 
@@ -222,6 +235,7 @@ class EqLibraryViewModel(
     private var ja11AutoSaveJob: Job? = null
     private var ja11SavePending = false
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
+    private val mutableEw300RuntimeSaveState = MutableStateFlow(Ew300RuntimeSaveUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
     private val mutableBlackPearlFlashOutcome = MutableStateFlow<BlackPearlFlashUiOutcome?>(null)
     private var blackPearlEditorLineageRepresentation: SavedHardwareEqRepresentation? = null
@@ -341,6 +355,8 @@ class EqLibraryViewModel(
             blackPearlQualificationState = BlackPearlQualificationUiState(),
             fiioJa11DeviceState = FiioJa11DeviceUiState(),
             ew300PlaybackGainState = Ew300PlaybackGainUiState(),
+            ew300RuntimePersistence = Ew300RuntimePersistenceState.UNKNOWN,
+            ew300RuntimeSaveState = Ew300RuntimeSaveUiState(),
             blackPearlFlashOutcome = null,
         )
     }
@@ -397,11 +413,22 @@ class EqLibraryViewModel(
         mutableJa11DcrTuningState,
     ) { hardware, dcr -> hardware.copy(ja11DcrTuningState = dcr) }
 
+    private val hardwareConnectionsWithEw300Runtime = combine(
+        hardwareConnectionsWithDcrTuning,
+        hardwareRepository.ew300RuntimePersistence,
+        mutableEw300RuntimeSaveState,
+    ) { hardware, persistence, saveState ->
+        hardware.copy(
+            ew300RuntimePersistence = persistence,
+            ew300RuntimeSaveState = saveState,
+        )
+    }
+
     val uiState: StateFlow<EqLibraryUiState> = combine(
         preferencesRepository.preferences,
         catalogRepository.state,
         libraryUi,
-        hardwareConnectionsWithDcrTuning,
+        hardwareConnectionsWithEw300Runtime,
         hardwareRepository.recognitionState,
     ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
@@ -438,6 +465,8 @@ class EqLibraryViewModel(
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
             ja11DcrTuningState = hardware.ja11DcrTuningState,
             ew300PlaybackGainState = hardware.ew300PlaybackGainState,
+            ew300RuntimePersistence = hardware.ew300RuntimePersistence,
+            ew300RuntimeSaveState = hardware.ew300RuntimeSaveState,
             blackPearlFlashOutcome = hardware.blackPearlFlashOutcome,
         )
     }.stateIn(
@@ -661,7 +690,11 @@ class EqLibraryViewModel(
         }
         mutableEw300PlaybackGainState.value = state.beginWrite()
         viewModelScope.launch {
-            val result = hardwareRepository.setEw300PlaybackGain(gainDb)
+            val result = if (BuildConfig.EW300_PARITY_EXPERIMENT_ENABLED) {
+                hardwareRepository.setEw300PlaybackGainRuntime(gainDb)
+            } else {
+                hardwareRepository.setEw300PlaybackGain(gainDb)
+            }
             mutableEw300PlaybackGainState.value = when (result) {
                 is Ew300PlaybackGainResult.Success -> state.verified(result.playbackGainDb)
                 is Ew300PlaybackGainResult.NotSuitable -> state.failure(result.reason)
@@ -1109,15 +1142,45 @@ class EqLibraryViewModel(
         if (current.stage != MyDacEditorStage.REVIEW || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
         mutableEw300EditorState.value = current.copy(applyStatus = MyDacEditorApplyStatus.APPLYING, applyFailureReason = null)
         viewModelScope.launch {
-            val result = hardwareRepository.applyEw300Editor(working, allowCautions)
-            mutableEw300EditorState.value = when (result) {
-                Ew300EditorApplyResult.Verified -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
-                is Ew300EditorApplyResult.ConfirmationRequired -> current.copy(applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED)
-                is Ew300EditorApplyResult.InvalidPlan -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
-                is Ew300EditorApplyResult.StaleBaseline -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
-                is Ew300EditorApplyResult.DeviceUnavailable -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
-                is Ew300EditorApplyResult.TransferFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
-                is Ew300EditorApplyResult.VerificationFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+            if (BuildConfig.EW300_PARITY_EXPERIMENT_ENABLED) {
+                val result = hardwareRepository.applyEw300EditorRuntime(working, allowCautions)
+                mutableEw300EditorState.value = when (result) {
+                    is Ew300RuntimeApplyResult.Verified -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
+                    is Ew300RuntimeApplyResult.ConfirmationRequired -> current.copy(applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED)
+                    is Ew300RuntimeApplyResult.InvalidPlan -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300RuntimeApplyResult.StaleBaseline -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300RuntimeApplyResult.DeviceUnavailable -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300RuntimeApplyResult.TransferFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300RuntimeApplyResult.VerificationFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                }
+            } else {
+                val result = hardwareRepository.applyEw300Editor(working, allowCautions)
+                mutableEw300EditorState.value = when (result) {
+                    Ew300EditorApplyResult.Verified -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
+                    is Ew300EditorApplyResult.ConfirmationRequired -> current.copy(applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED)
+                    is Ew300EditorApplyResult.InvalidPlan -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300EditorApplyResult.StaleBaseline -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300EditorApplyResult.DeviceUnavailable -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300EditorApplyResult.TransferFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                    is Ew300EditorApplyResult.VerificationFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                }
+            }
+        }
+    }
+
+    fun saveEw300Runtime() {
+        val state = mutableEw300RuntimeSaveState.value
+        if (state.running) return
+        mutableEw300RuntimeSaveState.value = Ew300RuntimeSaveUiState(running = true)
+        viewModelScope.launch {
+            mutableEw300RuntimeSaveState.value = when (val result = hardwareRepository.saveEw300Runtime()) {
+                Ew300RuntimeSaveResult.Verified -> Ew300RuntimeSaveUiState(
+                    message = "Saved in this session · EQ and output gain were verified after Save.",
+                )
+                is Ew300RuntimeSaveResult.NotSuitable -> Ew300RuntimeSaveUiState(error = result.reason)
+                is Ew300RuntimeSaveResult.DeviceUnavailable -> Ew300RuntimeSaveUiState(error = result.reason)
+                is Ew300RuntimeSaveResult.TransferFailed -> Ew300RuntimeSaveUiState(error = result.reason)
+                is Ew300RuntimeSaveResult.VerificationFailed -> Ew300RuntimeSaveUiState(error = result.reason)
             }
         }
     }
