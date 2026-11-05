@@ -157,3 +157,26 @@ Add entries below in chronological order.
 - Maintained docs updated: READINESS.md
 - Reviewer: pending final gpt-6-luna review
 
+### T-005 — review P1 fix: runtime gain bookkeeping
+
+- Date: 2026-11-05
+- Source SHA: working tree after reviewed head 7b80da22 (fix commit follows)
+- Artifact / APK: rebuilt ew300Parity APK
+- Device: Mac host
+- Environment: ./tools/codex-android
+- EW300 location: Mac, read-only
+- Preconditions / baseline: independent gpt-6-luna review returned FAIL with one P1 in setPlaybackGainRuntime
+- Command: ./tools/codex-android :app:testDebugUnitTest --tests '*Ew300*' && :app:assembleEw300Parity
+- Operation: rebase tracked EQ delta on a verified no-op absolute gain; invalidate delta and clear pending target after an uncertain write/readback
+- Exact bytes sent (if any): none
+- Exact bytes received: none
+- Observed result: 111 EW300 tests, 0 failures; rebuilt parity APK SHA-256 1599d98e9224264d7a88993a9e328159f63c6f256d12c422e339ddb86936e778
+- Result: PASS (finding fixed; confirmation pass pending)
+- What this proves: the reviewed stale-compensation defect now has explicit no-op and uncertain-write coverage.
+- What this does not prove: physical gain behavior.
+- Restoration: not applicable
+- Artifacts: named APK; test XMLs
+- Functional mapping rows updated: M-08
+- Maintained docs updated: this log
+- Reviewer: gpt-6-luna finding; same reviewer confirmation pending
+

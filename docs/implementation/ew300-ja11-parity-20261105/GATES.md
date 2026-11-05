@@ -116,6 +116,10 @@ OWNS: GATES.md,
 ## Review
 
 verdict: pending
-ran: none
+reviewer: gpt-6-luna
+account: other
+reviewed_head: 7b80da22400ec47c0e48b0badea685c818687084
+ran: pending
+confirmation: pending
 findings:
-- none yet
+- P1 fixed: verified no-op runtime absolute gain now rebases the tracked EQ delta and records a pending target; failed/readback-mismatched gain writes zero the stale delta, clear the pending target, and fence the state until a fresh read. Tests added. Confirmation pass pending.

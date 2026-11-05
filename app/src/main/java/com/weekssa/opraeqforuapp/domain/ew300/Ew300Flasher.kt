@@ -215,19 +215,34 @@ class Ew300Flasher(
             )
         val targetGain = Ew300Protocol.withGlobalGainSteps(currentGain, requestedSteps, protocolFlags)
         if (currentGain.contentEquals(targetGain)) {
+            // A verified no-op absolute set still rebases the tracked EQ delta. Leaving a stale
+            // compensation here would make a later profile Flash read the wrong user baseline.
+            pendingRuntimeTarget = runtimeTargetFromBaseline(baseline, currentGain, requestedSteps)
+            gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+            gainStateStore.writeUserBaselineGainSteps(deviceKey, requestedSteps)
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
             trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
             trace.stage(Ew300OperationStage.FINAL_READBACK)
+            transport.markRuntimeVerified()
             return@record Ew300PlaybackGainResult.Success(requestedSteps / Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB)
         }
         trace.markBeforeFirstWrite(transport.permissionRequestCount)
         trace.stage(Ew300OperationStage.WRITING)
         if (!transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, targetGain)) {
+            pendingRuntimeTarget = null
+            gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+            gainStateStore.writeUserBaselineGainSteps(deviceKey, currentSteps)
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.UNKNOWN
             return@record Ew300PlaybackGainResult.TransferFailed(
                 "EW300 did not accept the output-gain change. No Save command was sent.",
             )
         }
         val volatileGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
         if (volatileGain == null || !volatileGain.contentEquals(targetGain)) {
+            pendingRuntimeTarget = null
+            gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+            gainStateStore.writeUserBaselineGainSteps(deviceKey, currentSteps)
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.UNKNOWN
             return@record Ew300PlaybackGainResult.VerificationFailed(
                 "EW300 output-gain readback did not match the requested value.",
             )

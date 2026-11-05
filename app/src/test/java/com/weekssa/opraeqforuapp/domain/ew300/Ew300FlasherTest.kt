@@ -116,6 +116,45 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun verifiedNoOpRuntimeGainStillRebasesStaleDeltaAndCreatesPendingTarget() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0xB0, 0xB0, 0, 0))
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertEquals(Ew300PlaybackGainResult.Success(-40.0), result)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-80, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.RUNTIME_ONLY, flasher.runtimePersistence.value)
+        assertEquals(Ew300RuntimeSaveResult.Verified, flasher.saveRuntime())
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun uncertainRuntimeGainWriteFencesStaleDeltaAndPendingTarget() = runBlocking {
+        val transport = FakeTransport(
+            initialGain = bytes(0x96, 0x96, 0, 0),
+            failWriteRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER,
+        )
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertTrue(result is Ew300PlaybackGainResult.TransferFailed)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-106, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.UNKNOWN, flasher.runtimePersistence.value)
+        assertTrue(flasher.saveRuntime() is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
     fun runtimeSaveRejectsAnExternallyChangedLiveStateWithoutSave() = runBlocking {
         val transport = FakeTransport(initialGain = bytes(0x96, 0x96, 0, 0))
         val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
