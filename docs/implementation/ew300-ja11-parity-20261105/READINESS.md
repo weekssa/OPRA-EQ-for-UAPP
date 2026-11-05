@@ -1,6 +1,6 @@
 # EW300 / JA11 five-goal parity — readiness package
 
-Status: **five-goal test candidate built and locally tested; microphone mute implemented, UAC mode and headset-disable BLOCKED with exact descriptor/HID evidence; physical/owner qualification pending.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
+Status: **five-goal test candidate built and locally tested; microphone mute implemented, UAC mode and headset-disable BLOCKED with exact descriptor/HID evidence; physical qualification pending.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
 
 ## Candidate identity
 
