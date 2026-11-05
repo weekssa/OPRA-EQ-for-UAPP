@@ -38,8 +38,8 @@ Status: **local-ready; physical qualification pending.** No push, PR, merge, pub
 
 - Pre-change baseline: `./tools/codex-android :app:testDebugUnitTest --tests '*Ew300*'` — 15 classes, 97 tests, 0 failures.
 - Current EW300 JVM: 15 classes, 112 tests, 0 failures, 0 errors, 0 skipped.
-- Full debug JVM suite: 852 tests, 0 failures, 0 errors, 0 skipped.
-- Release EW300 JVM suite: 113 tests, 0 failures, 0 errors, 0 skipped.
+- Full debug JVM suite: 855 tests, 0 failures, 0 errors, 0 skipped.
+- Release EW300 JVM suite: 116 tests, 0 failures, 0 errors, 0 skipped.
 - Python probe tests: 7/7 pass; probe self-test PASS.
 - Explicit-emulator Compose flow: `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedEw300ParityAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.weekssa.opraeqforuapp.ui.screens.Ew300ParityFlowTest` — 4/4 pass on `ew300_parity_api36` (API 36).
 - Lint: `./tools/codex-android :app:lintDebug` — 0 errors, 120 warnings, 2 hints.

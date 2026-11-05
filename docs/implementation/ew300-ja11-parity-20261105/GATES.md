@@ -115,11 +115,11 @@ OWNS: GATES.md,
 
 ## Review
 
-verdict: pending
+verdict: PASS
 reviewer: gpt-6-luna
 account: other
-reviewed_head: 7b80da22400ec47c0e48b0badea685c818687084
-ran: pending
-confirmation: pending
+reviewed_head: 2609c1f24a5ac399df16dda707d33be137b20003
+ran: full diff review at 7b80da22; P1 fix review at 4866db88; findings-only confirmation at 2609c1f2
+confirmation: PASS
 findings:
-- P1 fixed: verified no-op runtime absolute gain now rebases the tracked EQ delta and records a pending target; failed/readback-mismatched gain writes zero the stale delta, clear the pending target, and fence the state until a fresh read. Tests added. Confirmation pass pending.
+- P1 closed: verified no-op runtime absolute gain rebases the tracked EQ delta and records a pending target; failed and readback-mismatched gain writes zero the stale delta, clear the pending target, and fence the state until a fresh read. Tests cover all three paths. Same reviewer confirmed PASS.

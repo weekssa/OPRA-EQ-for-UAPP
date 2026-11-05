@@ -17,7 +17,7 @@
 
 - Mac read-only probe complete: yes (256/256 registers, only 0x52)
 - Golden-frame tests complete: yes
-- JVM tests complete: yes (112 EW300 after the P1 fix / 852 full debug / 113 release EW300)
+- JVM tests complete: yes (112 debug EW300 / 855 full debug / 116 release EW300)
 - Emulator UI tests complete: yes (4/4 on emulator-5554)
 - Emulator USB passthrough result: not attempted
 - Debug APK built and hashed: yes
@@ -36,7 +36,7 @@
 ## Persistent loop
 
 - Last test command: ./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleEw300Parity :app:assembleEw300ParityAndroidTest
-- Last result: PASS; 852 debug tests, lint 0 errors, all builds; 109 EW300, 113 release EW300, 4 emulator tests
+- Last result: PASS; 855 debug tests, 112 debug EW300, 116 release EW300, lint 0 errors, all builds, 4 emulator tests
 - Current failure: none
 - Fix in progress: none
 - Next test command: final gate rerun on the reviewed head
