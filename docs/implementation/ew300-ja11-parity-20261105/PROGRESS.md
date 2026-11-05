@@ -7,9 +7,9 @@
 - Local branch: codex/ew300-ja11-parity
 - Task gate: docs/implementation/ew300-ja11-parity-20261105/GATES.md (resealed 0e4a8da31cf1f7fb)
 - Accepted plan: docs/implementation/ew300-ja11-parity-20261105/PLAN.md
-- Current candidate SHA: 91a07ff215c6dbda8171a5b83c1c6382efdef7be (readiness follow-up commit follows)
+- Current candidate SHA: 4866db88385ddbf476554f02df87bc86c9229917 (readiness follow-up commit follows)
 - Debug APK path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
-- APK SHA-256: 63c71d85195f01f2f07c7cb341efbc55ba21c6dcc1e61c2a0a2003101c8689a7
+- APK SHA-256: 1599d98e9224264d7a88993a9e328159f63c6f256d12c422e339ddb86936e778
 - Pixel serial / wireless endpoint: not used in this local run
 - EW300 location: Mac (read-only scope only)
 
@@ -17,7 +17,7 @@
 
 - Mac read-only probe complete: yes (256/256 registers, only 0x52)
 - Golden-frame tests complete: yes
-- JVM tests complete: yes (109 EW300 / 852 full debug / 113 release EW300)
+- JVM tests complete: yes (111 EW300 after the P1 fix / 852 full debug / 113 release EW300)
 - Emulator UI tests complete: yes (4/4 on emulator-5554)
 - Emulator USB passthrough result: not attempted
 - Debug APK built and hashed: yes
@@ -61,6 +61,7 @@
 - [x] Runtime/save split, capability flags, editor type chips, five-band rows, About, explicit Save, and Reset confirmation implemented.
 - [x] Read-only Mac probe written, self-tested, and run live.
 - [x] JVM, lint, emulator, and build gates pass; APK hashed and readiness manifest verified.
+- [x] Review P1 fixed: no-op and uncertain runtime gain paths rebase/fence the tracked delta; coverage added.
 
 ## Current slice
 

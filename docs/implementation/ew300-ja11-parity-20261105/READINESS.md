@@ -7,7 +7,7 @@ Status: **local-ready; physical qualification pending.** No push, PR, merge, pub
 - Base: `180f4a962a53d22d294311121dd49d92a570d89a` (verified origin/main, 2026-11-05)
 - Branch: `codex/ew300-ja11-parity`
 - Worktree: `/Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development`
-- Code candidate head: `91a07ff215c6dbda8171a5b83c1c6382efdef7be`
+- Code candidate head: `4866db88385ddbf476554f02df87bc86c9229917` (includes the review P1 fix)
 - This readiness file is a documentation-only follow-up commit on the same branch.
 
 ## APK
@@ -15,7 +15,7 @@ Status: **local-ready; physical qualification pending.** No push, PR, merge, pub
 - Path: `app/build/outputs/apk/ew300Parity/app-ew300Parity.apk`
 - File: `app-ew300Parity.apk`
 - Size: 22,844,887 bytes
-- SHA-256: `63c71d85195f01f2f07c7cb341efbc55ba21c6dcc1e61c2a0a2003101c8689a7`
+- SHA-256: `1599d98e9224264d7a88993a9e328159f63c6f256d12c422e339ddb86936e778`
 - Package: `com.weekssa.opraeqforuapp.ew300parity`
 - versionName: `0.10.0-ew300parity`
 - versionCode: `22`
@@ -37,7 +37,7 @@ Status: **local-ready; physical qualification pending.** No push, PR, merge, pub
 ## Local test results
 
 - Pre-change baseline: `./tools/codex-android :app:testDebugUnitTest --tests '*Ew300*'` — 15 classes, 97 tests, 0 failures.
-- Current EW300 JVM: 15 classes, 109 tests, 0 failures, 0 errors, 0 skipped.
+- Current EW300 JVM: 15 classes, 111 tests, 0 failures, 0 errors, 0 skipped.
 - Full debug JVM suite: 852 tests, 0 failures, 0 errors, 0 skipped.
 - Release EW300 JVM suite: 113 tests, 0 failures, 0 errors, 0 skipped.
 - Python probe tests: 7/7 pass; probe self-test PASS.
@@ -48,7 +48,7 @@ Status: **local-ready; physical qualification pending.** No push, PR, merge, pub
 ## Behavior implemented
 
 - Runtime editor Apply (`APPLY_RUNTIME`): product-allowlisted writes, same-session readback, zero Save.
-- Runtime output gain (`SET_GAIN_RUNTIME`): stereo `0x66`, bounded range, readback verified, zero Save; tracked delta rebased.
+- Runtime output gain (`SET_GAIN_RUNTIME`): stereo `0x66`, bounded range, readback verified, zero Save; tracked delta rebased on success, verified no-op, and uncertain-write paths.
 - Explicit Save (`SAVE_RUNTIME`): fresh comparison, exactly one `0x53`, expected reconnect, final readback; uncertain Save is not replayed.
 - Truthful saved-session state: Runtime only / Saving / Saved in this session / Save not verified / Unknown.
 - Five-band rows with accessible type/frequency/gain/Q values.
