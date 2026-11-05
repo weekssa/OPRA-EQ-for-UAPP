@@ -6,6 +6,41 @@
 #include <stdio.h>
 #include <string.h>
 
+static void uac_request(IOUSBDeviceInterface **dev, unsigned char request,
+                         unsigned short value, unsigned short index,
+                         int length, const char *label) {
+    unsigned char buffer[8] = {0};
+    IOUSBDevRequest req;
+    memset(&req, 0, sizeof(req));
+    req.bmRequestType = 0xA1;
+    req.bRequest = request;
+    req.wValue = value;
+    req.wIndex = index;
+    req.wLength = length;
+    req.pData = buffer;
+    IOReturn result = (*dev)->DeviceRequest(dev, &req);
+    printf("%s result=%d len=%d bytes=", label, result, req.wLenDone);
+    for (int i = 0; i < length; i++) printf("%02X", buffer[i]);
+    printf("\n");
+}
+
+static void hid_report(IOUSBDeviceInterface **dev, unsigned char reportId, int length, const char *label) {
+    unsigned char buffer[64] = {0};
+    IOUSBDevRequest req;
+    memset(&req, 0, sizeof(req));
+    req.bmRequestType = 0xA1;  // IN, class, interface
+    req.bRequest = 0x01;       // HID GET_REPORT
+    req.wValue = (0x01 << 8) | reportId;
+    req.wIndex = 3;            // HID interface 3
+    req.wLength = length;
+    req.pData = buffer;
+    IOReturn result = (*dev)->DeviceRequest(dev, &req);
+    printf("%s result=%d len=%d bytes=", label, result, req.wLenDone);
+    for (int i = 0; i < length; i++) printf("%02X", buffer[i]);
+    printf("\n");
+}
+
+
 int main(void) {
     CFMutableDictionaryRef matching = IOServiceMatching(kIOUSBDeviceClassName);
     io_iterator_t iterator = 0;
@@ -68,6 +103,26 @@ int main(void) {
                     muteGet.pData = &mute;
                     IOReturn muteResult = (*dev)->DeviceRequest(dev, &muteGet);
                     printf("mute_result=%d mute=%u\n", muteResult, mute);
+
+                    hid_report(dev, 0x01, 1, "hid_01");
+                    hid_report(dev, 0x4B, 10, "hid_4B");
+                    hid_report(dev, 0x54, 10, "hid_54");
+
+                    int units[] = {2, 4, 7};
+                    for (int unitIndex = 0; unitIndex < 3; unitIndex++) {
+                        int unit = units[unitIndex];
+                        char label[48];
+                        snprintf(label, sizeof(label), "unit%d_mute_get", unit);
+                        uac_request(dev, 0x81, 0x0100, (unsigned short)(unit << 8), 1, label);
+                        snprintf(label, sizeof(label), "unit%d_vol_get", unit);
+                        uac_request(dev, 0x81, 0x0201, (unsigned short)(unit << 8), 2, label);
+                        snprintf(label, sizeof(label), "unit%d_vol_min", unit);
+                        uac_request(dev, 0x82, 0x0201, (unsigned short)(unit << 8), 2, label);
+                        snprintf(label, sizeof(label), "unit%d_vol_max", unit);
+                        uac_request(dev, 0x83, 0x0201, (unsigned short)(unit << 8), 2, label);
+                        snprintf(label, sizeof(label), "unit%d_vol_res", unit);
+                        uac_request(dev, 0x84, 0x0201, (unsigned short)(unit << 8), 2, label);
+                    }
                 }
                 if (openResult == 0) (*dev)->USBDeviceClose(dev);
             }

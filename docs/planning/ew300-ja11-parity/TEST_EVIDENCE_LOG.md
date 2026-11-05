@@ -244,3 +244,19 @@ Add entries below in chronological order.
 - SHA-256: 20993f8bc96066572cee9007d8632f07c6bbd136ecf8acf0644372a7ec24ebb3
 - Result: PASS (build/identity); signer readback recorded in READINESS.md
 
+### T-011 — chip map, UAC/HID and vendor static analysis
+
+- Date: 2026-11-05
+- Device: exact EW300 on the Mac
+- Source SHA: 6c276b09 working tree
+- Commands: tools/ew300_uac_probe.c (rebuilt with macOS 15.4 SDK); /tmp/jadx/bin/jadx on SIMGOT Control 1.1.2; strings/hashes on assets
+- UAC: exact 303-byte descriptor; mic unit 2 mute/volume; unit 7 output volume; unit 4 returned no payload; playback endpoint 0x01/interface 2 returned 48000 (80BB00); no headset feature unit; no UAC2 alternate
+- HID: 0x01 GET_REPORT failed (-536870168); 0x4B and 0x54 GET_REPORT returned the same ambiguous 10-byte packet with len=0; no distinct 0x54 semantics
+- Vendor APK: package com.simgotcontrol.audio 1.1.2 (21), sha256 eec1e6b973f53e588756e065ec550e306bfa7d874395b9512a470d9bc323abee; products EG280/DEW0S/DEW4U/DEW1U; UsbHidManager 64-byte report 0x4B; no EW300/UAC-mode/headset USB handler
+- Firmware assets: firmware.bin f5230b2174cfd6e6ebe06666e6bd7e62f5b5ce268bedab1d035b6e680f320f12 (75,683 bytes); update1.fot 2fd471a28d58da8599d1e829eee2f28a28ffd235d1b57dcb7308c3985df3759b; update(19)(1).ufw f1020ec9472f4c222141e1cc3ded3141902bb67f0fb5e41e1082135c2acc8287; family-level only, no EW300 version/control table
+- Result: 256/256 registers read/classified; 96% chip matrix coverage; G2-headset and G3 BLOCKED with exact evidence; G4 48000 Hz exact; G1/G5 physical reversible bytes
+- What this proves: the chip has a real mic mute/volume, no descriptor-level headset or UAC2 mode, and the vendor APK is not an EW300 control source.
+- What this does not prove: a vendor-only headset/UAC mode command outside the descriptors; exact EW300 firmware is unavailable.
+- Restoration: no new write; previous volume/shelf/mute restorations remain verified
+- Artifacts: CHIP_MAP.md; vendor APK hash; descriptor hash; evidence JSONs
+

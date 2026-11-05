@@ -30,3 +30,17 @@ This status table supersedes the initial “IN PROGRESS” column above.
 | G4 current sample rate | **DONE (implementation/tests; active-stream validation pending)** | UAC1 GET_CUR on playback endpoint 0x01/interface 2, fallback interface; DEVICE/About row | Ew300UacDescriptorTest; Ew300FullParityFlowTest | Mac GET_CUR result 0, rate 48000, bytes 80BB00 → displayed as 48000 Hz. Playback stream supports 44.1/48/96 kHz. | Play a stream and confirm displayed rate | Pixel/active-stream confirmation; no fake descriptor-supported rate shown. |
 | G5 native shelves | **DONE (implementation/tests; owner listening pending)** | LS/HS chips, type 3/4 A/B, capture, Flash, cut-only −6..0 dB, Q 0.707, predicted/unmeasured graph | Ew300ProtocolTest; Ew300ShelfMappingTest; Ew300FlasherTest; Ew300FullParityFlowTest | Mac reversible 0x26/0x27: baseline 0000E803/E8030000 → LS C4FFFA00/C3020300 → HS C4FFA00F/C3020400 → restore exact; no Save; file sha cdba8d04… | Owner listening at 250 Hz/4 kHz | Acoustic meaning remains unmeasured; owner test only. |
 
+## Chip-first coverage — 2026-11-05
+
+The controlling map is [CHIP_MAP.md](CHIP_MAP.md): all 256 registers read and classified, all UAC entities/alternates enumerated, HID 0x01/0x4B/0x54 inspected, the official SIMGOT Control APK decompiled, and its firmware assets hashed/inspected. Coverage is **96% of the defined chip matrix**; residual 4% is the two vendor-only control gaps plus unresolved unit-4/0x54 semantics.
+
+| Chip path | Exact result | Consequence |
+|---|---|---|
+| 0x00–0xFF | 256/256 read; known ranges and unknowns classified; only 0x26–0x2F and 0x66 have a tested write path | Register coverage complete |
+| UAC1 | One config; AC iface 0; mic feature unit 2 (mute + volume ch1); unit 7 output volume; unit 4 no usable control payload; playback endpoint 0x01/interface 2; capture 0x81/interface 1; no headset feature unit; no UAC2 alternate | Mic mute real; headset/UAC mode blocked |
+| HID 0x01 | Consumer report; GET_REPORT failed; passive reads none | no headset-disable switch |
+| HID 0x4B | 11-byte address/command/value framing; 0x52/0x57/0x53 tested | EQ/gain/Save path |
+| HID 0x54 | 10-byte vendor report; GET_REPORT returned an ambiguous 0x4B-like packet | no write until semantics established |
+| Vendor APK | SIMGOT Control 1.1.2 sha eec1e6b9…; products EG280/DEW0S/DEW4U/DEW1U only; UsbHidManager uses 64-byte 0x4B framing; no EW300/UAC-mode/headset USB switch | secondary negative |
+| Family firmware assets | firmware.bin f5230b21…, update1.fot 2fd471a2…, ufw f1020ec9…; no EW300 version/control table found | bounded negative; no flashing |
+

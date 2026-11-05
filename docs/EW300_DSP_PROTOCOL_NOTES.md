@@ -360,3 +360,17 @@ production flags remain false.
   -6 dB, Q 0.707) and C4 FF A0 0F / C3 02 04 00 (High Shelf 4 kHz, -6 dB, Q 0.707). Mac
   reversible test restored the exact flat bytes. Acoustic meaning remains unmeasured until the
   owner listening test.
+
+## 2026-11-05 chip-first coverage and vendor static pass
+
+Full register/UAC/HID classification is in docs/planning/ew300-ja11-parity/CHIP_MAP.md. All 256
+registers were read; only 0x26-0x2F and 0x66 have a tested write path. UAC1 feature unit 2 is the
+microphone mute (master) and volume (channel 1); unit 7 is output volume; unit 4 returned no usable
+payload. HID 0x01 GET_REPORT failed; HID 0x4B and 0x54 GET_REPORT returned the same ambiguous
+10-byte packet. There is no headset feature unit and no UAC2 alternate.
+
+The official SIMGOT Control APK 1.1.2 (sha256 eec1e6b9...) supports EG280/DEW0S/DEW4U/DEW1U only
+and uses a 64-byte report 0x4B framing, not the EW300 11-byte framing. Its firmware assets
+(firmware.bin f5230b21..., update1.fot 2fd471a2..., ufw f1020ec9...) are family-level only; no
+EW300 version/control table was found. No firmware was flashed. Chip-matrix coverage is 96%, with
+the 4% residual being the two vendor-only control gaps plus unresolved unit-4/0x54 semantics.

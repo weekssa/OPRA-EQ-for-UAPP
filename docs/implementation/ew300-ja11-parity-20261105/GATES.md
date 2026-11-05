@@ -12,6 +12,7 @@ OWNS: GATES.md,
   docs/implementation/ew300-ja11-parity-20261105/PROGRESS.md,
   docs/implementation/ew300-ja11-parity-20261105/READINESS.md,
   docs/planning/ew300-ja11-parity/GOALS.md,
+  docs/planning/ew300-ja11-parity/CHIP_MAP.md,
   docs/planning/ew300-ja11-parity/README.md,
   docs/planning/ew300-ja11-parity/BRIEF.md,
   docs/planning/ew300-ja11-parity/EXECUTION_PROMPT.md,
@@ -131,17 +132,11 @@ OWNS: GATES.md,
 
 ## Review
 
-verdict: pending
+verdict: PASS
 reviewer: gpt-6-luna
 account: other
-reviewed_head: b0c8ded97908c81704ae4f261c81207d97780af3
-ran: pending
-confirmation: pending
+reviewed_head: 6c276b098a92e4bf169f06abe410e6ea99821eac
+ran: full review at 0800e712; fixes at 4a87ce9b/66af7a03; findings-only confirmations at b0c8ded9 and 6c276b09
+confirmation: PASS
 findings:
-- P1 fixed: UAC1 sample-rate wIndex corrected to endpoint low byte 0x01; exact-device GET_CUR reacquired 48000/80BB00; interface fallback removed.
-- P1 fixed: Mac UAC probe made read-only (no SET_CUR), eliminating the unverified-device write path; descriptor evidence retained.
-- P1 fixed: reversible shelf probe restores baseline in a failure-safe finally path, verifies both registers, and has fault-injection coverage.
-- P2 fixed: microphone mute is a switch with switch semantics; unknown GET_CUR shows Not read instead of Live.
-- P2 fixed: out-of-scale volume gain displays Unmapped rather than clamping to level 0.
-- P2 fixed: volume evidence records both file SHA-256 6fd8e368 and internal JSON SHA-256 9671c2d1.
-- Confirmation pass pending on the fixed candidate.
+- All prior findings closed. UAC1 sample-rate wIndex uses endpoint low byte 0x01; exact-device GET_CUR returned 48000/80BB00. Mac UAC probe is read-only. Shelf probe restores in finally with fault injection that reaches the restoration path. Microphone mute is a real switch; unknown readback is Not read. Out-of-scale volume is Unmapped. Volume evidence records file/internal hashes. Same reviewer confirmed PASS.

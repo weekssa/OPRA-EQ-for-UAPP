@@ -88,3 +88,11 @@ Execution performed no new research fan-out, as the accepted plan requires one w
 - Decision: microphone mute is a real UAC1 control and is exposed in the parity DEVICE surface. Headset-disable and UAC-mode switching remain BLOCKED with this exact descriptor evidence; no JA11 command 0x20 reuse and no blind register sweep.
 - Next experiments: static analysis of vendor APK/HID report 0x54 for a headset/UAC vendor control; active-stream sample-rate validation on the Pixel; owner microphone/listening checks.
 
+## 2026-11-05 chip-first vendor/static pass
+
+Source order for this pass: exact EW300 responses first; KT02H20-family firmware/tools second; community maps third; vendor apps/public pages last. The missing EW300 app is not evidence about the chip.
+
+- Official SIMGOT Control APK: https://oss.simgot.com/app/SIMGOT%20Control1.1.2.apk; package com.simgotcontrol.audio 1.1.2 (21); sha256 eec1e6b973f53e588756e065ec550e306bfa7d874395b9512a470d9bc323abee. Decompiled with jadx 1.5.1. UsbHidManager uses report ID 75 (0x4B), a 64-byte request-type/code packet; product enum is EG280/DEW0S/DEW4U/DEW1U only. No EW300 product, no UAC-mode handler, no headset-disable USB switch. Secondary negative.
+- Firmware assets in that APK: firmware.bin (75,683 bytes) sha256 f5230b2174cfd6e6ebe06666e6bd7e62f5b5ce268bedab1d035b6e680f320f12; update1.fot sha256 2fd471a28d58da8599d1e829eee2f28a28ffd235d1b57dcb7308c3985df3759b; update(19)(1).ufw sha256 f1020ec9472f4c222141e1cc3ded3141902bb67f0fb5e41e1082135c2acc8287. Strings/header inspection found family firmware markers (inti gmic1, USB_PLAYING) but no EW300 version/control table. No flashing or redistribution.
+- Exact EW300 UAC feature units: unit 2 mic mute/volume, unit 7 output volume, unit 4 no usable payload; no headset unit; one UAC1 configuration. HID 0x01 GET_REPORT failed; 0x4B/0x54 GET_REPORT returned the same ambiguous 10-byte packet. These are exact-device negatives, recorded in CHIP_MAP.md.
+

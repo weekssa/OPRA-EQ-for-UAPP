@@ -7,9 +7,9 @@
 - Local branch: codex/ew300-ja11-parity
 - Task gate: docs/implementation/ew300-ja11-parity-20261105/GATES.md (five-goal reseal 5ef34b797a53e153)
 - Accepted plan: docs/implementation/ew300-ja11-parity-20261105/PLAN.md
-- Current candidate SHA: working tree from 5832bc5e; final commit recorded in READINESS/FINAL_REPORT
+- Current candidate SHA: 6c276b098a92e4bf169f06abe410e6ea99821eac
 - Debug APK path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
-- APK SHA-256: pending final rebuild (previous 998d6a014e4a5aea0c2d0db50e897190e7eb0b40c8b25d4386c68aaf69a11e48)
+- APK SHA-256: 20993f8bc96066572cee9007d8632f07c6bbd136ecf8acf0644372a7ec24ebb3
 - Pixel serial / wireless endpoint: not used in this local run
 - EW300 location: Mac; reversible shelf/volume/mic tests run, baseline restored
 
@@ -17,7 +17,7 @@
 
 - Mac read-only probe complete: yes (256/256 registers, only 0x52)
 - Golden-frame tests complete: yes
-- JVM tests complete: yes (123 debug EW300 / 866 full debug / 127 release EW300 at last run)
+- JVM tests complete: yes (123 debug EW300 / 866 full debug / 123 release EW300)
 - Emulator UI tests complete: yes (Ew300FullParityFlowTest 3/3; prior parity 4/4)
 - Emulator USB passthrough result: not attempted
 - Debug APK built and hashed: yes
@@ -36,7 +36,7 @@
 ## Persistent loop
 
 - Last test command: ./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleEw300Parity :app:assembleEw300ParityAndroidTest
-- Last result: PASS; 866 debug tests, 123 debug EW300, 127 release EW300, lint 0 errors, all builds, 3/3 full-parity emulator tests
+- Last result: PASS; 866 debug tests, 123 debug EW300, 123 release EW300, lint 0 errors, all builds, 4/4 full-parity emulator tests
 - Current failure: none
 - Fix in progress: none
 - Next test command: final gate rerun on the reviewed head
@@ -65,13 +65,13 @@
 
 ## Current slice
 
-- Objective: independent review of the local-ready candidate
-- Files: none pending
-- Tests run: full local gates above
-- Result: PASS
-- Evidence: TEST_EVIDENCE_LOG.md T-000 through T-004; READINESS.md
-- Mapping update: complete for implemented rows
-- Evidence-log entry: complete
+- Objective: chip-first closure and 96% coverage
+- Files: CHIP_MAP.md, GOALS.md, vendor/static evidence
+- Tests run: 256-register map; UAC feature units; HID 0x01/0x4B/0x54; vendor APK/firmware; full local gates
+- Result: 96% chip coverage; G2-headset and G3 BLOCKED; G1/G4/G5 complete
+- Evidence: TEST_EVIDENCE_LOG.md T-011; CHIP_MAP.md; READINESS.md
+- Mapping update: complete for implemented/open rows
+- Evidence-log entry: T-011
 
 ## Next action
 

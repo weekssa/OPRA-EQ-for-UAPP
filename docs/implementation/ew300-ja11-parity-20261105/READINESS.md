@@ -8,7 +8,7 @@ Status: **five-goal test candidate built and locally tested; microphone mute imp
 - Branch: codex/ew300-ja11-parity
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
-- Code candidate head: 66af7a03c12b5657ed7bd07875616bd4f59bf507
+- Code candidate head: 6c276b098a92e4bf169f06abe410e6ea99821eac
 - Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
 
 ## APK
@@ -27,8 +27,8 @@ Status: **five-goal test candidate built and locally tested; microphone mute imp
 | Goal | Status | Evidence |
 |---|---|---|
 | G1 0–60 volume | DONE | Device row/slider; 60 = 0 dB, 0 = −60 dB, 1 dB/step; Mac 0x66 bytes 88880000 / C4C40000 / 00000000 and exact restore; zero Save; JVM/emulator tests. |
-| G2 mic/headset switches | PARTIAL — mic DONE, headset BLOCKED | UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 → SET 1 → verify 1 → restore 0. No headset feature unit; HID 0x01 is passive; no disable control. |
-| G3 UAC mode switching | BLOCKED | Exact 303-byte descriptor: one configuration, UAC1 only, no UAC2 alternate or mode selector; descriptor sha256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907. |
+| G2 mic/headset switches | PARTIAL — mic DONE, headset BLOCKED | UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 → SET 1 → verify 1 → restore 0; mic volume 0xCE00..0x0000 with 0x8000 step. No headset feature unit; HID 0x01 GET_REPORT failed; 0x54 ambiguous; vendor APK has no EW300 headset switch. |
+| G3 UAC mode switching | BLOCKED | Exact 303-byte descriptor: one configuration, UAC1 only, no UAC2 alternate or mode selector; descriptor sha256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907. SIMGOT Control APK 1.1.2 (sha eec1e6b9…) supports EG280/DEW0S/DEW4U/DEW1U only, no UAC-mode handler. |
 | G4 current sample rate | DONE (implementation/tests; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Mac returned 48000 Hz (80BB00). A zero result is treated as not read, not 0 Hz. |
 | G5 native shelves | DONE (implementation/tests; owner listening pending) | LS/HS editor/capture/Flash; type 3/4 bytes C4FFFA00/C3020300 and C4FFA00F/C3020400; Mac reversible and exact restore; graph says predicted/unmeasured. |
 
@@ -39,6 +39,8 @@ Status: **five-goal test candidate built and locally tested; microphone mute imp
 - Volume evidence: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-reversible-volume.json (file sha256 6fd8e3682f5e6caf39fe71a5c4fa41f4816f804bbf9039f9520634abf2e5cebd; internal JSON sha256 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c).
 - Shelf evidence: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-reversible-shelf.json (file sha256 cdba8d041947132fd175a01668034977153a72d22994ec58a117939f4e296f2d; internal sha256 37c4db310c85e7ed43758e42bd35d5e4950e8234bdeb6a30511ef030a50ecb89).
 - Live read-only full register capture: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-readonly-capture.json (file sha256 030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71).
+- Chip map: docs/planning/ew300-ja11-parity/CHIP_MAP.md (256/256 registers; 96% coverage; 4% residual headset/UAC-mode/unit-4/0x54).
+- Vendor APK: SIMGOT Control 1.1.2, sha256 eec1e6b973f53e588756e065ec550e306bfa7d874395b9512a470d9bc323abee; firmware.bin f5230b21…, update1.fot 2fd471a2…, ufw f1020ec9….
 
 ## Tests
 
@@ -50,6 +52,11 @@ Status: **five-goal test candidate built and locally tested; microphone mute imp
 - Probe self-tests: readonly 7/7; reversible shelf 3/3; live reversible volume/shelf/restore.
 
 ## Blockers and next experiments
+
+Chip coverage score: **96%** of the defined matrix in CHIP_MAP.md. All 256 registers were read and
+classified; all UAC entities/alternates, HID 0x01/0x4B/0x54, the vendor APK product/protocol paths,
+and family firmware assets were inspected or tested. The residual 4% is the two vendor-only control
+gaps (headset-disable and UAC mode) plus unresolved feature-unit-4/HID-0x54 semantics.
 
 - Headset-remote disable: no exact descriptor/HID control. Next: static vendor APK/HID 0x54 analysis and one hypothesis-driven vendor request with baseline/restore; no blind sweep.
 - UAC mode switching: no UAC2 alternate or mode selector in the exact descriptor. Next: vendor APK/firmware static analysis for a mode command; do not reuse JA11 0x20.

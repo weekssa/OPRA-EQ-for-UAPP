@@ -129,5 +129,11 @@ flags remain false and the existing persistent Apply/Flash/Reset policy is uncha
 | Current sample-rate readout | SUPPORTED_AND_IMPLEMENTED (read-only; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Mac returned 48000 Hz (80BB00). |
 | Native Low/High Shelf editor/capture/Flash | SUPPORTED_AND_IMPLEMENTED (experimental; acoustic unmeasured) | Type 3/4 bytes exact; Mac reversible LS/HS/restore; cut-only -6..0 dB, Q 0.707, 250 Hz/4 kHz. |
 
+Chip-first coverage is recorded in docs/planning/ew300-ja11-parity/CHIP_MAP.md: 256/256 registers
+read, all UAC entities/alternates enumerated, HID 0x01/0x4B/0x54 inspected, and the official
+SIMGOT Control APK/firmware assets analyzed. Coverage is 96%; the 4% residual is the two vendor-only
+control gaps (headset-disable and UAC mode) plus unresolved unit-4/0x54 semantics. Headset-disable
+and UAC mode remain BLOCKED; no firmware write or identity write occurred.
+
 Decision vocabulary is intentionally explicit: `SUPPORTED_AND_IMPLEMENTED`,
 `HARDWARE_DOES_NOT_PROVIDE`, `INSUFFICIENT_EVIDENCE`, and `UNSAFE_OR_OUT_OF_SCOPE`.

@@ -130,3 +130,9 @@ This remains software/reversible evidence, not a new physical persistence qualif
 - UAC descriptor: exact 303-byte configuration descriptor, UAC1 only, mic feature unit 2 master mute, playback endpoint 0x01/interface 2; descriptor sha256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907.
 - Microphone mute: live GET 0 -> SET 1 -> verify 1 -> restore 0.
 - UAC mode and headset-disable: BLOCKED with exact descriptor/HID evidence; no firmware, identity, or arbitrary register write.
+
+### 2026-11-05 chip-first coverage (software/descriptors/static)
+
+- CHIP_MAP.md records 256/256 register reads, UAC1 feature units 2/4/7, playback endpoint 0x01/interface 2 at 48000 Hz, HID 0x01/0x4B/0x54, vendor APK 1.1.2 (sha256 eec1e6b9…), and firmware assets (firmware.bin f5230b21…, update1.fot 2fd471a2…, ufw f1020ec9…).
+- Coverage 96%; residual 4% = headset-disable vendor control, UAC mode vendor control, unit-4/0x54 semantics.
+- No firmware flash, identity write, or arbitrary register write. Physical/owner/Pixel session remains pending.
