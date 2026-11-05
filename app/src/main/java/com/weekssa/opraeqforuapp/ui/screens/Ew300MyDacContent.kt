@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -15,6 +16,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.TabRowDefaults
@@ -30,9 +32,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
@@ -868,14 +873,18 @@ internal fun Ew300DeviceStatus(
             title = "Device volume (0–60)",
             value = currentGainDb?.let { gainDb ->
                 val level = Ew300VolumeControl.gainDbToLevel(gainDb)
-                String.format(Locale.US, "%d / 60 · %.1f dB", level, gainDb)
+                if (level != null) {
+                    String.format(Locale.US, "%d / 60 · %.1f dB", level, gainDb)
+                } else {
+                    String.format(Locale.US, "Unmapped · %.1f dB", gainDb)
+                }
             } ?: "Not read",
             supportingText = "EW300 0–60 mapping: 60 = 0 dB, 0 = −60 dB. Both stereo 0x66 bytes are written and verified.",
             enabled = canChangeGain,
             showDisclosure = true,
             onClick = if (canChangeGain) {
                 {
-                    stagedVolumeLevel = currentGainDb?.let(Ew300VolumeControl::gainDbToLevel) ?: 60
+                    stagedVolumeLevel = currentGainDb?.let(Ew300VolumeControl::gainDbToLevel) ?: 0
                     volumeDialogOpen = true
                 }
             } else {
@@ -942,27 +951,48 @@ internal fun Ew300DeviceStatus(
         },
     )
     val micMuteSupported = uac?.microphoneMuteSupported == true
-    val micMuted = uac?.microphoneMuted == true
-    PremiumValueRow(
-        title = "Microphone mute",
-        value = when {
-            !micMuteSupported -> "Not established"
-            micMuted -> "Muted"
-            else -> "Live"
-        },
-        supportingText = if (micMuteSupported) {
-            "UAC1 feature-unit mute, verified by GET_CUR after each change."
-        } else {
-            "No UAC1 microphone feature unit with mute control was found on this connection."
-        },
-        enabled = micMuteSupported && !uacState.busy && !operationBusy,
-        showDisclosure = true,
-        onClick = if (micMuteSupported && !uacState.busy && !operationBusy) {
-            { onSetMicrophoneMuted(!micMuted) }
-        } else {
-            null
-        },
-    )
+    val micMuted = uac?.microphoneMuted
+    if (micMuteSupported && micMuted != null) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = micMuted,
+                    enabled = !uacState.busy && !operationBusy,
+                    role = Role.Switch,
+                    onValueChange = { onSetMicrophoneMuted(it) },
+                )
+                .semantics { contentDescription = "Microphone mute" }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Microphone mute", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    if (micMuted) "Muted · verified by GET_CUR after each change."
+                    else "Live · verified by GET_CUR after each change.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = micMuted,
+                onCheckedChange = null,
+                enabled = !uacState.busy && !operationBusy,
+            )
+        }
+    } else {
+        PremiumValueRow(
+            title = "Microphone mute",
+            value = if (micMuteSupported) "Not read" else "Not established",
+            supportingText = if (micMuteSupported) {
+                "The feature unit exists but GET_CUR did not return a value. Read USB audio again."
+            } else {
+                "No UAC1 microphone feature unit with mute control was found on this connection."
+            },
+            enabled = false,
+        )
+    }
     PremiumValueRow(
         title = "Headset remote",
         value = if (uac?.headsetFeaturePresent == true) "Feature unit present" else "No disable control",

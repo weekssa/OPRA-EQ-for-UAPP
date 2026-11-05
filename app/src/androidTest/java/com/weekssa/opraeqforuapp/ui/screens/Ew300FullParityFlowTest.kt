@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -101,7 +102,7 @@ class Ew300FullParityFlowTest {
 
         composeRule.onNodeWithText("Current sample rate").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("48000 Hz").assertIsDisplayed()
-        composeRule.onNodeWithText("Microphone mute").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithContentDescription("Microphone mute").performScrollTo().assertIsDisplayed().performClick()
         assertEquals(true, muted)
     }
 
@@ -151,5 +152,34 @@ class Ew300FullParityFlowTest {
         composeRule.onNodeWithText("Low shelf").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("High shelf").performScrollTo().assertIsDisplayed()
     }
-}
 
+    @Test
+    fun unknownMicReadbackIsNotShownAsLive() {
+        composeRule.setContent {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Ew300DeviceStatus(
+                    report = null,
+                    hardwareEqState = snapshotState(),
+                    running = false,
+                    onRun = {},
+                    onShareReadable = {},
+                    onShareJson = {},
+                    uacState = Ew300UacUiState(
+                        status = Ew300UacStatus(
+                            uacVersion = "UAC 1.0",
+                            currentSampleRateHz = null,
+                            sampleRatePath = null,
+                            microphoneMuteSupported = true,
+                            microphoneMuted = null,
+                            headsetFeaturePresent = false,
+                        ),
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(
+            "The feature unit exists but GET_CUR did not return a value. Read USB audio again.",
+        ).performScrollTo().assertIsDisplayed()
+    }
+}

@@ -49,7 +49,7 @@ int main(void) {
                     rateRequest.bmRequestType = 0xA2;  // IN, class, endpoint
                     rateRequest.bRequest = 0x81;       // GET_CUR
                     rateRequest.wValue = 0x0100;       // SAMPLING_FREQ_CONTROL, ch 0
-                    rateRequest.wIndex = 0x0102;       // endpoint 0x01, interface 2
+                    rateRequest.wIndex = 0x01;       // endpoint 0x01, interface 2
                     rateRequest.wLength = 3;
                     rateRequest.pData = sampleRate;
                     IOReturn rateResult = (*dev)->DeviceRequest(dev, &rateRequest);
@@ -68,35 +68,6 @@ int main(void) {
                     muteGet.pData = &mute;
                     IOReturn muteResult = (*dev)->DeviceRequest(dev, &muteGet);
                     printf("mute_result=%d mute=%u\n", muteResult, mute);
-                    if (muteResult == 0) {
-                        unsigned char target = mute ? 0 : 1;
-                        IOUSBDevRequest muteSet;
-                        memset(&muteSet, 0, sizeof(muteSet));
-                        muteSet.bmRequestType = 0x21;  // OUT, class, interface
-                        muteSet.bRequest = 0x01;       // SET_CUR
-                        muteSet.wValue = 0x0100;
-                        muteSet.wIndex = 0x0200;
-                        muteSet.wLength = 1;
-                        muteSet.pData = &target;
-                        IOReturn setResult = (*dev)->DeviceRequest(dev, &muteSet);
-                        unsigned char verify = 0;
-                        IOUSBDevRequest verifyGet = muteGet;
-                        verifyGet.pData = &verify;
-                        IOReturn verifyResult = (*dev)->DeviceRequest(dev, &verifyGet);
-                        printf("mute_set_result=%d verify_result=%d verify=%u\n",
-                               setResult, verifyResult, verify);
-                        // Restore the original mute state.
-                        unsigned char restore = mute;
-                        IOUSBDevRequest restoreSet = muteSet;
-                        restoreSet.pData = &restore;
-                        IOReturn restoreResult = (*dev)->DeviceRequest(dev, &restoreSet);
-                        unsigned char restored = 0;
-                        IOUSBDevRequest restoredGet = muteGet;
-                        restoredGet.pData = &restored;
-                        IOReturn restoredResult = (*dev)->DeviceRequest(dev, &restoredGet);
-                        printf("mute_restore_result=%d restored_result=%d restored=%u\n",
-                               restoreResult, restoredResult, restored);
-                    }
                 }
                 if (openResult == 0) (*dev)->USBDeviceClose(dev);
             }

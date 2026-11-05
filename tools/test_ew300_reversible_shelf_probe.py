@@ -38,6 +38,17 @@ class Ew300ReversibleShelfProbeTest(unittest.TestCase):
     def test_self_test_sequence_restores_baseline(self):
         self.assertEqual(probe.self_test(), 0)
 
+    def test_write_failure_still_restores_baseline(self):
+        fake = probe.FakeHid(fail_after_writes=2)
+        guard = probe.Guard({probe.LOW_SHELF_A, probe.LOW_SHELF_B,
+                             probe.HIGH_SHELF_A, probe.HIGH_SHELF_B,
+                             fake.baseline[probe.BAND_A], fake.baseline[probe.BAND_B]})
+        transport = probe.Transport(fake, {"vendor_id": "31b2"}, guard)
+        with self.assertRaises(probe.ProbeError):
+            probe.run_reversible(transport)
+        self.assertEqual(fake.state[probe.BAND_A], fake.baseline[probe.BAND_A])
+        self.assertEqual(fake.state[probe.BAND_B], fake.baseline[probe.BAND_B])
+
 
 if __name__ == "__main__":
     unittest.main()

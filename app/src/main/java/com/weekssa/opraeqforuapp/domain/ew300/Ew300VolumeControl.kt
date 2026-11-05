@@ -19,9 +19,10 @@ object Ew300VolumeControl {
 
     fun levelToGainDb(level: Int): Double = requireLevel(level) - 60.0
 
-    fun gainDbToLevel(gainDb: Double): Int {
+    fun gainDbToLevel(gainDb: Double): Int? {
         require(gainDb.isFinite()) { "EW300 gain must be finite." }
-        return (gainDb + 60.0).roundToInt().coerceIn(MIN_LEVEL, MAX_LEVEL)
+        if (gainDb < MIN_GAIN_DB || gainDb > MAX_GAIN_DB) return null
+        return (gainDb + 60.0).roundToInt()
     }
 
     fun levelToSteps(level: Int): Int = (requireLevel(level) - 60) * 2

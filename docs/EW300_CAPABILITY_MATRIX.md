@@ -126,7 +126,7 @@ flags remain false and the existing persistent Apply/Flash/Reset policy is uncha
 | Microphone mute | SUPPORTED_AND_IMPLEMENTED (parity package; Pixel acoustic check pending) | UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 -> SET 1 -> verify 1 -> restore 0. |
 | Headset-remote disable switch | INSUFFICIENT_EVIDENCE / BLOCKED | Exact descriptor has no headset feature unit; HID report 0x01 is passive. Next: vendor APK/HID 0x54 static analysis. |
 | UAC mode switching | INSUFFICIENT_EVIDENCE / BLOCKED | One UAC1 configuration; no UAC2 alternate or mode selector. JA11 0x20 not transferable. Next: vendor-only command research. |
-| Current sample-rate readout | SUPPORTED_AND_IMPLEMENTED (read-only; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01/interface 2; idle returned 000000 and is displayed as not read. |
+| Current sample-rate readout | SUPPORTED_AND_IMPLEMENTED (read-only; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Mac returned 48000 Hz (80BB00). |
 | Native Low/High Shelf editor/capture/Flash | SUPPORTED_AND_IMPLEMENTED (experimental; acoustic unmeasured) | Type 3/4 bytes exact; Mac reversible LS/HS/restore; cut-only -6..0 dB, Q 0.707, 250 Hz/4 kHz. |
 
 Decision vocabulary is intentionally explicit: `SUPPORTED_AND_IMPLEMENTED`,

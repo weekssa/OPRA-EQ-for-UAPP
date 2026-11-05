@@ -49,7 +49,7 @@ class Ew300UacDescriptorTest {
         assertEquals(0xA2, endpoint.requestType)
         assertEquals(0x81, endpoint.request)
         assertEquals(0x0100, endpoint.value)
-        assertEquals(0x8201, endpoint.index)
+        assertEquals(0x82, endpoint.index)
         assertEquals(3, endpoint.length)
 
         val mic = requireNotNull(parsed.microphoneFeature)

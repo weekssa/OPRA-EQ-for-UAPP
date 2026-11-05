@@ -351,9 +351,8 @@ production flags remain false.
   Descriptor SHA-256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907.
 - Microphone mute: UAC1 GET_CUR 0 -> SET_CUR 1 -> verify 1 -> restore 0. This is a real
   feature-unit control, not a JA11 command or a HID consumer-report switch.
-- Current sample rate: GET_CUR SAMPLING_FREQ_CONTROL to endpoint 0x01/interface 2 returned
-  000000 while idle. The app treats that as "not read," not as a 0 Hz rate. Active-stream
-  validation remains pending.
+- Current sample rate: GET_CUR SAMPLING_FREQ_CONTROL to endpoint 0x01 (wIndex 0x0001) returned
+  48000 (80BB00) on the Mac. The app treats a zero result as "not read," not as 0 Hz.
 - UAC mode: no UAC2 alternate or mode selector is present in the exact descriptor. JA11 command
   0x20 is not reused. Headset-disable has no exact descriptor/HID control; both remain BLOCKED
   with the descriptor/HID evidence and a vendor-static-analysis next experiment.

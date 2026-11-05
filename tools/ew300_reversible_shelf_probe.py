@@ -54,6 +54,10 @@ class ResponseError(ProbeError):
     pass
 
 
+class RestorationError(ProbeError):
+    pass
+
+
 def build_write_frame(register: int, data: bytes) -> bytes:
     if register not in ALLOWED_WRITE_REGISTERS:
         raise ProbeSafetyError(f"register 0x{register:02X} is not in the reversible shelf allowlist")
@@ -156,16 +160,20 @@ class Transport:
 
 
 class FakeHid:
-    def __init__(self):
+    def __init__(self, fail_after_writes: int | None = None):
         self.state = {BAND_A: bytes.fromhex("0000E803"), BAND_B: bytes.fromhex("E8030000")}
         self.baseline = dict(self.state)
         self.frames: list[bytes] = []
+        self.fail_after_writes = fail_after_writes
 
     def write(self, frame: bytes) -> int:
         Guard({LOW_SHELF_A, LOW_SHELF_B, HIGH_SHELF_A, HIGH_SHELF_B,
                self.baseline[BAND_A], self.baseline[BAND_B],
                self.state[BAND_A], self.state[BAND_B]}).check(frame)
         self.frames.append(bytes(frame))
+        if self.fail_after_writes is not None and len(self.frames) >= self.fail_after_writes:
+            self.fail_after_writes = None
+            raise ProbeError("injected write failure")
         if frame[5] == WRITE_COMMAND:
             self.state[frame[1]] = bytes(frame[7:11])
         return len(frame)
@@ -195,28 +203,35 @@ def run_reversible(transport: Transport) -> dict:
     baseline_b = transport.read(BAND_B)
     allowed = {LOW_SHELF_A, LOW_SHELF_B, HIGH_SHELF_A, HIGH_SHELF_B, baseline_a, baseline_b}
     transport.guard.allowed_payloads = allowed
-
-    transport.write(BAND_A, LOW_SHELF_A)
-    transport.write(BAND_B, LOW_SHELF_B)
-    low_read_a = transport.read(BAND_A)
-    low_read_b = transport.read(BAND_B)
-    if low_read_a != LOW_SHELF_A or low_read_b != LOW_SHELF_B:
-        raise ResponseError("Low Shelf readback did not match the exact written bytes")
-
-    transport.write(BAND_A, HIGH_SHELF_A)
-    transport.write(BAND_B, HIGH_SHELF_B)
-    high_read_a = transport.read(BAND_A)
-    high_read_b = transport.read(BAND_B)
-    if high_read_a != HIGH_SHELF_A or high_read_b != HIGH_SHELF_B:
-        raise ResponseError("High Shelf readback did not match the exact written bytes")
-
-    transport.write(BAND_A, baseline_a)
-    transport.write(BAND_B, baseline_b)
-    restored_a = transport.read(BAND_A)
-    restored_b = transport.read(BAND_B)
-    if restored_a != baseline_a or restored_b != baseline_b:
-        raise ResponseError("baseline restoration did not verify byte-for-byte")
-
+    low_read_a = low_read_b = high_read_a = high_read_b = None
+    failure: Exception | None = None
+    try:
+        transport.write(BAND_A, LOW_SHELF_A)
+        transport.write(BAND_B, LOW_SHELF_B)
+        low_read_a = transport.read(BAND_A)
+        low_read_b = transport.read(BAND_B)
+        if low_read_a != LOW_SHELF_A or low_read_b != LOW_SHELF_B:
+            raise ResponseError("Low Shelf readback did not match the exact written bytes")
+        transport.write(BAND_A, HIGH_SHELF_A)
+        transport.write(BAND_B, HIGH_SHELF_B)
+        high_read_a = transport.read(BAND_A)
+        high_read_b = transport.read(BAND_B)
+        if high_read_a != HIGH_SHELF_A or high_read_b != HIGH_SHELF_B:
+            raise ResponseError("High Shelf readback did not match the exact written bytes")
+    except Exception as error:
+        failure = error
+    finally:
+        try:
+            transport.write(BAND_A, baseline_a)
+            transport.write(BAND_B, baseline_b)
+            restored_a = transport.read(BAND_A)
+            restored_b = transport.read(BAND_B)
+            if restored_a != baseline_a or restored_b != baseline_b:
+                raise ResponseError("baseline restoration did not verify byte-for-byte")
+        except Exception as restore_error:
+            raise RestorationError(f"baseline restoration failed: {restore_error}") from restore_error
+    if failure is not None:
+        raise failure
     result = {
         "schema": "ew300-reversible-shelf-v1",
         "identity": transport.identity,

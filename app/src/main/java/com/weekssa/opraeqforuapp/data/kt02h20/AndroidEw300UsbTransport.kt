@@ -137,22 +137,6 @@ class AndroidEw300UsbTransport(
                         ((endpointValue[1].toInt() and 0xFF) shl 8) or
                         ((endpointValue[2].toInt() and 0xFF) shl 16)
                     ratePath = "UAC1 GET_CUR endpoint"
-                } else {
-                    val interfaceRequest = com.weekssa.opraeqforuapp.domain.ew300.Ew300UacRequests
-                        .currentSampleRateInterface(stream)
-                    val interfaceValue = hid.controlTransferIn(
-                        interfaceRequest.requestType,
-                        interfaceRequest.request,
-                        interfaceRequest.value,
-                        interfaceRequest.index,
-                        interfaceRequest.length,
-                    )
-                    if (interfaceValue != null && interfaceValue.size >= 3) {
-                        rate = (interfaceValue[0].toInt() and 0xFF) or
-                            ((interfaceValue[1].toInt() and 0xFF) shl 8) or
-                            ((interfaceValue[2].toInt() and 0xFF) shl 16)
-                        ratePath = "UAC1 GET_CUR interface"
-                    }
                 }
             }
             if (rate == 0) {

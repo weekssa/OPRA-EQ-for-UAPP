@@ -233,18 +233,12 @@ object Ew300UacRequests {
             requestType = 0xA2,
             request = GET_CUR,
             value = SAMPLING_FREQ_CONTROL,
-            index = (endpoint shl 8) or stream.interfaceNumber,
+            // UAC1 endpoint requests put the endpoint address in the low byte and zero in the
+            // high byte. The interface number is not part of this wIndex.
+            index = endpoint,
             length = 3,
         )
     }
-
-    fun currentSampleRateInterface(stream: Ew300UacStream): Ew300UacRequest = Ew300UacRequest(
-        requestType = 0xA1,
-        request = GET_CUR,
-        value = SAMPLING_FREQ_CONTROL,
-        index = stream.interfaceNumber,
-        length = 3,
-    )
 
     fun microphoneMuteGet(unitId: Int, audioControlInterface: Int): Ew300UacRequest = Ew300UacRequest(
         requestType = 0xA1,

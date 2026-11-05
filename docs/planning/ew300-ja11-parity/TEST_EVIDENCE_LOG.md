@@ -190,14 +190,14 @@ Add entries below in chronological order.
 - Environment: macOS IOUSBDeviceInterface, 31B2:0111, LE XIAN
 - Command: /tmp/ew300_uac_probe (compiled from tools/ew300_uac_probe.c)
 - Operation: GetConfigurationDescriptorPtr; UAC1 GET_CUR sample rate; GET_CUR/SET_CUR/GET_CUR/restore microphone mute
-- Exact bytes sent: descriptor read-only; sample-rate GET_CUR 0xA2/0x81/0x0100/0x0102/3; mute GET 0xA1/0x81/0x0100/0x0200/1, SET 0x21/0x01/0x0100/0x0200/1
-- Exact bytes received: 303-byte config descriptor; sample-rate 000000; mute 0, then 1, restored 0
+- Exact bytes sent: descriptor read-only; sample-rate GET_CUR 0xA2/0x81/0x0100/0x01/3; mute GET 0xA1/0x81/0x0100/0x0200/1, SET 0x21/0x01/0x0100/0x0200/1
+- Exact bytes received: 303-byte config descriptor; sample-rate 48000 (80BB00); mute 0, then 1, restored 0
 - Observed result: UAC1 only; one configuration; microphone feature unit 2 with master mute; playback stream interface 2 endpoint 0x01 with 44.1/48/96 kHz; capture interface 1 endpoint 0x81; no headset feature unit; no UAC2 alternate
 - Result: PASS for descriptor/mic mute; UAC mode switch BLOCKED
 - What this proves: a real microphone mute control exists; the exact descriptor has no UAC2/UAC-mode alternate; headset-disable is not established.
 - What this does not prove: acoustic mic behavior on the Pixel; a vendor-only UAC mode command outside the descriptor.
 - Restoration: mute restored to 0 and verified; no Save
-- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-uac-descriptor.json (file sha 4ea759b960d40572e9b96ebf722e16a17dcc1f25460af513597ece975644bec9; descriptor sha e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907)
+- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-uac-descriptor.json (file sha a65245351b68e4a5d750e623aa771cb9c385c85baa7283477e420cbcc034566b; descriptor sha e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907)
 - Functional mapping rows updated: M-21..M-24
 - Maintained docs updated: protocol notes, capability matrix
 - Reviewer: pending final gpt-6-luna
@@ -212,7 +212,7 @@ Add entries below in chronological order.
 - Result: PASS
 - What this proves: the exact 0–60 mapping writes both stereo channel bytes and restores.
 - What this does not prove: audible level calibration or Pixel UI behavior.
-- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-reversible-volume.json (sha 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c)
+- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-reversible-volume.json (file sha256 6fd8e3682f5e6caf39fe71a5c4fa41f4816f804bbf9039f9520634abf2e5cebd; internal JSON sha256 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c)
 
 ### T-008 — reversible native Low/High Shelf bytes
 
@@ -241,6 +241,6 @@ Add entries below in chronological order.
 - Date: 2026-11-05
 - Artifact: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
 - Package/version: com.weekssa.opraeqforuapp.ew300parity / 0.10.0-ew300parity / 22
-- SHA-256: 998d6a014e4a5aea0c2d0db50e897190e7eb0b40c8b25d4386c68aaf69a11e48
+- SHA-256: 20993f8bc96066572cee9007d8632f07c6bbd136ecf8acf0644372a7ec24ebb3
 - Result: PASS (build/identity); signer readback recorded in READINESS.md
 

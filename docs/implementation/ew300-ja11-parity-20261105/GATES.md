@@ -132,6 +132,10 @@ OWNS: GATES.md,
 ## Review
 
 verdict: pending
-ran: none
+reviewer: gpt-6-luna
+account: other
+reviewed_head: 0800e712a6b81bf959d20eff6fbcc870b43b6337
+ran: pending
+confirmation: pending
 findings:
 - none yet

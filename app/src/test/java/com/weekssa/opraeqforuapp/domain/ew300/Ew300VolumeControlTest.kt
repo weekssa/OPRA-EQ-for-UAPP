@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.ew300
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class Ew300VolumeControlTest {
@@ -19,8 +20,8 @@ class Ew300VolumeControlTest {
         assertEquals(0, Ew300VolumeControl.gainDbToLevel(-60.0))
         assertEquals(30, Ew300VolumeControl.gainDbToLevel(-30.0))
         assertEquals(60, Ew300VolumeControl.gainDbToLevel(0.0))
-        assertEquals(0, Ew300VolumeControl.gainDbToLevel(-64.0))
-        assertEquals(60, Ew300VolumeControl.gainDbToLevel(0.5))
+        assertNull(Ew300VolumeControl.gainDbToLevel(-64.0))
+        assertNull(Ew300VolumeControl.gainDbToLevel(0.5))
     }
 
     @Test
