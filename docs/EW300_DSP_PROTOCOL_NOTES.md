@@ -374,3 +374,14 @@ and uses a 64-byte report 0x4B framing, not the EW300 11-byte framing. Its firmw
 (firmware.bin f5230b21..., update1.fot 2fd471a2..., ufw f1020ec9...) are family-level only; no
 EW300 version/control table was found. No firmware was flashed. Chip-matrix coverage is 96%, with
 the 4% residual being the two vendor-only control gaps plus unresolved unit-4/0x54 semantics.
+
+## 2026-11-05 exact die: KT0211L
+
+Read-only bootloader CHP (KTM handshake 1e4b544d, CHP d2434850) returned
+`12 40 85 B2 30 32 31 31 4C 43 30 32 3E` → chip ID `0211LC02` = **KT0211L**. The EW300 returned
+normal mode after an owner replug, with the exact flat baseline restored. This is not KT02H20.
+
+KT0211L's public profile is UAC1.0, 24-bit/96 kHz DAC, 24-bit/96 kHz mono ADC microphone input,
+mic preamp/adjustable bias, six GPIOs, up to four function keys, auxiliary ADC, 2-wire, and
+external interrupt. The exact descriptor matches UAC1-only. G3 is **CHIP-LIMITED**; there is no
+UAC2 mode to chase. G2-headset remains open for KT0211L GPIO/key/aux-ADC/mic-bias research.

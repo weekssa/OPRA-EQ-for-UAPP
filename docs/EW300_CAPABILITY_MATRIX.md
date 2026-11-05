@@ -135,5 +135,11 @@ SIMGOT Control APK/firmware assets analyzed. Coverage is 96%; the 4% residual is
 control gaps (headset-disable and UAC mode) plus unresolved unit-4/0x54 semantics. Headset-disable
 and UAC mode remain BLOCKED; no firmware write or identity write occurred.
 
+**Exact die:** CHP `0211LC02` = **KT0211L**, not KT02H20. KT0211L is UAC1.0 / 24-bit / 96 kHz with
+a mono ADC mic input, mic preamp/bias, six GPIOs, up to four keys, and an auxiliary ADC. Therefore
+G3 UAC2 switching is **CHIP-LIMITED**, not a missing vendor command. G2-headset remains open for
+KT0211L GPIO/key/ADC/bias research; the real UAC1 microphone mute remains implemented. The
+KT02H20-family language elsewhere in this historical document is family-level context only.
+
 Decision vocabulary is intentionally explicit: `SUPPORTED_AND_IMPLEMENTED`,
 `HARDWARE_DOES_NOT_PROVIDE`, `INSUFFICIENT_EVIDENCE`, and `UNSAFE_OR_OUT_OF_SCOPE`.

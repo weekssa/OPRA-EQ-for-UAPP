@@ -260,3 +260,30 @@ Add entries below in chronological order.
 - Restoration: no new write; previous volume/shelf/mute restorations remain verified
 - Artifacts: CHIP_MAP.md; vendor APK hash; descriptor hash; evidence JSONs
 
+### T-012 — parity APK emulator install/launch
+
+- Date: 2026-11-05
+- Device: emulator-5554, ew300_parity_api36
+- Command: ./tools/codex-android adb -s emulator-5554 install -r app/build/outputs/apk/ew300Parity/app-ew300Parity.apk; am start MainActivity
+- Observed result: install EXIT 0; MainActivity topResumedActivity; screenshot captured
+- Result: PASS (emulator only)
+- Artifact: ~/.codex/evidence/ew300/2026-11-05/emulator/parity-launch.png (sha256 a9549528fe4b03644eef89013a21c4d3508543048c5316220791af350b6446d6)
+- What this proves: the parity APK installs and launches on the emulator.
+- What this does not prove: Pixel install or physical EW300 behavior.
+
+### T-013 — read-only CHP die confirmation
+
+- Date: 2026-11-05
+- Device: exact EW300, normal mode 31B2:0111
+- Pre-baseline: 0x00 5245473A; 0x26 0000E803; 0x66 00000000
+- Entry: HID report 0x54 31 32 33 34 35 36 37 38 00 00; bootloader CDC 8888:CDC0 at /dev/cu.usbmodem2111201
+- Commands: KTM handshake 1e4b544d; CHP d2434850; RESET 5a525354
+- CHP reply: 12 40 85 B2 30 32 31 31 4C 43 30 32 3E
+- Chip ID: 0211LC02 -> KT0211L
+- Post: software reset did not return normal mode; owner unplug/replug restored exact 31B2:0111, 0x00 5245473A, 0x26 0000E803, 0x66 00000000
+- Result: PASS (identity); KT0211L confirmed
+- What this proves: the exact die is KT0211L, not KT02H20; UAC1-only is a silicon limitation.
+- What this does not prove: KT0211L GPIO/key/ADC headset behavior; exact EW300 firmware.
+- Restoration: normal mode and flat baseline verified
+- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-chip-id-chp.json (sha256 d037f7b57a6549d53224178cf33a08ba3aef5c0257bf1966eb8555bf3dbc69bb)
+

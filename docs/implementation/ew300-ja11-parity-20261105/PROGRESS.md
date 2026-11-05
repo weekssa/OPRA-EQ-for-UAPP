@@ -65,11 +65,11 @@
 
 ## Current slice
 
-- Objective: chip-first closure and 96% coverage
-- Files: CHIP_MAP.md, GOALS.md, vendor/static evidence
-- Tests run: 256-register map; UAC feature units; HID 0x01/0x4B/0x54; vendor APK/firmware; full local gates
-- Result: 96% chip coverage; G2-headset and G3 BLOCKED; G1/G4/G5 complete
-- Evidence: TEST_EVIDENCE_LOG.md T-011; CHIP_MAP.md; READINESS.md
+- Objective: exact die confirmation and KT0211L rescore
+- Files: CHIP_CONFIDENCE.md, CHIP_MAP.md, GOALS.md, evidence
+- Tests run: read-only CHP, UAC/HID, vendor APK/firmware, full local gates
+- Result: exact die KT0211L; G3 CHIP-LIMITED; G2-headset open; 96% coverage; G1/G4/G5 complete
+- Evidence: TEST_EVIDENCE_LOG.md T-013; CHIP_CONFIDENCE.md; CHIP_MAP.md
 - Mapping update: complete for implemented/open rows
 - Evidence-log entry: T-011
 

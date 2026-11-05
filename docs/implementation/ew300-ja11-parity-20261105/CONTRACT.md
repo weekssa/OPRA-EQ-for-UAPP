@@ -18,6 +18,7 @@ Accepted plan: `PLAN.md`. Goal ledger: `docs/planning/ew300-ja11-parity/GOALS.md
     "docs/implementation/ew300-ja11-parity-20261105/READINESS.md",
     "docs/planning/ew300-ja11-parity/GOALS.md",
     "docs/planning/ew300-ja11-parity/CHIP_MAP.md",
+    "docs/planning/ew300-ja11-parity/CHIP_CONFIDENCE.md",
     "docs/planning/ew300-ja11-parity/README.md",
     "docs/planning/ew300-ja11-parity/BRIEF.md",
     "docs/planning/ew300-ja11-parity/EXECUTION_PROMPT.md",

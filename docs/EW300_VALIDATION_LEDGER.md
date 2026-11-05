@@ -136,3 +136,10 @@ This remains software/reversible evidence, not a new physical persistence qualif
 - CHIP_MAP.md records 256/256 register reads, UAC1 feature units 2/4/7, playback endpoint 0x01/interface 2 at 48000 Hz, HID 0x01/0x4B/0x54, vendor APK 1.1.2 (sha256 eec1e6b9…), and firmware assets (firmware.bin f5230b21…, update1.fot 2fd471a2…, ufw f1020ec9…).
 - Coverage 96%; residual 4% = headset-disable vendor control, UAC mode vendor control, unit-4/0x54 semantics.
 - No firmware flash, identity write, or arbitrary register write. Physical/owner/Pixel session remains pending.
+
+### 2026-11-05 exact die CHP — KT0211L
+
+- Read-only CHP through the KTMicro bootloader: KTM 1e4b544d, CHP d2434850; reply 12 40 85 B2 30 32 31 31 4C 43 30 32 3E; chip ID 0211LC02 = KT0211L.
+- Pre/post normal baseline: 0x00=5245473A, 0x26=0000E803, 0x66=00000000; exact 31B2:0111 HID restored after owner replug.
+- No flash/erase/identity/firmware write. G3 becomes CHIP-LIMITED (KT0211L UAC1-only); G2-headset remains open for KT0211L GPIO/key/ADC/bias research.
+- Evidence: ~/.codex/evidence/ew300/2026-11-05/ew300-chip-id-chp.json sha256 d037f7b57a6549d53224178cf33a08ba3aef5c0257bf1966eb8555bf3dbc69bb.

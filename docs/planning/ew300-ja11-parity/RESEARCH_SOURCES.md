@@ -96,3 +96,10 @@ Source order for this pass: exact EW300 responses first; KT02H20-family firmware
 - Firmware assets in that APK: firmware.bin (75,683 bytes) sha256 f5230b2174cfd6e6ebe06666e6bd7e62f5b5ce268bedab1d035b6e680f320f12; update1.fot sha256 2fd471a28d58da8599d1e829eee2f28a28ffd235d1b57dcb7308c3985df3759b; update(19)(1).ufw sha256 f1020ec9472f4c222141e1cc3ded3141902bb67f0fb5e41e1082135c2acc8287. Strings/header inspection found family firmware markers (inti gmic1, USB_PLAYING) but no EW300 version/control table. No flashing or redistribution.
 - Exact EW300 UAC feature units: unit 2 mic mute/volume, unit 7 output volume, unit 4 no usable payload; no headset unit; one UAC1 configuration. HID 0x01 GET_REPORT failed; 0x4B/0x54 GET_REPORT returned the same ambiguous 10-byte packet. These are exact-device negatives, recorded in CHIP_MAP.md.
 
+## 2026-11-05 exact die confirmation and KT0211L reassessment
+
+- CHP read-only request: KTM handshake `1e4b544d`, CHP `d2434850`; reply `12 40 85 B2 30 32 31 31 4C 43 30 32 3E`; chip ID `0211LC02` = **KT0211L**.
+- Official/third-party KT0211L profile: USB Audio Class 1.0; 24-bit/96 kHz DAC; 24-bit/96 kHz mono ADC microphone input; microphone preamp with adjustable bias; six GPIOs; up to four function keys; auxiliary ADC; 2-wire; external interrupt. Source: https://warmseaic.com/kt/kt0211l.
+- Decision: G3 is **CHIP-LIMITED** (UAC1-only silicon), not a missing vendor command. G2-headset remains open; the next experiment is KT0211L GPIO/key/aux-ADC/mic-bias configuration, not KT02H20 headset inheritance.
+- The earlier “KT02H20 family” assumption is retained only as historical family evidence. The exact die is KT0211L.
+
