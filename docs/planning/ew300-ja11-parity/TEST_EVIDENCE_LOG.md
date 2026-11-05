@@ -309,7 +309,7 @@ Add entries below in chronological order.
 ### T-016 — Pixel Plan B runtime writes (zero Save)
 
 - Date: 2026-11-05
-- APK: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825
+- APK: 487445cb6779aa1da23eb5bdfacf126ec85b9f44e9871520ce2f93e2563ebf25
 - Runtime target: Low Shelf 250 Hz, -6.0 dB, Q 0.707, type 3; output gain 58/60 = -2.0 dB
 - UI readback: 1 active shelf, graph -6.0..0.0 dB, "Experimental native shelf response · predicted · unmeasured"; output gain -2.0 dB
 - Zero Save: parity Apply is runtime-only; no Save action used
@@ -318,7 +318,7 @@ Add entries below in chronological order.
 ### T-017 — Pixel Plan C one Save
 
 - Date: 2026-11-05
-- APK: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825
+- APK: 487445cb6779aa1da23eb5bdfacf126ec85b9f44e9871520ce2f93e2563ebf25
 - Target: Low Shelf 250 Hz, -6.0 dB, Q 0.707, type 3; output gain 0 dB
 - Runtime readback: 1 active shelf, graph -6.0..0.0 dB, predicted/unmeasured
 - Save: exactly one "Save EQ and output gain"; UI reported "Saved in this session · final readback matched"; no second Save
@@ -344,11 +344,19 @@ Add entries below in chronological order.
 - Finding: initial Android UAC GET_CUR failed because the audio driver owned the AS/AC interfaces; the app did not select the alt setting.
 - Fix: force-claim the exact interface, select the UsbInterface alt object, GET_CUR, restore alt 0, release.
 - Pixel readback after fix: current rate 96000 Hz (UAC endpoint); microphone mute Live; UAC 1.0; no writes.
-- APK: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825; on-device hash matched.
+- APK: 487445cb6779aa1da23eb5bdfacf126ec85b9f44e9871520ce2f93e2563ebf25; on-device hash matched.
 
 ### T-021 — Plan D listening pending
 
 - Fixed targets: Low Shelf 250 Hz/-6 dB/Q0.707/type 3; High Shelf 4000 Hz/-6 dB/Q0.707/type 4.
 - Randomized flat-vs-filter trials, 12 per shelf, >=10 correct plus consistent direction/region.
 - Status: owner listening pending; no acoustic claim yet.
+
+### T-022 — strict UAC claim/restore release
+
+- Date: 2026-11-05
+- APK: 487445cb6779aa1da23eb5bdfacf126ec85b9f44e9871520ce2f93e2563ebf25
+- Fix: missing alt, failed setInterface(target), failed restore to alt0, or failed releaseInterface now fail the operation closed; release is attempted even if restore throws.
+- Pixel Plan A after rebuild: 96000 Hz, microphone mute Live, UAC 1.0; no writes.
+- Reviewer findings-only confirmation: PASS.
 

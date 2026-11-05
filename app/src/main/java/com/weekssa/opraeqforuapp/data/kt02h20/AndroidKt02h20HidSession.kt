@@ -166,34 +166,38 @@ internal class AndroidKt02h20HidSession(
                 alt0
             } else {
                 interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == altSetting }
-                    ?: alt0
+                    ?: return@withLock null
             }
-            val claimed = runCatching { current.connection.claimInterface(alt0, true) }
-                .getOrDefault(false)
-            if (!claimed) return@withLock null
+            if (!current.connection.claimInterface(alt0, true)) return@withLock null
+            var result: ByteArray? = null
+            var healthy = true
             try {
-                if (target !== alt0) {
-                    runCatching { current.connection.setInterface(target) }
+                if (target !== alt0 && !current.connection.setInterface(target)) {
+                    healthy = false
                 }
-                val buffer = ByteArray(length)
-                val read = runCatching {
-                    current.connection.controlTransfer(
-                        requestType,
-                        request,
-                        value,
-                        index,
-                        buffer,
-                        length,
-                        TRANSFER_TIMEOUT_MILLIS,
-                    )
-                }.getOrDefault(-1)
-                if (read <= 0) null else buffer.copyOf(read)
+                if (healthy) {
+                    val buffer = ByteArray(length)
+                    val read = runCatching {
+                        current.connection.controlTransfer(
+                            requestType,
+                            request,
+                            value,
+                            index,
+                            buffer,
+                            length,
+                            TRANSFER_TIMEOUT_MILLIS,
+                        )
+                    }.getOrDefault(-1)
+                    result = if (read <= 0) null else buffer.copyOf(read)
+                }
             } finally {
-                if (target !== alt0) {
-                    runCatching { current.connection.setInterface(alt0) }
-                }
-                runCatching { current.connection.releaseInterface(alt0) }
+                val restored = target === alt0 ||
+                    runCatching { current.connection.setInterface(alt0) }.getOrDefault(false)
+                val released = runCatching { current.connection.releaseInterface(alt0) }
+                    .getOrDefault(false)
+                if (!restored || !released) healthy = false
             }
+            if (healthy) result else null
         }
     }
 
@@ -216,33 +220,36 @@ internal class AndroidKt02h20HidSession(
                 alt0
             } else {
                 interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == altSetting }
-                    ?: alt0
+                    ?: return@withLock false
             }
-            val claimed = runCatching { current.connection.claimInterface(alt0, true) }
-                .getOrDefault(false)
-            if (!claimed) return@withLock false
+            if (!current.connection.claimInterface(alt0, true)) return@withLock false
+            var healthy = true
+            var writtenOk = false
             try {
-                if (target !== alt0) {
-                    runCatching { current.connection.setInterface(target) }
+                if (target !== alt0 && !current.connection.setInterface(target)) {
+                    healthy = false
+                } else {
+                    val written = runCatching {
+                        current.connection.controlTransfer(
+                            requestType,
+                            request,
+                            value,
+                            index,
+                            data,
+                            data.size,
+                            TRANSFER_TIMEOUT_MILLIS,
+                        )
+                    }.getOrDefault(-1)
+                    writtenOk = written == data.size
                 }
-                val written = runCatching {
-                    current.connection.controlTransfer(
-                        requestType,
-                        request,
-                        value,
-                        index,
-                        data,
-                        data.size,
-                        TRANSFER_TIMEOUT_MILLIS,
-                    )
-                }.getOrDefault(-1)
-                written == data.size
             } finally {
-                if (target !== alt0) {
-                    runCatching { current.connection.setInterface(alt0) }
-                }
-                runCatching { current.connection.releaseInterface(alt0) }
+                val restored = target === alt0 ||
+                    runCatching { current.connection.setInterface(alt0) }.getOrDefault(false)
+                val released = runCatching { current.connection.releaseInterface(alt0) }
+                    .getOrDefault(false)
+                if (!restored || !released) healthy = false
             }
+            healthy && writtenOk
         }
     }
 

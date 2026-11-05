@@ -16,7 +16,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 
 - Path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
 - File: app-ew300Parity.apk
-- SHA-256: dda0c90c13399467c06c328da2b3d1405fb00ad4cbf69392ccf4d0cfdefb5825
+- SHA-256: 487445cb6779aa1da23eb5bdfacf126ec85b9f44e9871520ce2f93e2563ebf25
 - Package: com.weekssa.opraeqforuapp.ew300parity
 - versionName: 0.10.0-ew300parity
 - versionCode: 22
