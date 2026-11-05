@@ -9,7 +9,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
 - Code candidate head: 6c276b098a92e4bf169f06abe410e6ea99821eac
-- Frozen evidence head: 3b473d0c43e0c35337e82830c57fedc7d812df45
+- Frozen evidence head: 51d2b9901cda05f0d57f300042c0e714f7519842
 - Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
 
 ## APK
@@ -67,6 +67,7 @@ for a GPIO/key disable field. UAC mode is CHIP-LIMITED, not blocked.
 - UAC mode switching: CHIP-LIMITED by KT0211L (UAC1.0 / 24-bit / 96 kHz); exact descriptor matches. No UAC2 switch exists to chase.
 - Sample-rate Pixel validation: play a known-rate stream and compare UAC1 GET_CUR with the actual stream; a zero result must remain “not read.”
 - Pixel session: no Pixel is connected in this environment; wireless/USB plans A–E remain ready. This is the one external dependency.
+- Pixel plans: docs/implementation/ew300-ja11-parity-20261105/PIXEL_SESSION.md
 - Owner listening: fixed 250 Hz Low Shelf and 4 kHz High Shelf, −6 dB, Q 0.707; owner performs the scored listening test.
 - Physical persistence: one target Save and one restoration Save only after the owner approves the bounded session.
 
