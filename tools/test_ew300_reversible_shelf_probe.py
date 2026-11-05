@@ -46,6 +46,7 @@ class Ew300ReversibleShelfProbeTest(unittest.TestCase):
         transport = probe.Transport(fake, {"vendor_id": "31b2"}, guard)
         with self.assertRaises(probe.ProbeError):
             probe.run_reversible(transport)
+        self.assertGreaterEqual(fake.write_count, 2)
         self.assertEqual(fake.state[probe.BAND_A], fake.baseline[probe.BAND_A])
         self.assertEqual(fake.state[probe.BAND_B], fake.baseline[probe.BAND_B])
 

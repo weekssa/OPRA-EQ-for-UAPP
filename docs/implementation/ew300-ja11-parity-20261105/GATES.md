@@ -134,8 +134,14 @@ OWNS: GATES.md,
 verdict: pending
 reviewer: gpt-6-luna
 account: other
-reviewed_head: 0800e712a6b81bf959d20eff6fbcc870b43b6337
+reviewed_head: b0c8ded97908c81704ae4f261c81207d97780af3
 ran: pending
 confirmation: pending
 findings:
-- none yet
+- P1 fixed: UAC1 sample-rate wIndex corrected to endpoint low byte 0x01; exact-device GET_CUR reacquired 48000/80BB00; interface fallback removed.
+- P1 fixed: Mac UAC probe made read-only (no SET_CUR), eliminating the unverified-device write path; descriptor evidence retained.
+- P1 fixed: reversible shelf probe restores baseline in a failure-safe finally path, verifies both registers, and has fault-injection coverage.
+- P2 fixed: microphone mute is a switch with switch semantics; unknown GET_CUR shows Not read instead of Live.
+- P2 fixed: out-of-scale volume gain displays Unmapped rather than clamping to level 0.
+- P2 fixed: volume evidence records both file SHA-256 6fd8e368 and internal JSON SHA-256 9671c2d1.
+- Confirmation pass pending on the fixed candidate.

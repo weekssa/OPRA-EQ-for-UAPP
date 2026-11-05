@@ -165,17 +165,19 @@ class FakeHid:
         self.baseline = dict(self.state)
         self.frames: list[bytes] = []
         self.fail_after_writes = fail_after_writes
+        self.write_count = 0
 
     def write(self, frame: bytes) -> int:
         Guard({LOW_SHELF_A, LOW_SHELF_B, HIGH_SHELF_A, HIGH_SHELF_B,
                self.baseline[BAND_A], self.baseline[BAND_B],
                self.state[BAND_A], self.state[BAND_B]}).check(frame)
         self.frames.append(bytes(frame))
-        if self.fail_after_writes is not None and len(self.frames) >= self.fail_after_writes:
-            self.fail_after_writes = None
-            raise ProbeError("injected write failure")
         if frame[5] == WRITE_COMMAND:
             self.state[frame[1]] = bytes(frame[7:11])
+            self.write_count += 1
+            if self.fail_after_writes is not None and self.write_count >= self.fail_after_writes:
+                self.fail_after_writes = None
+                raise ProbeError("injected write failure")
         return len(frame)
 
     def read(self, size: int, timeout_ms: int) -> bytes:
