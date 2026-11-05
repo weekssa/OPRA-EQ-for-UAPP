@@ -5,23 +5,23 @@
 - Base SHA: 180f4a962a53d22d294311121dd49d92a570d89a
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Local branch: codex/ew300-ja11-parity
-- Task gate: docs/implementation/ew300-ja11-parity-20261105/GATES.md (seal f78a320e30208887)
+- Task gate: docs/implementation/ew300-ja11-parity-20261105/GATES.md (resealed 0e4a8da31cf1f7fb)
 - Accepted plan: docs/implementation/ew300-ja11-parity-20261105/PLAN.md
-- Current candidate SHA: uncommitted working tree
-- Debug APK path: pending
-- APK SHA-256: pending
+- Current candidate SHA: 91a07ff215c6dbda8171a5b83c1c6382efdef7be (readiness follow-up commit follows)
+- Debug APK path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
+- APK SHA-256: 63c71d85195f01f2f07c7cb341efbc55ba21c6dcc1e61c2a0a2003101c8689a7
 - Pixel serial / wireless endpoint: not used in this local run
 - EW300 location: Mac (read-only scope only)
 
 ## Hardware phase
 
-- Mac read-only probe complete: harness written; live capture pending separate authorization
-- Golden-frame tests complete: in progress
-- JVM tests complete: baseline complete
-- Emulator UI tests complete: pending
+- Mac read-only probe complete: yes (256/256 registers, only 0x52)
+- Golden-frame tests complete: yes
+- JVM tests complete: yes (109 EW300 / 852 full debug / 113 release EW300)
+- Emulator UI tests complete: yes (4/4 on emulator-5554)
 - Emulator USB passthrough result: not attempted
-- Debug APK built and hashed: pending
-- Final-session readiness gate signed: pending
+- Debug APK built and hashed: yes
+- Final-session readiness gate signed: readiness manifest verified; independent review pending
 - EW300 moved to Pixel: no
 
 ## Research pass
@@ -35,18 +35,18 @@
 
 ## Persistent loop
 
-- Last test command: ./tools/codex-android :app:testDebugUnitTest --tests '*Ew300*'
-- Last result: PASS, 97 tests / 15 classes
+- Last test command: ./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleEw300Parity :app:assembleEw300ParityAndroidTest
+- Last result: PASS; 852 debug tests, lint 0 errors, all builds; 109 EW300, 113 release EW300, 4 emulator tests
 - Current failure: none
-- Fix in progress: protocol/runtime-save slice
-- Next test command: targeted Ew300 protocol/editor/flasher tests
+- Fix in progress: none
+- Next test command: final gate rerun on the reviewed head
 - Continue without asking: yes
 - Stop condition (if any): none
 - Gate turns used / limit: 1 / 12
 - Stop time: owner review availability open-ended per 2026-11-05 clarification
-- Functional mapping rows updated: pending
-- Test evidence log entry: T-000
-- Maintained docs updated: pending
+- Functional mapping rows updated: M-03, M-04, M-07, M-08, M-13, M-15, M-16, M-17, M-18, M-19, M-20
+- Test evidence log entry: T-000 through T-004
+- Maintained docs updated: EW300 protocol notes, capability matrix, validation ledger, runbook, project state
 
 ## Completed
 
@@ -58,18 +58,21 @@
 - [x] Gate seeded and sealed; scope-guard IN SCOPE
 - [x] Pre-change EW300 baseline suite recorded
 - [x] Contract OWNS expanded on 2026-11-05 to the four UI wiring files required by the accepted plan (MainActivity, EqLibraryActions, EqLibraryApp, MyDacRootScreen) and resealed through scope-guard.
+- [x] Runtime/save split, capability flags, editor type chips, five-band rows, About, explicit Save, and Reset confirmation implemented.
+- [x] Read-only Mac probe written, self-tested, and run live.
+- [x] JVM, lint, emulator, and build gates pass; APK hashed and readiness manifest verified.
 
 ## Current slice
 
-- Objective: experimental policy, protocol golden fixtures, runtime Apply/explicit Save transaction split
-- Files: Ew300Protocol, Ew300CapabilityProfile, Ew300EditorApply, Ew300Flasher, Ew300ReconnectGate, transport, repository
-- Tests run: pending
-- Result: pending
-- Evidence: pending
-- Mapping update: pending
-- Evidence-log entry: pending
+- Objective: independent review of the local-ready candidate
+- Files: none pending
+- Tests run: full local gates above
+- Result: PASS
+- Evidence: TEST_EVIDENCE_LOG.md T-000 through T-004; READINESS.md
+- Mapping update: complete for implemented rows
+- Evidence-log entry: complete
 
 ## Next action
 
-Implement gate 2 slice, then UI/build variant, then tooling/docs/readiness, then independent review.
+Run the single fresh gpt-6-luna review from the other account, close findings, and run one findings-only confirmation pass. Physical qualification remains pending.
 
