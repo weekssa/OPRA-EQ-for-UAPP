@@ -8,7 +8,7 @@ Status: **five-goal test candidate built and locally tested; microphone mute imp
 - Branch: codex/ew300-ja11-parity
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
-- Code candidate head: recorded in the final commit and FINAL_REPORT.md
+- Code candidate head: 510b2db9e386aa9c1442c26bb22754ae4b66517c
 - Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
 
 ## APK
