@@ -68,7 +68,7 @@
 - Objective: exact die confirmation and KT0211L rescore
 - Files: CHIP_CONFIDENCE.md, CHIP_MAP.md, GOALS.md, evidence
 - Tests run: read-only CHP, UAC/HID, vendor APK/firmware, full local gates
-- Result: exact die KT0211L; G3 CHIP-LIMITED; G2-headset open; 96% coverage; G1/G4/G5 complete
+- Result: exact die KT0211L; G3 CHIP-LIMITED; G2-headset CHIP-LIMITED on USB surface; 96% coverage; G1/G4/G5 complete
 - Evidence: TEST_EVIDENCE_LOG.md T-013; CHIP_CONFIDENCE.md; CHIP_MAP.md
 - Mapping update: complete for implemented/open rows
 - Evidence-log entry: T-011

@@ -45,12 +45,12 @@ The exact EW300 descriptor matches KT0211L’s UAC1-only profile: one UAC1 confi
 | Every goal mapped to bytes/requests or chip limitation | G1/G4/G5 + mic mute; G3 chip-limited; G2 headset open | 94% |
 | Residual risks listed with next experiments | Below | 100% |
 
-**Weighted coverage: 96%.** Residual 4%: (1) KT0211L headset-remote/GPIO/key configuration and exact headset-disable behavior; (2) feature-unit 4 control semantics (no payload returned); (3) HID 0x54 distinct semantics (GET_REPORT ambiguous); (4) active-stream Pixel validation. G3 is no longer a residual: it is **CHIP-LIMITED** by KT0211L’s UAC1-only silicon.
+**Weighted coverage: 96%.** Residual 4%: (1) feature-unit 4 control semantics (no payload returned); (2) HID 0x54 distinct semantics (GET_REPORT ambiguous); (3) active-stream Pixel validation; (4) exact KT0211L firmware/config for a GPIO/key headset-disable field. G2-headset is **CHIP-LIMITED on the USB surface**: KT0211L family firmware contains OMTP/CTIA/lradc and click/double/long-press strings, but the exact EW300 exposes no USB/HID disable control. G3 is **CHIP-LIMITED** by KT0211L’s UAC1-only silicon.
 
 ## Goal consequences
 
 - **G1** unchanged: 0–60 volume, both stereo bytes, readback, runtime/Save.
-- **G2** PARTIAL/OPEN: real UAC1 mic mute and mic volume; headset-disable remains open. Next: KT0211L GPIO/key/ADC/bias configuration and exact-device headset detection tests. Do not inherit KT02H20 headset claims.
+- **G2** MIC DONE / HEADSET CHIP-LIMITED: real UAC1 mic mute and mic volume. The family firmware shows internal OMTP/CTIA/lradc and key handling, but there is no USB/HID headset-disable control. Next only if exact firmware/config is obtained: locate the GPIO/key matrix field; no blind write. Do not inherit KT02H20 headset claims.
 - **G3** **CHIP-LIMITED**: KT0211L is UAC1-only; the EW300 descriptor matches. No UAC2 switch is expected. Do not chase JA11 0x20.
 - **G4** unchanged: UAC1 GET_CUR 48000/80BB00; Pixel active-stream check pending.
 - **G5** unchanged: native shelves and reversible Mac evidence; owner listening pending.

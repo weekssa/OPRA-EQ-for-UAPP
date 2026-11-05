@@ -313,13 +313,13 @@ Descriptor sha256: e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36
 | HID report IDs | 3 (0x01/0x4B/0x54) | 3 enumerated; 0x4B full; 0x01/0x54 negative | 0x54 semantics | 2/3 functional |
 | Vendor APK/product/protocol paths | 4 products + USB manager + firmware assets | all inspected | none for EW300 (absent) | 100% of present paths |
 | Family firmware images | 3 assets | header/strings/hash inspected | exact EW300 image absent | bounded negative |
-| Live physical controls | 5 goals | G1/G4/G5 + mic mute; headset open; UAC mode chip-limited | headset/unit-4/0x54 | 3/5 complete, 1 open, 1 chip-limited |
+| Live physical controls | 5 goals | G1/G4/G5 + mic mute; headset chip-limited on USB surface; UAC mode chip-limited | unit-4/0x54/Pixel | 3/5 complete, 2 chip-limited |
 
-**Coverage claim: 96% of the defined chip-coverage matrix.** Exact die KT0211L is confirmed. G3 is CHIP-LIMITED by KT0211L's UAC1-only silicon. The 4% residual is the KT0211L headset/GPIO/key configuration, feature-unit 4 semantics, HID 0x54 ambiguity, and Pixel active-stream validation. G2-headset remains open with exact evidence and a concrete next experiment.
+**Coverage claim: 96% of the defined chip-coverage matrix.** Exact die KT0211L is confirmed. G3 is CHIP-LIMITED by KT0211L's UAC1-only silicon. G2-headset is CHIP-LIMITED on the USB surface: family firmware contains OMTP/CTIA/lradc and key strings, but the exact EW300 exposes no USB/HID disable control. The 4% residual is feature-unit 4, HID 0x54 ambiguity, Pixel active-stream validation, and exact firmware/config for a GPIO/key disable field.
 
 ## Residual risks and next experiments
 
-1. Headset-disable/remote switch: no headset feature unit, no HID 0x01 GET_REPORT, no distinct 0x54 semantics, no EW300 product in the vendor APK. Next: inspect an exact EW300 firmware/update package if one becomes obtainable; otherwise a vendor boot-config hypothesis with baseline/restore.
+1. Headset-disable/remote switch: no headset feature unit, no HID 0x01 GET_REPORT, no distinct 0x54 semantics, no EW300 product in the vendor APK. Family firmware contains OMTP/CTIA/lradc and key strings, but no USB/HID disable control. Next only with exact firmware/config: locate GPIO/key matrix field; no blind write.
 2. UAC mode: CHIP-LIMITED by KT0211L (UAC1.0 / 24-bit / 96 kHz); the exact EW300 descriptor matches. No UAC2 switch exists to chase; do not reuse JA11 0x20.
 3. Feature unit 4: no usable payload for mute/volume; classify its actual entity type from a full descriptor parser before any write.
 4. HID 0x54: GET_REPORT returns an ambiguous 0x4B-like packet; do not write until its framing is established from exact firmware/descriptor evidence.

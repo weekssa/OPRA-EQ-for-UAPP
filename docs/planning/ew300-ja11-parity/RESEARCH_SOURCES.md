@@ -103,3 +103,8 @@ Source order for this pass: exact EW300 responses first; KT02H20-family firmware
 - Decision: G3 is **CHIP-LIMITED** (UAC1-only silicon), not a missing vendor command. G2-headset remains open; the next experiment is KT0211L GPIO/key/aux-ADC/mic-bias configuration, not KT02H20 headset inheritance.
 - The earlier “KT02H20 family” assumption is retained only as historical family evidence. The exact die is KT0211L.
 
+### KT0211L headset boundary
+
+- The family firmware asset (sha256 f5230b21…) contains OMTP (0x74b0), CTIA lradc_data:%d (0x778f), id %d click/double/long press, and host type:computer. This is family evidence for headset-type/key detection, not an EW300 USB disable control.
+- Exact EW300 has no headset feature unit; HID 0x01 GET_REPORT failed; HID 0x54 is ambiguous. G2-headset is CHIP-LIMITED on the USB surface; only an exact firmware/config field could change that.
+

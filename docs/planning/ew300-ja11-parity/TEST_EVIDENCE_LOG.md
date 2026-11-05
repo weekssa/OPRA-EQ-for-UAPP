@@ -287,3 +287,12 @@ Add entries below in chronological order.
 - Restoration: normal mode and flat baseline verified
 - Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-chip-id-chp.json (sha256 d037f7b57a6549d53224178cf33a08ba3aef5c0257bf1966eb8555bf3dbc69bb)
 
+### T-014 — KT0211L headset/GPIO firmware boundary
+
+- Date: 2026-11-05
+- Source: SIMGOT Control 1.1.2 assets/firmware.bin (sha256 f5230b2174cfd6e6ebe06666e6bd7e62f5b5ce268bedab1d035b6e680f320f12)
+- Static finding: strings contain OMTP at offset 0x74b0, CTIA lradc_data:%d at 0x778f, id %d click/double/long press, host type:computer; family firmware therefore implements headset-type/key detection.
+- Exact EW300: no headset feature unit; HID 0x01 GET_REPORT failed; HID 0x54 ambiguous; no USB/HID disable control identified.
+- Result: G2-headset **CHIP-LIMITED on the USB surface**; internal detection is present in family firmware but not exposed as a switch.
+- Next experiment only if exact EW300 firmware/config is obtained: locate the GPIO/key matrix field for headset disable; do not perform a blind register sweep.
+

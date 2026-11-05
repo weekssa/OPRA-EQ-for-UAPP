@@ -9,6 +9,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
 - Code candidate head: 6c276b098a92e4bf169f06abe410e6ea99821eac
+- Frozen evidence head: 3b473d0c43e0c35337e82830c57fedc7d812df45
 - Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
 
 ## APK
@@ -20,6 +21,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - versionName: 0.10.0-ew300parity
 - versionCode: 22
 - Signer SHA-256: 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer)
+- Build time: 2026-11-05T22:35:28Z (UTC), rebuilt from the frozen code head
 - Updates: disabled in the parity variant
 
 ## Five-goal status
@@ -27,7 +29,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 | Goal | Status | Evidence |
 |---|---|---|
 | G1 0–60 volume | DONE | Device row/slider; 60 = 0 dB, 0 = −60 dB, 1 dB/step; Mac 0x66 bytes 88880000 / C4C40000 / 00000000 and exact restore; zero Save; JVM/emulator tests. |
-| G2 mic/headset switches | PARTIAL / OPEN (headset) | Exact die KT0211L (CHP 0211LC02). UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 → SET 1 → verify 1 → restore 0; mic volume 0xCE00..0x0000/0x8000. No headset feature unit; HID 0x01 failed; 0x54 ambiguous. Next: KT0211L GPIO/key/ADC/bias. |
+| G2 mic/headset switches | MIC DONE / HEADSET CHIP-LIMITED | Exact die KT0211L (CHP 0211LC02). UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 → SET 1 → verify 1 → restore 0; mic volume 0xCE00..0x0000/0x8000. No headset feature unit; HID 0x01 failed; 0x54 ambiguous. Family firmware has OMTP/CTIA/key strings but no USB/HID disable control. |
 | G3 UAC mode switching | CHIP-LIMITED | KT0211L is UAC1.0 / 24-bit / 96 kHz with a mono ADC; exact EW300 descriptor is one UAC1 config, 44.1/48/96 kHz, 16/24-bit. No UAC2 silicon path. Descriptor sha256 e955ae8c…. |
 | G4 current sample rate | DONE (implementation/tests; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Mac returned 48000 Hz (80BB00). A zero result is treated as not read, not 0 Hz. |
 | G5 native shelves | DONE (implementation/tests; owner listening pending) | LS/HS editor/capture/Flash; type 3/4 bytes C4FFFA00/C3020300 and C4FFA00F/C3020400; Mac reversible and exact restore; graph says predicted/unmeasured. |
@@ -57,11 +59,11 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 
 Chip coverage score: **96%** of the defined matrix in CHIP_MAP.md/CHIP_CONFIDENCE.md. All 256
 registers were read and classified; all UAC entities/alternates, HID 0x01/0x4B/0x54, the vendor APK
-product/protocol paths, and family firmware assets were inspected or tested. The residual 4% is the
-KT0211L headset/GPIO/key configuration, feature-unit-4 semantics, HID-0x54 ambiguity, and Pixel
-active-stream validation. UAC mode is CHIP-LIMITED, not blocked.
+product/protocol paths, and family firmware assets were inspected or tested. The residual 4% is
+feature-unit-4 semantics, HID-0x54 ambiguity, Pixel active-stream validation, and exact firmware/config
+for a GPIO/key disable field. UAC mode is CHIP-LIMITED, not blocked.
 
-- Headset-remote disable: no exact descriptor/HID control. Next: static vendor APK/HID 0x54 analysis and one hypothesis-driven vendor request with baseline/restore; no blind sweep.
+- Headset-remote disable: CHIP-LIMITED on the USB surface. KT0211L family firmware has OMTP/CTIA/lradc and key strings, but the exact EW300 exposes no USB/HID disable control. Next only with exact firmware/config: locate a GPIO/key matrix field; no blind sweep.
 - UAC mode switching: CHIP-LIMITED by KT0211L (UAC1.0 / 24-bit / 96 kHz); exact descriptor matches. No UAC2 switch exists to chase.
 - Sample-rate Pixel validation: play a known-rate stream and compare UAC1 GET_CUR with the actual stream; a zero result must remain “not read.”
 - Pixel session: no Pixel is connected in this environment; wireless/USB plans A–E remain ready. This is the one external dependency.
