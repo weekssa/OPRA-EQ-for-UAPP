@@ -259,6 +259,9 @@ fun EqLibraryApp(
     val onAdvanceEw300PersistenceQualification = actions.onAdvanceEw300PersistenceQualification
     val onSetEw300PlaybackGain = actions.onSetEw300PlaybackGain
     val onSaveEw300Runtime = actions.onSaveEw300Runtime
+    val onSetEw300VolumeLevel = actions.onSetEw300VolumeLevel
+    val onRefreshEw300Uac = actions.onRefreshEw300Uac
+    val onSetEw300MicrophoneMuted = actions.onSetEw300MicrophoneMuted
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -1132,6 +1135,7 @@ fun EqLibraryApp(
                             ew300PlaybackGainState = state.ew300PlaybackGainState,
                             ew300RuntimePersistence = state.ew300RuntimePersistence,
                             ew300RuntimeSaveState = state.ew300RuntimeSaveState,
+                            ew300UacState = state.ew300UacState,
                             onConnectDac = onConnectDacForMyDac,
                             onOpenBlackPearlEditor = onOpenBlackPearlEditor,
                             onCloseBlackPearlEditor = onCloseMyDacEditor,
@@ -1187,6 +1191,9 @@ fun EqLibraryApp(
                             onAdvanceEw300PersistenceQualification = onAdvanceEw300PersistenceQualification,
                             onSetEw300PlaybackGain = onSetEw300PlaybackGain,
                             onSaveEw300Runtime = onSaveEw300Runtime,
+                            onSetEw300VolumeLevel = onSetEw300VolumeLevel,
+                            onRefreshEw300Uac = onRefreshEw300Uac,
+                            onSetEw300MicrophoneMuted = onSetEw300MicrophoneMuted,
                             onMessage = ::showMessage,
                             onOperationStatus = ::showOperationStatus,
                                 modifier = Modifier.fillMaxSize(),

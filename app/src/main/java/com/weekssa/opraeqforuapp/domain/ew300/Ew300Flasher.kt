@@ -36,6 +36,12 @@ interface Ew300Transport {
 
     /** Confirms a successful no-Save runtime transaction so its session may reconnect safely. */
     fun markRuntimeVerified() = Unit
+
+    /** Read-only UAC1 descriptor/control facts; null when the exact path is unavailable. */
+    suspend fun readUacStatus(): Ew300UacStatus? = null
+
+    /** Evidence-backed UAC microphone mute; false when no exact feature unit exists. */
+    suspend fun setMicrophoneMuted(muted: Boolean): Boolean = false
 }
 
 enum class Ew300RuntimePersistenceState {
@@ -55,6 +61,7 @@ class Ew300Flasher(
     private val sourceCommit: String = "unknown",
     private val appVersion: String = "unknown",
     private val signerVerified: Boolean = false,
+    private val experimentalShelfEnabled: Boolean = false,
 ) {
     private val transactionCoordinator = Ew300TransactionCoordinator(transport)
     @Volatile
@@ -97,7 +104,7 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.BASELINE_CAPTURED)
-        return Ew300EditorApplier(transport).apply(
+        return Ew300EditorApplier(transport, experimentalShelfEnabled).apply(
             workingCopy = workingCopy,
             allowCautions = allowCautions,
             isSessionCurrent = isSessionCurrent,
@@ -142,7 +149,7 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.BASELINE_CAPTURED)
-        val result = Ew300EditorApplier(transport).applyRuntime(
+        val result = Ew300EditorApplier(transport, experimentalShelfEnabled).applyRuntime(
             workingCopy = workingCopy,
             allowCautions = allowCautions,
             isSessionCurrent = isSessionCurrent,
@@ -377,9 +384,19 @@ class Ew300Flasher(
                 "Persistent EW300 Flash is unavailable for this device identity or hardware profile.",
             )
         }
-        val representation = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)) {
-            is FiveBandOptimizationResult.NotSuitable -> return Kt02h20FlashResult.NotSuitable(result.reason)
-            is FiveBandOptimizationResult.Ready -> result.representation
+        val hasNativeShelf = experimentalShelfEnabled && profile.bands.orEmpty().any {
+            it.type == "low_shelf" || it.type == "high_shelf"
+        }
+        val representation = if (hasNativeShelf) {
+            nativeShelfRepresentation(profile)
+                ?: return Kt02h20FlashResult.NotSuitable(
+                    "The experimental EW300 shelf target is incomplete or outside the cut-only, Q 0.707 envelope.",
+                )
+        } else {
+            when (val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)) {
+                is FiveBandOptimizationResult.NotSuitable -> return Kt02h20FlashResult.NotSuitable(result.reason)
+                is FiveBandOptimizationResult.Ready -> result.representation
+            }
         }
         val target = completeBands(representation.bands)
         val baseline = transactionCoordinator.captureBaseline()
@@ -414,7 +431,9 @@ class Ew300Flasher(
             )
         }
         val targetWires = target.map { band ->
-            runCatching { Ew300Protocol.encodeBand(band) }.getOrElse {
+            runCatching {
+                Ew300Protocol.encodeBand(band, allowExperimentalShelf = experimentalShelfEnabled)
+            }.getOrElse {
                 return Kt02h20FlashResult.NotSuitable(it.message ?: "EW300 band is not representable.")
             }
         }
@@ -441,7 +460,7 @@ class Ew300Flasher(
                 )
             }
         }
-        if (verify(target) != null) {
+        if (verify(target, allowExperimentalShelf = experimentalShelfEnabled) != null) {
             return restoreBeforeCommit(
                 baseline = baseline,
                 reason = "EW300 volatile PEQ readback did not match before Save.",
@@ -483,7 +502,7 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.FINAL_READBACK)
-        val finalReadback = reconcileFinalReadback(target, targetGain)
+        val finalReadback = reconcileFinalReadback(target, targetGain, experimentalShelfEnabled)
         if (finalReadback.bandFailure != null) {
             val verificationFailure = finalReadback.bandFailure
             return Kt02h20FlashResult.VerificationFailed(
@@ -1123,7 +1142,10 @@ class Ew300Flasher(
         else -> Ew300OperationOutcome.UNKNOWN
     }
 
-    private suspend fun verify(expected: List<Kt02h20Band>): VerificationFailure? {
+    private suspend fun verify(
+        expected: List<Kt02h20Band>,
+        allowExperimentalShelf: Boolean = false,
+    ): VerificationFailure? {
         expected.indices.forEach { index ->
             val gain = transport.readRegister(Ew300Protocol.bandRegister(index))
                 ?: return VerificationFailure(index, expected[index], null)
@@ -1133,7 +1155,9 @@ class Ew300Flasher(
             // Verify the device's encoded fields, not the display-layer Double values. The
             // EW300 stores integer tenths/thousandths, so 0.7 and 0.7000000000000001 are the
             // same hardware value even though Kotlin data-class equality treats them as distinct.
-            val expectedWire = runCatching { Ew300Protocol.encodeBand(expected[index]) }.getOrNull()
+            val expectedWire = runCatching {
+                Ew300Protocol.encodeBand(expected[index], allowExperimentalShelf)
+            }.getOrNull()
             val matchesWire = expectedWire != null &&
                 expectedWire.first.contentEquals(gain) &&
                 expectedWire.second.contentEquals(q)
@@ -1153,10 +1177,11 @@ class Ew300Flasher(
     private suspend fun reconcileFinalReadback(
         expected: List<Kt02h20Band>,
         expectedGain: ByteArray,
+        allowExperimentalShelf: Boolean = false,
     ): FinalReadback = Ew300ReadbackRetry.read(
         read = {
             FinalReadback(
-                bandFailure = verify(expected),
+                bandFailure = verify(expected, allowExperimentalShelf),
                 gain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER),
             )
         },
@@ -1179,6 +1204,41 @@ class Ew300Flasher(
 
     private fun completeBands(bands: List<Kt02h20Band>): List<Kt02h20Band> =
         bands + List(Ew300Protocol.BAND_COUNT - bands.size) { Kt02h20Band("peak_dip", 1000.0, 0.0, 1.0) }
+
+    private fun nativeShelfRepresentation(
+        profile: OpraEqProfile,
+    ): FiveBandRepresentation? {
+        val source = profile.bands.orEmpty()
+        if (source.isEmpty() || source.size > Ew300Protocol.BAND_COUNT) return null
+        val converted = source.map { band ->
+            val type = band.type ?: return null
+            if (type !in setOf("peak_dip", "low_shelf", "high_shelf")) return null
+            Kt02h20Band(
+                type = type,
+                frequencyHz = band.frequency ?: return null,
+                gainDb = band.gainDb ?: return null,
+                q = band.q ?: return null,
+            )
+        }
+        val target = completeBands(converted)
+        target.forEach { band ->
+            runCatching {
+                Ew300Protocol.encodeBand(band, allowExperimentalShelf = true)
+            }.getOrElse { return null }
+        }
+        return FiveBandRepresentation(
+            bands = target,
+            playbackGainDb = 0.0,
+            fidelity = DevicePresetFidelity.OPTIMIZED,
+            rmsErrorDb = 0.0,
+            maxAbsoluteErrorDb = 0.0,
+            usesGeneratedHeadroom = false,
+            representationVersion = HardwareEqDeviceSpecs.SIMGOT_EW300.representationVersion,
+            sourceBandCount = source.size,
+            usedResponseFit = false,
+            usesNativeQuantization = true,
+        )
+    }
 
     private fun formatDb(value: Double): String = String.format(java.util.Locale.US, "%.2f", value)
 }

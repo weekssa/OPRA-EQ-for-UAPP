@@ -118,5 +118,16 @@ flags remain false and the existing persistent Apply/Flash/Reset policy is uncha
 | Native Low/High Shelf editor and persistence | INSUFFICIENT_EVIDENCE | Type-byte transport is historical evidence; acoustic meaning is unmeasured. Ordinary editor exposure and shelf capture/Flash remain dormant. The fixed research targets are for a future approved listening session only. |
 | Healthy reconnect after verified runtime work | SUPPORTED_AND_IMPLEMENTED | A verified no-Save completion releases a later automatic reconnect; a failed pre-verification operation stays fenced. |
 
+### 2026-11-05 five-goal parity closure
+
+| Capability | Decision | Evidence / product behavior |
+| --- | --- | --- |
+| 0-60 EW300 volume mapping | SUPPORTED_AND_IMPLEMENTED (parity package) | 60 = 0 dB, 0 = -60 dB, 1 dB/step on 0x66; Mac reversible bytes 88880000 / C4C40000 / 00000000 and exact restore. Not JA11 0x02. |
+| Microphone mute | SUPPORTED_AND_IMPLEMENTED (parity package; Pixel acoustic check pending) | UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 -> SET 1 -> verify 1 -> restore 0. |
+| Headset-remote disable switch | INSUFFICIENT_EVIDENCE / BLOCKED | Exact descriptor has no headset feature unit; HID report 0x01 is passive. Next: vendor APK/HID 0x54 static analysis. |
+| UAC mode switching | INSUFFICIENT_EVIDENCE / BLOCKED | One UAC1 configuration; no UAC2 alternate or mode selector. JA11 0x20 not transferable. Next: vendor-only command research. |
+| Current sample-rate readout | SUPPORTED_AND_IMPLEMENTED (read-only; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01/interface 2; idle returned 000000 and is displayed as not read. |
+| Native Low/High Shelf editor/capture/Flash | SUPPORTED_AND_IMPLEMENTED (experimental; acoustic unmeasured) | Type 3/4 bytes exact; Mac reversible LS/HS/restore; cut-only -6..0 dB, Q 0.707, 250 Hz/4 kHz. |
+
 Decision vocabulary is intentionally explicit: `SUPPORTED_AND_IMPLEMENTED`,
 `HARDWARE_DOES_NOT_PROVIDE`, `INSUFFICIENT_EVIDENCE`, and `UNSAFE_OR_OUT_OF_SCOPE`.

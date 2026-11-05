@@ -10,6 +10,8 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300UacStatus
+import com.weekssa.opraeqforuapp.BuildConfig
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -174,6 +176,12 @@ class DacSessionRepository(
     suspend fun <T> withExclusiveEw300Operation(block: suspend () -> T): T =
         ew300OperationMutex.withLock { block() }
 
+    suspend fun readEw300UacStatus(): Ew300UacStatus? =
+        withExclusiveEw300Operation { ew300Transport.readUacStatus() }
+
+    suspend fun setEw300MicrophoneMuted(muted: Boolean): Boolean =
+        withExclusiveEw300Operation { ew300Transport.setMicrophoneMuted(muted) }
+
     /**
      * Hardware mutation execution belongs to this session owner, not to the calling Compose scope.
      * Cancelling a UI waiter therefore cannot abort an in-flight Save/replacement verification.
@@ -230,6 +238,7 @@ class DacSessionRepository(
                     globalGainDb = globalGainDb,
                     sessionGeneration = generation,
                     verifiedAtEpochMillis = System.currentTimeMillis(),
+                    allowExperimentalShelf = BuildConfig.EW300_SHELF_EDITOR_ENABLED,
                 )
             }
         },

@@ -29,6 +29,13 @@ data class HardwareEqEditSpec(
     val headroomGainStepDb: Double? = null,
     /** Static lower bound only when it is meaningful without reading a fresh absolute baseline. */
     val minimumVerifiedHeadroomGainDb: Double? = null,
+    /**
+     * Experimental EW300 native-shelf envelope. Null keeps the ordinary Peak policy. The parity
+     * editor exposes type 3/4 only when this envelope is present.
+     */
+    val experimentalShelfGainRangeDb: DacNumericRange? = null,
+    val experimentalShelfFrequencyRangeHz: DacNumericRange? = null,
+    val experimentalShelfQ: Double? = null,
 ) {
     init {
         require(bandCount > 0) { "Hardware EQ editor requires a positive band count." }
@@ -41,6 +48,7 @@ data class HardwareEqEditSpec(
             minimumVerifiedHeadroomGainDb == null ||
                 minimumVerifiedHeadroomGainDb.isFinite() && minimumVerifiedHeadroomGainDb <= 0.0,
         )
+        require(experimentalShelfQ == null || experimentalShelfQ.isFinite() && experimentalShelfQ > 0.0)
         normalGainRangeDb?.let { normal ->
             require(normal.minimum >= gainRangeDb.minimum && normal.maximum <= gainRangeDb.maximum)
         }
@@ -79,6 +87,17 @@ object HardwareEqEditSpecs {
         minimumVerifiedHeadroomGainDb = null,
     )
 
+    /**
+     * Experimental-only EW300 view. Production `SIMGOT_EW300` remains Peak-only. Shelves use a
+     * fixed Q and a cut-only envelope; the native flash path re-validates the same envelope.
+     */
+    val SIMGOT_EW300_PARITY: HardwareEqEditSpec = SIMGOT_EW300.copy(
+        supportedFilterTypes = setOf(EqFilterType.PEAK, EqFilterType.LOW_SHELF, EqFilterType.HIGH_SHELF),
+        experimentalShelfGainRangeDb = DacNumericRange(-6.0, 0.0),
+        experimentalShelfFrequencyRangeHz = DacNumericRange(20.0, 20_000.0),
+        experimentalShelfQ = 0.707,
+    )
+
     val FIIO_JA11: HardwareEqEditSpec = fromFiniteHardwareSpec(
         deviceId = DacDeviceId.FIIO_JA11,
         spec = HardwareEqDeviceSpecs.FIIO_JA11,
@@ -90,9 +109,12 @@ object HardwareEqEditSpecs {
         minimumVerifiedHeadroomGainDb = null,
     )
 
-    fun forDevice(deviceId: DacDeviceId): HardwareEqEditSpec? = when (deviceId) {
+    fun forDevice(
+        deviceId: DacDeviceId,
+        experimentalEw300Shelf: Boolean = false,
+    ): HardwareEqEditSpec? = when (deviceId) {
         DacDeviceId.TRN_BLACK_PEARL -> TRN_BLACK_PEARL
-        DacDeviceId.SIMGOT_EW300 -> SIMGOT_EW300
+        DacDeviceId.SIMGOT_EW300 -> if (experimentalEw300Shelf) SIMGOT_EW300_PARITY else SIMGOT_EW300
         DacDeviceId.FIIO_JA11 -> FIIO_JA11
         else -> null
     }
@@ -404,25 +426,41 @@ object HardwareEqEditor {
             if (filter.type !in spec.supportedFilterTypes) {
                 add(HardwareEqEditIssue.UnsupportedFilterType(filter.index, filter.type))
             }
+            val shelf = filter.type == EqFilterType.LOW_SHELF || filter.type == EqFilterType.HIGH_SHELF
+            val frequencyRange = if (shelf) {
+                spec.experimentalShelfFrequencyRangeHz ?: spec.frequencyRangeHz
+            } else {
+                spec.frequencyRangeHz
+            }
+            val gainRange = if (shelf) {
+                spec.experimentalShelfGainRangeDb ?: spec.gainRangeDb
+            } else {
+                spec.gainRangeDb
+            }
+            val qRange = if (shelf) {
+                spec.experimentalShelfQ?.let { DacNumericRange(it, it) } ?: spec.qRange
+            } else {
+                spec.qRange
+            }
             validateNumeric(
                 bandIndex = filter.index,
                 field = HardwareEqDifferenceField.FREQUENCY_HZ,
                 value = filter.frequencyHz,
-                range = spec.frequencyRangeHz,
+                range = frequencyRange,
                 step = spec.frequencyStepHz,
             )?.let(::add)
             validateNumeric(
                 bandIndex = filter.index,
                 field = HardwareEqDifferenceField.GAIN_DB,
                 value = filter.gainDb,
-                range = spec.gainRangeDb,
+                range = gainRange,
                 step = spec.gainStepDb,
             )?.let(::add)
             validateNumeric(
                 bandIndex = filter.index,
                 field = HardwareEqDifferenceField.Q,
                 value = filter.q,
-                range = spec.qRange,
+                range = qRange,
                 step = spec.qStep,
             )?.let(::add)
             spec.normalGainRangeDb?.takeIf { normal ->

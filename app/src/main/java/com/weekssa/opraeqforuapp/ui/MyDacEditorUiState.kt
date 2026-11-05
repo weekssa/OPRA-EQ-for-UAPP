@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui
 
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300UacStatus
 
 enum class MyDacEditorStage {
     CLOSED,
@@ -22,6 +23,13 @@ enum class MyDacEditorApplyStatus {
     VERIFIED,
     FAILED,
 }
+
+/** ViewModel-owned USB-audio status for the parity DEVICE surface. */
+data class Ew300UacUiState(
+    val status: Ew300UacStatus? = null,
+    val busy: Boolean = false,
+    val error: String? = null,
+)
 
 /**
  * ViewModel-owned workflow state for the approved My DAC manual editor.

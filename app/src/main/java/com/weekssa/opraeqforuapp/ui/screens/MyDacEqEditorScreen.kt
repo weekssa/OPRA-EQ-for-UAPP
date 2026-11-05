@@ -49,6 +49,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditIssue
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditIssueSeverity
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
@@ -74,7 +75,12 @@ internal fun DacEqEditorScreen(
     dacLabel: String = "TRN Black Pearl",
 ) {
     val supportedTypes = state.workingCopy?.baselineSnapshot?.deviceId
-        ?.let(HardwareEqEditSpecs::forDevice)
+        ?.let { deviceId ->
+            HardwareEqEditSpecs.forDevice(
+                deviceId,
+                experimentalEw300Shelf = BuildConfig.EW300_SHELF_EDITOR_ENABLED,
+            )
+        }
         ?.supportedFilterTypes
         ?: setOf(EqFilterType.PEAK)
     when {

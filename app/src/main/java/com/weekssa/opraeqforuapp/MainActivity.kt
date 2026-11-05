@@ -185,6 +185,9 @@ class MainActivity : ComponentActivity() {
         onAdvanceEw300PersistenceQualification = viewModel::advanceEw300PersistenceQualification,
         onSetEw300PlaybackGain = viewModel::setEw300PlaybackGain,
         onSaveEw300Runtime = viewModel::saveEw300Runtime,
+        onSetEw300VolumeLevel = viewModel::setEw300VolumeLevel,
+        onRefreshEw300Uac = viewModel::refreshEw300Uac,
+        onSetEw300MicrophoneMuted = viewModel::setEw300MicrophoneMuted,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())

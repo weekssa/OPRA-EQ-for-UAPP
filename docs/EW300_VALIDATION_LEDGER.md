@@ -120,3 +120,13 @@ This is not a new physical ledger entry. No E-number is assigned and no hardware
 - Read-only live capture: 256/256 registers, only command `0x52`; file SHA-256 `030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71`; internal capture SHA-256 `f54de03cd8ff0a6a104b54936f130346dd0d086cf7ecebe5178d1bfe094bf17a`.
 - Accepted physical records E001 and E037-E046 remain tied to their original sources and artifacts. This candidate did not repeat or extend them.
 - Physical qualification, shelf listening, Save persistence on this candidate, Pixel install/launch, and restoration are **pending**. No public support claim or release is authorized.
+
+### 2026-11-05 five-goal parity extension (software + reversible Mac)
+
+This remains software/reversible evidence, not a new physical persistence qualification.
+
+- 0-60 volume: Mac reversible 0x66 reads/writes at 0/30/60 and exact restore; no Save. File sha256 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c.
+- Native shelves: reversible 0x26/0x27 LS/HS writes and exact restore; no Save. File sha256 cdba8d041947132fd175a01668034977153a72d22994ec58a117939f4e296f2d; internal sha256 37c4db310c85e7ed43758e42bd35d5e4950e8234bdeb6a30511ef030a50ecb89.
+- UAC descriptor: exact 303-byte configuration descriptor, UAC1 only, mic feature unit 2 master mute, playback endpoint 0x01/interface 2; descriptor sha256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907.
+- Microphone mute: live GET 0 -> SET 1 -> verify 1 -> restore 0.
+- UAC mode and headset-disable: BLOCKED with exact descriptor/HID evidence; no firmware, identity, or arbitrary register write.

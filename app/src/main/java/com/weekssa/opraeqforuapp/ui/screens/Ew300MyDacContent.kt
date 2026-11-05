@@ -21,6 +21,7 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +51,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300VolumeControl
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300QualificationExport
 import com.weekssa.opraeqforuapp.domain.ew300.resolveEw300HardwareEq
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
@@ -62,6 +64,7 @@ import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.Ew300PlaybackGainUiState
 import com.weekssa.opraeqforuapp.ui.Ew300RuntimeSaveUiState
+import com.weekssa.opraeqforuapp.ui.Ew300UacUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
@@ -83,6 +86,7 @@ internal fun Ew300MyDacContent(
     playbackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     runtimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
     runtimeSaveState: Ew300RuntimeSaveUiState = Ew300RuntimeSaveUiState(),
+    uacState: Ew300UacUiState = Ew300UacUiState(),
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
@@ -94,6 +98,9 @@ internal fun Ew300MyDacContent(
     onAdvancePersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     onSetPlaybackGain: (Double) -> Unit = {},
     onSaveRuntime: () -> Unit = {},
+    onSetVolumeLevel: (Int) -> Unit = {},
+    onRefreshUac: () -> Unit = {},
+    onSetMicrophoneMuted: (Boolean) -> Unit = {},
     onCaptureDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     onOpenEditor: () -> Unit,
     onCloseEditor: () -> Unit,
@@ -118,6 +125,13 @@ internal fun Ew300MyDacContent(
     var persistenceRunning by remember { mutableStateOf(false) }
     var persistenceConfirmationOpen by remember { mutableStateOf(false) }
     var restorationRunning by remember { mutableStateOf(false) }
+    LaunchedEffect(connectionState) {
+        if (connectionState == Kt02h20ConnectionState.Connected &&
+            BuildConfig.EW300_PARITY_EXPERIMENT_ENABLED
+        ) {
+            onRefreshUac()
+        }
+    }
     if (saveDacEqOpen && !operationBusy && connectionState == Kt02h20ConnectionState.Connected) {
         BlackPearlSaveDacEqDialog(
             catalogState = catalogState,
@@ -216,11 +230,15 @@ internal fun Ew300MyDacContent(
                         playbackGainState = playbackGainState,
                         runtimePersistence = runtimePersistence,
                         runtimeSaveState = runtimeSaveState,
+                        uacState = uacState,
                         running = capabilityBatchRunning || operationBusy,
                         operationBusy = operationBusy,
                         onRefresh = onConnect,
                         onSetPlaybackGain = onSetPlaybackGain,
                         onSaveRuntime = onSaveRuntime,
+                        onSetVolumeLevel = onSetVolumeLevel,
+                        onRefreshUac = onRefreshUac,
+                        onSetMicrophoneMuted = onSetMicrophoneMuted,
                         onRun = {
                             if (!capabilityBatchRunning) {
                                 capabilityBatchRunning = true
@@ -540,12 +558,22 @@ private fun Ew300EqStatus(
             filters = bundle.snapshot.filters,
             accessibilityDescription = String.format(
                 Locale.US,
-                "EW300 EQ response graph from 20 hertz to 20 kilohertz with %d active Peak bands. Response ranges from %.1f to %.1f decibels, with a zero-decibel reference line.",
+                "EW300 EQ response graph from 20 hertz to 20 kilohertz with %d active bands. Response ranges from %.1f to %.1f decibels, with a zero-decibel reference line.",
                 activeBandCount,
                 responseCurve.minimumGainDb,
                 responseCurve.maximumGainDb,
             ),
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    if (bundle.snapshot.filters.any {
+            it.type == EqFilterType.LOW_SHELF || it.type == EqFilterType.HIGH_SHELF
+        }
+    ) {
+        Text(
+            "Experimental native shelf response · predicted · unmeasured until the owner listening test.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.tertiary,
         )
     }
 
@@ -658,11 +686,15 @@ internal fun Ew300DeviceStatus(
     playbackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     runtimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
     runtimeSaveState: Ew300RuntimeSaveUiState = Ew300RuntimeSaveUiState(),
+    uacState: Ew300UacUiState = Ew300UacUiState(),
     running: Boolean,
     operationBusy: Boolean = false,
     onRefresh: () -> Unit = {},
     onSetPlaybackGain: (Double) -> Unit = {},
     onSaveRuntime: () -> Unit = {},
+    onSetVolumeLevel: (Int) -> Unit = {},
+    onRefreshUac: () -> Unit = {},
+    onSetMicrophoneMuted: (Boolean) -> Unit = {},
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
     onShareJson: (() -> Unit)?,
@@ -683,6 +715,8 @@ internal fun Ew300DeviceStatus(
     val parityEnabled = BuildConfig.EW300_PARITY_EXPERIMENT_ENABLED
     var gainDialogOpen by remember { mutableStateOf(false) }
     var stagedGainDb by remember { mutableStateOf(0.0) }
+    var volumeDialogOpen by remember { mutableStateOf(false) }
+    var stagedVolumeLevel by remember { mutableStateOf(60) }
     val hardwareBundle = hardwareEqState.bundle
     val currentGainDb = hardwareBundle?.snapshot?.playbackGainDb
     val canChangeGain = currentGainDb != null &&
@@ -751,6 +785,57 @@ internal fun Ew300DeviceStatus(
             },
         )
     }
+    if (volumeDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!playbackGainState.isWriting) volumeDialogOpen = false },
+            title = { Text("EW300 device volume (0–60)") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "EW300 0–60 mapping: 60 = 0 dB, 0 = −60 dB, one dB per step. This is not the JA11 0x02 command; it writes the EW300 output-gain register.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        String.format(
+                            Locale.US,
+                            "%d / 60 · %+.1f dB",
+                            stagedVolumeLevel,
+                            Ew300VolumeControl.levelToGainDb(stagedVolumeLevel),
+                        ),
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    Slider(
+                        value = stagedVolumeLevel.toFloat(),
+                        onValueChange = { value -> stagedVolumeLevel = value.roundToInt().coerceIn(0, 60) },
+                        valueRange = 0f..60f,
+                        steps = 59,
+                        enabled = !playbackGainState.isWriting && !operationBusy,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Applies for this session. Save to DAC persists the current EQ and gain. Readback is verified after every change.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    playbackGainState.error?.let { error ->
+                        Text(error, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        volumeDialogOpen = false
+                        onSetVolumeLevel(stagedVolumeLevel)
+                    },
+                    enabled = !playbackGainState.isWriting && !operationBusy,
+                ) { Text(if (playbackGainState.isWriting) "Applying…" else "Apply for this session") }
+            },
+            dismissButton = {
+                TextButton(onClick = { volumeDialogOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
     PremiumSectionLabel(
         text = when (hardwareEqState.freshness) {
             DacStateFreshness.CURRENT -> "Current device state"
@@ -777,6 +862,26 @@ internal fun Ew300DeviceStatus(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(if (hardwareEqState.isReading) "Refreshing…" else "Refresh")
+    }
+    if (parityEnabled) {
+        PremiumValueRow(
+            title = "Device volume (0–60)",
+            value = currentGainDb?.let { gainDb ->
+                val level = Ew300VolumeControl.gainDbToLevel(gainDb)
+                String.format(Locale.US, "%d / 60 · %.1f dB", level, gainDb)
+            } ?: "Not read",
+            supportingText = "EW300 0–60 mapping: 60 = 0 dB, 0 = −60 dB. Both stereo 0x66 bytes are written and verified.",
+            enabled = canChangeGain,
+            showDisclosure = true,
+            onClick = if (canChangeGain) {
+                {
+                    stagedVolumeLevel = currentGainDb?.let(Ew300VolumeControl::gainDbToLevel) ?: 60
+                    volumeDialogOpen = true
+                }
+            } else {
+                null
+            },
+        )
     }
     PremiumValueRow(
         title = "Output gain",
@@ -818,6 +923,64 @@ internal fun Ew300DeviceStatus(
         },
         supportingText = "One shared My DAC session. Refresh rereads it without opening a second USB path.",
     )
+
+    PremiumSectionLabel(text = "USB audio", divider = false)
+    val uac = uacState.status
+    PremiumValueRow(
+        title = "Current sample rate",
+        value = uac?.currentSampleRateHz?.let { "$it Hz" } ?: "Not read",
+        supportingText = uac?.sampleRatePath
+            ?: "Read-only UAC1 GET_CUR. Tap Read USB audio to query the exact streaming endpoint.",
+    )
+    PremiumValueRow(
+        title = "USB Audio Class",
+        value = uac?.uacVersion ?: "Not read",
+        supportingText = if (uac?.uacModeSwitchSupported == true) {
+            "Exact mode switch control available."
+        } else {
+            "Read-only descriptor state. One configuration/UAC1 is exposed; no exact mode switch control is established."
+        },
+    )
+    val micMuteSupported = uac?.microphoneMuteSupported == true
+    val micMuted = uac?.microphoneMuted == true
+    PremiumValueRow(
+        title = "Microphone mute",
+        value = when {
+            !micMuteSupported -> "Not established"
+            micMuted -> "Muted"
+            else -> "Live"
+        },
+        supportingText = if (micMuteSupported) {
+            "UAC1 feature-unit mute, verified by GET_CUR after each change."
+        } else {
+            "No UAC1 microphone feature unit with mute control was found on this connection."
+        },
+        enabled = micMuteSupported && !uacState.busy && !operationBusy,
+        showDisclosure = true,
+        onClick = if (micMuteSupported && !uacState.busy && !operationBusy) {
+            { onSetMicrophoneMuted(!micMuted) }
+        } else {
+            null
+        },
+    )
+    PremiumValueRow(
+        title = "Headset remote",
+        value = if (uac?.headsetFeaturePresent == true) "Feature unit present" else "No disable control",
+        supportingText = "HID consumer report 0x01 is passive; no exact EW300 headset-disable control is established.",
+    )
+    OutlinedButton(
+        onClick = onRefreshUac,
+        enabled = !uacState.busy && !operationBusy,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(if (uacState.busy) "Reading USB audio…" else "Read USB audio")
+    }
+    uacState.error?.let { error ->
+        Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+    }
+    uac?.blockedReasons?.forEach { reason ->
+        Text(reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 
     PremiumSectionLabel(text = "Saved settings", divider = false)
     PremiumValueRow(

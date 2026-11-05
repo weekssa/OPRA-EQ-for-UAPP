@@ -335,3 +335,29 @@ reports flat five-band Peak EQ and 0 gain. Capture file SHA-256
 Native Low Shelf / High Shelf type bytes remain transport evidence only. The fixed 250 Hz and
 4 kHz, -6 dB, Q 0.707 research targets are hypotheses for the future owner listening session; no
 acoustic, Q-semantics, or persistence claim follows from a type echo.
+
+## 2026-11-05 five-goal parity evidence
+
+The parity test package adds an EW300-native 0-60 volume mapping, a real UAC1 microphone mute, a
+read-only UAC1 current-rate path, and experimental native shelves. These are test-package features;
+production flags remain false.
+
+- 0-60 volume: 60 = 0 dB, 0 = -60 dB, 1 dB per step, written to both active 0x66 channel bytes.
+  Mac reversible evidence: 00000000 -> level 0 88880000 -> level 30 C4C40000 -> level 60
+  00000000 -> restore 00000000; zero Save. This is an EW300 mapping, not JA11 command 0x02.
+- UAC1 descriptor: one configuration, AudioControl interface 0 subclass 1; microphone feature unit
+  2 (source terminal 0x0201) with master mute; playback AS interface 2 endpoint 0x01
+  (44.1/48/96 kHz); capture AS interface 1 endpoint 0x81 (44.1/48 kHz); HID interface 3.
+  Descriptor SHA-256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907.
+- Microphone mute: UAC1 GET_CUR 0 -> SET_CUR 1 -> verify 1 -> restore 0. This is a real
+  feature-unit control, not a JA11 command or a HID consumer-report switch.
+- Current sample rate: GET_CUR SAMPLING_FREQ_CONTROL to endpoint 0x01/interface 2 returned
+  000000 while idle. The app treats that as "not read," not as a 0 Hz rate. Active-stream
+  validation remains pending.
+- UAC mode: no UAC2 alternate or mode selector is present in the exact descriptor. JA11 command
+  0x20 is not reused. Headset-disable has no exact descriptor/HID control; both remain BLOCKED
+  with the descriptor/HID evidence and a vendor-static-analysis next experiment.
+- Native shelves: exact type 3/4 A/B bytes are C4 FF FA 00 / C3 02 03 00 (Low Shelf 250 Hz,
+  -6 dB, Q 0.707) and C4 FF A0 0F / C3 02 04 00 (High Shelf 4 kHz, -6 dB, Q 0.707). Mac
+  reversible test restored the exact flat bytes. Acoustic meaning remains unmeasured until the
+  owner listening test.

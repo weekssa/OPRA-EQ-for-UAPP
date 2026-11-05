@@ -107,6 +107,65 @@ internal class AndroidKt02h20HidSession(
     val permissionRequestCount: Long
         get() = permissionRequests
 
+    /** Read-only copy of the active connection's raw configuration descriptor. */
+    suspend fun configurationDescriptor(): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            session?.connection?.rawDescriptors?.copyOf()
+        }
+    }
+
+    /** Read-only class/vendor control transfer on the active exact-device connection. */
+    suspend fun controlTransferIn(
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        length: Int,
+    ): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock null
+            if (length !in 1..4096) return@withLock null
+            val buffer = ByteArray(length)
+            val read = runCatching {
+                current.connection.controlTransfer(
+                    requestType,
+                    request,
+                    value,
+                    index,
+                    buffer,
+                    length,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
+            if (read <= 0) null else buffer.copyOf(read)
+        }
+    }
+
+    /** Explicit control-transfer write used only by an evidence-backed microphone mute path. */
+    suspend fun controlTransferOut(
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        data: ByteArray,
+    ): Boolean = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock false
+            val written = runCatching {
+                current.connection.controlTransfer(
+                    requestType,
+                    request,
+                    value,
+                    index,
+                    data,
+                    data.size,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
+            written == data.size
+        }
+    }
+
     /**
      * A read or ordinary mutation may report success only if the physical session stayed the
      * same for the whole exchange. Save is the deliberate exception because it is itself allowed

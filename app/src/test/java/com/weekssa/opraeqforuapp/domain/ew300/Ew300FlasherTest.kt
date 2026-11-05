@@ -208,6 +208,41 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun nativeShelfProfileFlashesTypeThreeAndFourWithOneSave() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0, 0, 0, 0))
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+        val profile = OpraEqProfile(
+            id = "native-shelf-test",
+            productId = "test",
+            author = "test",
+            details = null,
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = null,
+            bands = listOf(
+                OpraBand("low_shelf", 250.0, -6.0, 0.707, null),
+                OpraBand("peak_dip", 1_000.0, 0.0, 1.0, null),
+                OpraBand("peak_dip", 2_000.0, 0.0, 1.0, null),
+                OpraBand("peak_dip", 4_000.0, 0.0, 1.0, null),
+                OpraBand("high_shelf", 4_000.0, -6.0, 0.707, null),
+            ),
+        )
+
+        val result = flasher.flash(profile)
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+        assertTrue(transport.writes.contains(Ew300Protocol.bandRegister(0) + 1))
+        assertEquals(0x03, transport.state.getValue(Ew300Protocol.bandRegister(0) + 1)[2].toInt() and 0xFF)
+        assertEquals(0x04, transport.state.getValue(Ew300Protocol.bandRegister(4) + 1)[2].toInt() and 0xFF)
+    }
+
+    @Test
     fun playbackGainStopsOnUnequalStereoBaselineBeforeAnyWriteOrSave() = runBlocking {
         val transport = FakeTransport(initialGain = bytes(0x96, 0xF8, 0, 0))
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })

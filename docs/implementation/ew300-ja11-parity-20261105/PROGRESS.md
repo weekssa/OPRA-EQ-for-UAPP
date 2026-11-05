@@ -2,23 +2,23 @@
 
 ## Identity
 
-- Base SHA: 180f4a962a53d22d294311121dd49d92a570d89a
+- Base SHA: 5832bc5e9194cbbff7d9321e8a2bf10395d0c9c6 (five-goal continuation)
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Local branch: codex/ew300-ja11-parity
-- Task gate: docs/implementation/ew300-ja11-parity-20261105/GATES.md (resealed 0e4a8da31cf1f7fb)
+- Task gate: docs/implementation/ew300-ja11-parity-20261105/GATES.md (five-goal reseal 5ef34b797a53e153)
 - Accepted plan: docs/implementation/ew300-ja11-parity-20261105/PLAN.md
-- Current candidate SHA: 4866db88385ddbf476554f02df87bc86c9229917 (readiness follow-up commit follows)
+- Current candidate SHA: working tree from 5832bc5e; final commit recorded in READINESS/FINAL_REPORT
 - Debug APK path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
-- APK SHA-256: 1599d98e9224264d7a88993a9e328159f63c6f256d12c422e339ddb86936e778
+- APK SHA-256: pending final rebuild (previous 998d6a014e4a5aea0c2d0db50e897190e7eb0b40c8b25d4386c68aaf69a11e48)
 - Pixel serial / wireless endpoint: not used in this local run
-- EW300 location: Mac (read-only scope only)
+- EW300 location: Mac; reversible shelf/volume/mic tests run, baseline restored
 
 ## Hardware phase
 
 - Mac read-only probe complete: yes (256/256 registers, only 0x52)
 - Golden-frame tests complete: yes
-- JVM tests complete: yes (112 debug EW300 / 855 full debug / 116 release EW300)
-- Emulator UI tests complete: yes (4/4 on emulator-5554)
+- JVM tests complete: yes (123 debug EW300 / 866 full debug / 127 release EW300 at last run)
+- Emulator UI tests complete: yes (Ew300FullParityFlowTest 3/3; prior parity 4/4)
 - Emulator USB passthrough result: not attempted
 - Debug APK built and hashed: yes
 - Final-session readiness gate signed: readiness manifest verified; independent review pending
@@ -30,13 +30,13 @@
 - Queries run: recorded in RESEARCH_SOURCES.md
 - New sources added: planning pass only
 - Sources rejected / license concern: GPL-3.0 and unlicensed sources remain behavior-only
-- Unresolved capability question: native shelf acoustics; saved-startup vs live state
-- Research decision: keep native shelf editor exposure dormant; runtime/save split testable locally
+- Unresolved capability question: headset-disable and UAC-mode vendor control; native shelf acoustics; active-stream sample rate
+- Research decision: mic mute is a real UAC1 control; headset/UAC mode remain BLOCKED with exact descriptor evidence
 
 ## Persistent loop
 
 - Last test command: ./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleEw300Parity :app:assembleEw300ParityAndroidTest
-- Last result: PASS; 855 debug tests, 112 debug EW300, 116 release EW300, lint 0 errors, all builds, 4 emulator tests
+- Last result: PASS; 866 debug tests, 123 debug EW300, 127 release EW300, lint 0 errors, all builds, 3/3 full-parity emulator tests
 - Current failure: none
 - Fix in progress: none
 - Next test command: final gate rerun on the reviewed head

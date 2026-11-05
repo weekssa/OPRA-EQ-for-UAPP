@@ -1,108 +1,77 @@
-# EW300 parity — local readiness package
+# EW300 / JA11 five-goal parity — readiness package
 
-Status: **local-ready; physical qualification pending.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
+Status: **five-goal test candidate built and locally tested; microphone mute implemented, UAC mode and headset-disable BLOCKED with exact descriptor/HID evidence; physical/owner qualification pending.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
 
 ## Candidate identity
 
-- Base: `180f4a962a53d22d294311121dd49d92a570d89a` (verified origin/main, 2026-11-05)
-- Branch: `codex/ew300-ja11-parity`
-- Worktree: `/Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development`
-- Code candidate head: `4866db88385ddbf476554f02df87bc86c9229917` (includes the review P1 fix)
-- This readiness file is a documentation-only follow-up commit on the same branch.
+- Base: 5832bc5e9194cbbff7d9321e8a2bf10395d0c9c6
+- Branch: codex/ew300-ja11-parity
+- Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
+- Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
+- Code candidate head: recorded in the final commit and FINAL_REPORT.md
+- Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
 
 ## APK
 
-- Path: `app/build/outputs/apk/ew300Parity/app-ew300Parity.apk`
-- File: `app-ew300Parity.apk`
-- Size: 22,844,887 bytes
-- SHA-256: `1599d98e9224264d7a88993a9e328159f63c6f256d12c422e339ddb86936e778`
-- Package: `com.weekssa.opraeqforuapp.ew300parity`
-- versionName: `0.10.0-ew300parity`
-- versionCode: `22`
-- Signer SHA-256: `945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5` (Android debug certificate, local test signer)
+- Path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
+- File: app-ew300Parity.apk
+- SHA-256: 998d6a014e4a5aea0c2d0db50e897190e7eb0b40c8b25d4386c68aaf69a11e48
+- Package: com.weekssa.opraeqforuapp.ew300parity
+- versionName: 0.10.0-ew300parity
+- versionCode: 22
+- Signer SHA-256: 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer)
 - Updates: disabled in the parity variant
-- Separate package: installs beside the public app
 
-## Read-only Mac evidence
+## Five-goal status
 
-- Tool: `tools/ew300_readonly_probe.py`
-- Self-test: PASS, only `0x52` frames can be emitted; `0x57/0x53/0x43/0x08/0x54` rejected; missing register and foreign identity fail closed.
-- Live capture: 256/256 registers; every emitted command was `0x52`; no write or Save was sent.
-- Identity: `31B2:0111`, `LE XIAN`, `SIMGOT EW300 DSP`, HID interface 3.
-- Capture file: `/Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-readonly-capture.json`
-- Capture file SHA-256: `030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71`
-- Internal capture SHA-256: `f54de03cd8ff0a6a104b54936f130346dd0d086cf7ecebe5178d1bfe094bf17a`
-- Observed state: firmware `1.0.0`; five-band Peak bank flat at 1 kHz / 0 dB / Q 1; output gain 0.
+| Goal | Status | Evidence |
+|---|---|---|
+| G1 0–60 volume | DONE | Device row/slider; 60 = 0 dB, 0 = −60 dB, 1 dB/step; Mac 0x66 bytes 88880000 / C4C40000 / 00000000 and exact restore; zero Save; JVM/emulator tests. |
+| G2 mic/headset switches | PARTIAL — mic DONE, headset BLOCKED | UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 → SET 1 → verify 1 → restore 0. No headset feature unit; HID 0x01 is passive; no disable control. |
+| G3 UAC mode switching | BLOCKED | Exact 303-byte descriptor: one configuration, UAC1 only, no UAC2 alternate or mode selector; descriptor sha256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907. |
+| G4 current sample rate | DONE (implementation/tests; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01/interface 2; idle returned 000000 and is shown as not read, not 0 Hz. |
+| G5 native shelves | DONE (implementation/tests; owner listening pending) | LS/HS editor/capture/Flash; type 3/4 bytes C4FFFA00/C3020300 and C4FFA00F/C3020400; Mac reversible and exact restore; graph says predicted/unmeasured. |
 
-## Local test results
+## Exact-device evidence
 
-- Pre-change baseline: `./tools/codex-android :app:testDebugUnitTest --tests '*Ew300*'` — 15 classes, 97 tests, 0 failures.
-- Current EW300 JVM: 15 classes, 112 tests, 0 failures, 0 errors, 0 skipped.
-- Full debug JVM suite: 855 tests, 0 failures, 0 errors, 0 skipped.
-- Release EW300 JVM suite: 116 tests, 0 failures, 0 errors, 0 skipped.
-- Python probe tests: 7/7 pass; probe self-test PASS.
-- Explicit-emulator Compose flow: `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedEw300ParityAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.weekssa.opraeqforuapp.ui.screens.Ew300ParityFlowTest` — 4/4 pass on `ew300_parity_api36` (API 36).
-- Lint: `./tools/codex-android :app:lintDebug` — 0 errors, 120 warnings, 2 hints.
-- Builds: `assembleDebug`, `assembleEw300Parity`, `assembleEw300ParityAndroidTest` succeed.
+- Configuration descriptor: 303 bytes, UAC1, AC interface 0, mic feature unit 2 (master mute), playback endpoint 0x01/interface 2 (44.1/48/96 kHz), capture endpoint 0x81/interface 1, HID interface 3.
+- UAC evidence JSON: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-uac-descriptor.json (file sha256 4ea759b960d40572e9b96ebf722e16a17dcc1f25460af513597ece975644bec9).
+- Volume evidence: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-reversible-volume.json (sha256 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c).
+- Shelf evidence: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-reversible-shelf.json (file sha256 cdba8d041947132fd175a01668034977153a72d22994ec58a117939f4e296f2d; internal sha256 37c4db310c85e7ed43758e42bd35d5e4950e8234bdeb6a30511ef030a50ecb89).
+- Live read-only full register capture: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-readonly-capture.json (file sha256 030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71).
 
-## Behavior implemented
+## Tests
 
-- Runtime editor Apply (`APPLY_RUNTIME`): product-allowlisted writes, same-session readback, zero Save.
-- Runtime output gain (`SET_GAIN_RUNTIME`): stereo `0x66`, bounded range, readback verified, zero Save; tracked delta rebased on success, verified no-op, and uncertain-write paths.
-- Explicit Save (`SAVE_RUNTIME`): fresh comparison, exactly one `0x53`, expected reconnect, final readback; uncertain Save is not replayed.
-- Truthful saved-session state: Runtime only / Saving / Saved in this session / Save not verified / Unknown.
-- Five-band rows with accessible type/frequency/gain/Q values.
-- Read-only About: model, firmware, USB identity, validation class, experimental limits.
-- Capability-driven editor type chips: EW300 exposes Peak only; JA11 retains its types.
-- Reset confirmation explicitly says it saves flat EQ to the DAC.
-- Native Low/High Shelf editor exposure remains dormant; fixed shelf targets are future listening-test hypotheses only.
+- Debug JVM: 866 tests, 123 EW300, 0 failures.
+- Release EW300: 127 tests, 0 failures.
+- Emulator: Ew300FullParityFlowTest 3/3 on emulator-5554; prior parity flow 4/4.
+- Lint: 0 errors, 120 warnings, 3 hints.
+- Builds: debug, ew300Parity, ew300ParityAndroidTest.
+- Probe self-tests: readonly 7/7; reversible shelf 3/3; live reversible volume/shelf/restore.
 
-## Production isolation
+## Blockers and next experiments
 
-- Default/release flags: `EW300_PARITY_EXPERIMENT_ENABLED=false`, `EW300_SHELF_QUALIFICATION_ENABLED=false`, `EW300_SHELF_EDITOR_ENABLED=false`.
-- Production Apply remains persistent; Flash/Reset/reconnect/capture/output-gain paths are preserved.
-- Experimental behavior is reachable only through the separate `ew300Parity` package.
+- Headset-remote disable: no exact descriptor/HID control. Next: static vendor APK/HID 0x54 analysis and one hypothesis-driven vendor request with baseline/restore; no blind sweep.
+- UAC mode switching: no UAC2 alternate or mode selector in the exact descriptor. Next: vendor APK/firmware static analysis for a mode command; do not reuse JA11 0x20.
+- Sample-rate active-stream validation: play a known-rate stream on the Pixel and compare UAC1 GET_CUR with the actual stream; idle 000000 must remain “not read.”
+- Owner listening: fixed 250 Hz Low Shelf and 4 kHz High Shelf, −6 dB, Q 0.707; owner performs the scored listening test.
+- Physical persistence: one target Save and one restoration Save only after the owner approves the bounded session.
 
-## Final-session readiness checklist
+## Safety and rollback
 
-- [x] Read-only Mac harness documented, self-tested, and captured successfully.
-- [x] Golden/protocol and applicable JVM tests pass.
-- [x] Explicit-emulator UI/fake-transport and accessibility checks pass.
-- [x] Debug experiment APK built, hashed, signed, and identified.
-- [x] Production flags and existing persistent paths verified by tests/build.
-- [ ] Independent review complete.
-- [x] Original-state capture/restoration procedure and rollback artifacts prepared (read-only capture; restoration procedure below).
-- [ ] One-page listening guide and physical plan accepted, or session restricted to reads.
-- [x] EW300 can be moved safely from Mac to Pixel when the owner authorizes it.
-- [ ] Wireless ADB targets the exact Pixel; USB fallback arranged before DAC testing.
+- No firmware, bootloader, erase, calibration, 0x08, 0x43, 0x54 identity, or arbitrary register write.
+- The reversible Mac probes wrote only 0x26/0x27 (shelves) and 0x66 (volume), verified readback, and restored the exact baseline. They never sent 0x53.
+- Rollback: stop using the experiment package; complete any DAC restoration before uninstalling.
+- Production flags remain false; only com.weekssa.opraeqforuapp.ew300parity exposes experimental controls.
 
-## Rollback and restoration
+## Documentation
 
-- Stop using the separate experiment package; return to the existing app.
-- Uninstalling the experiment does not restore DAC settings. Complete any hardware restoration first.
-- Before any physical mutation, capture the live baseline and the stored-startup baseline separately.
-- Use at most one target Save and one restoration Save; never retry an uncertain Save.
-- The read-only capture above records the current live flat state, not a stored-startup claim.
+- docs/planning/ew300-ja11-parity/GOALS.md
+- docs/planning/ew300-ja11-parity/FUNCTIONAL_MAPPING.md
+- docs/planning/ew300-ja11-parity/TEST_EVIDENCE_LOG.md
+- docs/planning/ew300-ja11-parity/RESEARCH_SOURCES.md
+- docs/EW300_DSP_PROTOCOL_NOTES.md, docs/EW300_CAPABILITY_MATRIX.md, docs/EW300_VALIDATION_LEDGER.md
+- docs/CHATGPT_PROJECT_RUNBOOK.md, docs/PROJECT_STATE.md
 
-## Evidence and documentation
-
-- `docs/planning/ew300-ja11-parity/FUNCTIONAL_MAPPING.md`
-- `docs/planning/ew300-ja11-parity/TEST_EVIDENCE_LOG.md`
-- `docs/planning/ew300-ja11-parity/RESEARCH_SOURCES.md`
-- `docs/implementation/ew300-ja11-parity-20261105/PLAN.md`
-- `docs/EW300_DSP_PROTOCOL_NOTES.md`, `docs/EW300_CAPABILITY_MATRIX.md`, `docs/EW300_VALIDATION_LEDGER.md`
-- `docs/CHATGPT_PROJECT_RUNBOOK.md`, `docs/PROJECT_STATE.md`
-
-## Limits
-
-- No physical EW300 mutation, Save, power cycle, or restoration ran for this candidate.
-- No native-shelf listening or acoustic qualification ran.
-- No Pixel install/launch ran.
-- No end-to-end Android USB emulation is claimed.
-- Accepted physical records E001 and E037-E046 remain tied to their original sources/artifacts.
-- Physical qualification pending.
-
-## Next action
-
-Run exactly one fresh `gpt-6-luna` review from the other account on the final candidate head, close findings, and run one findings-only confirmation pass. Then the owner can decide whether to begin the bounded physical session described in the plan.
+Physical qualification pending.
 

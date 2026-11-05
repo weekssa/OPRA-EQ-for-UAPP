@@ -76,8 +76,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
             buildConfigField("boolean", "EW300_PARITY_EXPERIMENT_ENABLED", "true")
-            buildConfigField("boolean", "EW300_SHELF_QUALIFICATION_ENABLED", "false")
-            buildConfigField("boolean", "EW300_SHELF_EDITOR_ENABLED", "false")
+            buildConfigField("boolean", "EW300_SHELF_QUALIFICATION_ENABLED", "true")
+            buildConfigField("boolean", "EW300_SHELF_EDITOR_ENABLED", "true")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
             matchingFallbacks += listOf("debug")
         }

@@ -181,3 +181,66 @@ Add entries below in chronological order.
 - Maintained docs updated: this log
 - Reviewer: gpt-6-luna finding; same reviewer confirmation pending
 
+### T-006 — exact EW300 UAC descriptor, microphone mute, UAC mode
+
+- Date: 2026-11-05
+- Source SHA: working tree from 5832bc5e (five-goal candidate)
+- Artifact / APK: ew300Parity in progress
+- Device: exact EW300 on the Mac
+- Environment: macOS IOUSBDeviceInterface, 31B2:0111, LE XIAN
+- Command: /tmp/ew300_uac_probe (compiled from tools/ew300_uac_probe.c)
+- Operation: GetConfigurationDescriptorPtr; UAC1 GET_CUR sample rate; GET_CUR/SET_CUR/GET_CUR/restore microphone mute
+- Exact bytes sent: descriptor read-only; sample-rate GET_CUR 0xA2/0x81/0x0100/0x0102/3; mute GET 0xA1/0x81/0x0100/0x0200/1, SET 0x21/0x01/0x0100/0x0200/1
+- Exact bytes received: 303-byte config descriptor; sample-rate 000000; mute 0, then 1, restored 0
+- Observed result: UAC1 only; one configuration; microphone feature unit 2 with master mute; playback stream interface 2 endpoint 0x01 with 44.1/48/96 kHz; capture interface 1 endpoint 0x81; no headset feature unit; no UAC2 alternate
+- Result: PASS for descriptor/mic mute; UAC mode switch BLOCKED
+- What this proves: a real microphone mute control exists; the exact descriptor has no UAC2/UAC-mode alternate; headset-disable is not established.
+- What this does not prove: acoustic mic behavior on the Pixel; a vendor-only UAC mode command outside the descriptor.
+- Restoration: mute restored to 0 and verified; no Save
+- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-uac-descriptor.json (file sha 4ea759b960d40572e9b96ebf722e16a17dcc1f25460af513597ece975644bec9; descriptor sha e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907)
+- Functional mapping rows updated: M-21..M-24
+- Maintained docs updated: protocol notes, capability matrix
+- Reviewer: pending final gpt-6-luna
+
+### T-007 — reversible 0–60 volume bytes on 0x66
+
+- Date: 2026-11-05
+- Device: exact EW300 on the Mac
+- Command: macOS hidapi writes/readbacks to 0x66
+- Operation: baseline → level 0 (−60 dB, 88880000) → level 30 (−30 dB, C4C40000) → level 60 (0 dB, 00000000) → baseline
+- Observed result: all readbacks exact; restored 00000000; zero Save
+- Result: PASS
+- What this proves: the exact 0–60 mapping writes both stereo channel bytes and restores.
+- What this does not prove: audible level calibration or Pixel UI behavior.
+- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-reversible-volume.json (sha 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c)
+
+### T-008 — reversible native Low/High Shelf bytes
+
+- Date: 2026-11-05
+- Device: exact EW300 on the Mac
+- Command: tools/ew300_reversible_shelf_probe.py --live
+- Operation: baseline 0x26/0x27 → LS C4FFFA00/C3020300 → HS C4FFA00F/C3020400 → baseline
+- Observed result: all readbacks exact; restored 0000E803/E8030000; zero Save; only 0x52/0x57 to 0x26/0x27
+- Result: PASS
+- What this proves: type 3/4 A/B byte mapping and exact restoration on the exact device.
+- What this does not prove: shelf acoustics, Q semantics, or persistence.
+- Artifacts: ~/.codex/evidence/ew300/2026-11-05/ew300-reversible-shelf.json (file sha cdba8d041947132fd175a01668034977153a72d22994ec58a117939f4e296f2d; internal sha 37c4db310c85e7ed43758e42bd35d5e4950e8234bdeb6a30511ef030a50ecb89)
+
+### T-009 — five-goal JVM and emulator flows
+
+- Date: 2026-11-05
+- Source SHA: working tree from 5832bc5e
+- Commands: :app:testDebugUnitTest; :app:testReleaseUnitTest --tests '*Ew300*'; explicit-emulator Ew300FullParityFlowTest; :app:lintDebug
+- Observed result: 866 debug tests (123 EW300), 127 release EW300, 3/3 full-parity Compose tests, lint 0 errors
+- Result: PASS
+- What this proves: five-goal software surfaces, 0–60 mapping, UAC parser/mic row, shelf chips/flash/capture are locally covered.
+- What this does not prove: Pixel/phone behavior or owner listening.
+
+### T-010 — five-goal parity APK
+
+- Date: 2026-11-05
+- Artifact: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
+- Package/version: com.weekssa.opraeqforuapp.ew300parity / 0.10.0-ew300parity / 22
+- SHA-256: 998d6a014e4a5aea0c2d0db50e897190e7eb0b40c8b25d4386c68aaf69a11e48
+- Result: PASS (build/identity); signer readback recorded in READINESS.md
+

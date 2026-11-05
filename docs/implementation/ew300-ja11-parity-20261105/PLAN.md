@@ -505,3 +505,17 @@ Before requesting the Pixel:
 - [ ] Wireless ADB targets the exact Pixel; recovery skill used only if discovery/authorization fails. USB fallback is arranged before DAC testing.
 
 **One next action:** review and accept this plan as the local experiment’s contract. The accepted plan is then sealed and handed to a fresh DeepSeek execution thread in the isolated worktree.
+
+## 2026-11-05 owner expansion — five mandatory goals (controlling for the parity package)
+
+The owner superseded the earlier “omit / dormant / not permitted before owner listening” dispositions for the experimental `com.weekssa.opraeqforuapp.ew300parity` package. The original text above remains historical; this amendment and `docs/planning/ew300-ja11-parity/GOALS.md` control the test build.
+
+The parity test build must contain:
+
+1. A JA11-style 0–60 EW300 device volume mapped to `0x66`: 60 = 0 dB, 0 = −60 dB, 1 dB per step, both stereo bytes, readback after every change. This is an EW300 mapping, not JA11 command `0x02`.
+2. Microphone/headset-remote switches only where exact EW300 evidence establishes a real control. The evidence program must parse UAC feature units/terminals/alternate settings and inspect HID report `0x01`, vendor report `0x54`, and relevant `0x4B` registers, with GET_CUR/MIN/MAX before any write.
+3. UAC mode switching only if the exact EW300 exposes it. Otherwise record exact descriptor/control-transfer evidence, distinguish “not supported” from “not researched,” and name the next experiment.
+4. A read-only current sample-rate readout using the UAC1 GET_CUR sampling-frequency path, validated against the actual stream, not descriptor-supported rates.
+5. Native Low Shelf / High Shelf editor exposure, type 3/4 A/B read/write/readback, capture, and Flash, with cut-only −6.0–0.0 dB, Q 0.707, 250 Hz Low Shelf and 4,000 Hz High Shelf. Acoustic semantics remain experimental/unmeasured until the owner listening test.
+
+Production flags remain false; only the parity package may expose these controls. A build without all five goals is an intermediate candidate, not completion. G2/G3 may be BLOCKED only with exact, reproducible evidence and a concrete next experiment. Reversible Mac writes, static analysis, and bounded phone testing are authorized; firmware flashing, bootloader/erase/calibration, `0x08`, `0x43`, `0x54` identity writes, and destructive recovery remain prohibited.

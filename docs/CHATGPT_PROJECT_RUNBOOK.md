@@ -6,6 +6,15 @@ For a concise current release and device-evidence summary, start with [`PROJECT_
 
 ## 2026-11-05 EW300 parity local experiment (unreleased)
 
+The owner expanded this test package to five goals: a JA11-style 0-60 EW300 volume, microphone/
+headset-remote switches, UAC mode switching if supported, current sample-rate readout, and native
+Low/High Shelf editor/capture/Flash. The five-goal candidate implements the 0-60 mapping, a real
+UAC1 microphone mute (feature unit 2), read-only UAC1 current-rate status, and the native shelf
+path. Exact descriptor evidence blocks UAC mode switching (one UAC1 configuration, no UAC2
+alternate) and headset-disable (no headset feature unit or exact HID disable control); both are
+recorded in GOALS.md with next experiments. The Mac reversible tests restored 0x26/0x27 and 0x66
+exactly and sent no Save. Owner listening and Pixel/active-stream checks remain pending.
+
 The owner-approved EW300/JA11 parity plan is implemented on local branch `codex/ew300-ja11-parity`
 from exact base `180f4a962a53d22d294311121dd49d92a570d89a`. It adds a separate debug-derived
 `com.weekssa.opraeqforuapp.ew300parity` package with runtime editor Apply and runtime output gain

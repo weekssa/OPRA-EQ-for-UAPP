@@ -59,6 +59,7 @@ data class Ew300CommitObservation(
 /** Applies the shared My DAC editor working copy through the guarded EW300 transaction. */
 class Ew300EditorApplier(
     private val transport: Ew300Transport,
+    private val allowExperimentalShelf: Boolean = false,
 ) {
     private val transactionCoordinator = Ew300TransactionCoordinator(transport)
 
@@ -375,15 +376,22 @@ class Ew300EditorApplier(
     }
 
     private fun encode(filter: HardwareEqFilter): WireBandPair? {
-        if (filter.type != EqFilterType.PEAK) return null
+        val type = when (filter.type) {
+            EqFilterType.PEAK -> "peak_dip"
+            EqFilterType.LOW_SHELF -> "low_shelf"
+            EqFilterType.HIGH_SHELF -> "high_shelf"
+            else -> return null
+        }
+        if (type != "peak_dip" && !allowExperimentalShelf) return null
         return runCatching {
             Ew300Protocol.encodeBand(
                 Kt02h20Band(
-                    type = "peak_dip",
+                    type = type,
                     frequencyHz = filter.frequencyHz,
                     gainDb = filter.gainDb,
                     q = filter.q,
                 ),
+                allowExperimentalShelf = allowExperimentalShelf,
             ).let { (gain, q) -> WireBandPair(gain, q) }
         }.getOrNull()
     }

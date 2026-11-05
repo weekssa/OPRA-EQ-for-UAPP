@@ -70,6 +70,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300PlaybackGainResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeApplyResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeSaveResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300VolumeControl
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
@@ -157,6 +158,7 @@ private data class HardwareConnectionUiState(
     val ew300PlaybackGainState: Ew300PlaybackGainUiState,
     val ew300RuntimePersistence: Ew300RuntimePersistenceState,
     val ew300RuntimeSaveState: Ew300RuntimeSaveUiState,
+    val ew300UacState: Ew300UacUiState,
     val blackPearlFlashOutcome: BlackPearlFlashUiOutcome?,
 )
 
@@ -203,6 +205,7 @@ data class EqLibraryUiState(
     val ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     val ew300RuntimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
     val ew300RuntimeSaveState: Ew300RuntimeSaveUiState = Ew300RuntimeSaveUiState(),
+    val ew300UacState: Ew300UacUiState = Ew300UacUiState(),
     val blackPearlFlashOutcome: BlackPearlFlashUiOutcome? = null,
 )
 
@@ -236,6 +239,7 @@ class EqLibraryViewModel(
     private var ja11SavePending = false
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
     private val mutableEw300RuntimeSaveState = MutableStateFlow(Ew300RuntimeSaveUiState())
+    private val mutableEw300UacState = MutableStateFlow(Ew300UacUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
     private val mutableBlackPearlFlashOutcome = MutableStateFlow<BlackPearlFlashUiOutcome?>(null)
     private var blackPearlEditorLineageRepresentation: SavedHardwareEqRepresentation? = null
@@ -357,6 +361,7 @@ class EqLibraryViewModel(
             ew300PlaybackGainState = Ew300PlaybackGainUiState(),
             ew300RuntimePersistence = Ew300RuntimePersistenceState.UNKNOWN,
             ew300RuntimeSaveState = Ew300RuntimeSaveUiState(),
+            ew300UacState = Ew300UacUiState(),
             blackPearlFlashOutcome = null,
         )
     }
@@ -417,10 +422,12 @@ class EqLibraryViewModel(
         hardwareConnectionsWithDcrTuning,
         hardwareRepository.ew300RuntimePersistence,
         mutableEw300RuntimeSaveState,
-    ) { hardware, persistence, saveState ->
+        mutableEw300UacState,
+    ) { hardware, persistence, saveState, uacState ->
         hardware.copy(
             ew300RuntimePersistence = persistence,
             ew300RuntimeSaveState = saveState,
+            ew300UacState = uacState,
         )
     }
 
@@ -467,6 +474,7 @@ class EqLibraryViewModel(
             ew300PlaybackGainState = hardware.ew300PlaybackGainState,
             ew300RuntimePersistence = hardware.ew300RuntimePersistence,
             ew300RuntimeSaveState = hardware.ew300RuntimeSaveState,
+            ew300UacState = hardware.ew300UacState,
             blackPearlFlashOutcome = hardware.blackPearlFlashOutcome,
         )
     }.stateIn(
@@ -705,6 +713,40 @@ class EqLibraryViewModel(
         }
     }
 
+    fun setEw300VolumeLevel(level: Int) {
+        setEw300PlaybackGain(Ew300VolumeControl.levelToGainDb(level))
+    }
+
+    fun refreshEw300Uac() {
+        if (mutableEw300UacState.value.busy) return
+        mutableEw300UacState.value = mutableEw300UacState.value.copy(busy = true, error = null)
+        viewModelScope.launch {
+            val status = runCatching { hardwareRepository.readEw300UacStatus() }
+                .getOrElse {
+                    mutableEw300UacState.value = Ew300UacUiState(
+                        busy = false,
+                        error = "USB-audio descriptors could not be read.",
+                    )
+                    return@launch
+                }
+            mutableEw300UacState.value = Ew300UacUiState(status = status, busy = false)
+        }
+    }
+
+    fun setEw300MicrophoneMuted(muted: Boolean) {
+        if (mutableEw300UacState.value.busy) return
+        mutableEw300UacState.value = mutableEw300UacState.value.copy(busy = true, error = null)
+        viewModelScope.launch {
+            val ok = runCatching { hardwareRepository.setEw300MicrophoneMuted(muted) }.getOrDefault(false)
+            val status = runCatching { hardwareRepository.readEw300UacStatus() }.getOrNull()
+            mutableEw300UacState.value = Ew300UacUiState(
+                status = status ?: mutableEw300UacState.value.status,
+                busy = false,
+                error = if (ok) null else "The exact EW300 microphone mute control did not verify.",
+            )
+        }
+    }
+
     private fun writeFiioJa11Control(controlId: DacControlId, value: DacControlValue) {
         val state = mutableFiioJa11DeviceState.value
         val snapshot = state.snapshot
@@ -879,7 +921,7 @@ class EqLibraryViewModel(
             val result = withContext(computationDispatcher) {
                 HardwareEqEditor.startFromCurrent(
                     snapshotState = hardwareRepository.ew300SnapshotState.value,
-                    spec = HardwareEqEditSpecs.SIMGOT_EW300,
+                    spec = ew300EditSpec(),
                 )
             }
             mutableEw300EditorState.value = when (result) {
@@ -893,6 +935,13 @@ class EqLibraryViewModel(
             }
         }
     }
+
+    private fun ew300EditSpec(): com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpec =
+        if (BuildConfig.EW300_SHELF_EDITOR_ENABLED) {
+            HardwareEqEditSpecs.SIMGOT_EW300_PARITY
+        } else {
+            HardwareEqEditSpecs.SIMGOT_EW300
+        }
 
     fun openFiioJa11Editor() {
         val current = mutableFiioJa11EditorState.value
@@ -1119,7 +1168,7 @@ class EqLibraryViewModel(
     fun updateEw300EditorBand(index: Int, type: EqFilterType, frequencyHz: Double, gainDb: Double, q: Double) = mutableEw300EditorState.update { current ->
         val working = current.workingCopy ?: return@update current
         current.copy(
-            workingCopy = HardwareEqEditor.updateFilter(working, HardwareEqEditSpecs.SIMGOT_EW300, index, type, frequencyHz, gainDb, q),
+            workingCopy = HardwareEqEditor.updateFilter(working, ew300EditSpec(), index, type, frequencyHz, gainDb, q),
             selectedBandIndex = index,
             applyStatus = MyDacEditorApplyStatus.IDLE,
             applyFailureReason = null,
@@ -1128,12 +1177,12 @@ class EqLibraryViewModel(
 
     fun useSafeEw300EditorGain() = mutableEw300EditorState.update { current ->
         val working = current.workingCopy ?: return@update current
-        current.copy(workingCopy = HardwareEqEditor.useSafeGain(working, HardwareEqEditSpecs.SIMGOT_EW300), applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+        current.copy(workingCopy = HardwareEqEditor.useSafeGain(working, ew300EditSpec()), applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
     }
 
     fun resetEw300EditorLocalEdits() = mutableEw300EditorState.update { current ->
         val working = current.workingCopy ?: return@update current
-        current.copy(stage = MyDacEditorStage.EDIT, workingCopy = HardwareEqEditor.resetLocalEdits(working, HardwareEqEditSpecs.SIMGOT_EW300), applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+        current.copy(stage = MyDacEditorStage.EDIT, workingCopy = HardwareEqEditor.resetLocalEdits(working, ew300EditSpec()), applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
     }
 
     fun applyEw300Editor(allowCautions: Boolean) {
