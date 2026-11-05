@@ -155,6 +155,27 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun runtimeGainReadbackMismatchFencesStaleDeltaAndPendingTarget() = runBlocking {
+        val transport = FakeTransport(
+            initialGain = bytes(0x96, 0x96, 0, 0),
+            corruptWriteRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER,
+        )
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertTrue(result is Ew300PlaybackGainResult.VerificationFailed)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-106, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.UNKNOWN, flasher.runtimePersistence.value)
+        assertTrue(flasher.saveRuntime() is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
     fun runtimeSaveRejectsAnExternallyChangedLiveStateWithoutSave() = runBlocking {
         val transport = FakeTransport(initialGain = bytes(0x96, 0x96, 0, 0))
         val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
@@ -538,6 +559,7 @@ class Ew300FlasherTest {
         private val throwOnCommitNumber: Int? = null,
         private var transientReadFailuresAfterCommit: Int = 0,
         private val initialGain: ByteArray = bytes(0, 0, 0, 0),
+        private val corruptWriteRegister: Int? = null,
     ) : Ew300Transport {
         override var deviceFingerprintKey: String = "test-ew300"
         override var sessionGeneration: Long = 1L
@@ -579,7 +601,11 @@ class Ew300FlasherTest {
         override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
             writes += register
             if (register == failWriteRegister) return false
-            state[register] = data.copyOf()
+            state[register] = if (register == corruptWriteRegister) {
+                data.copyOf().also { it[0] = (it[0].toInt() + 1).toByte() }
+            } else {
+                data.copyOf()
+            }
             return true
         }
 

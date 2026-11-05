@@ -170,7 +170,8 @@ Add entries below in chronological order.
 - Operation: rebase tracked EQ delta on a verified no-op absolute gain; invalidate delta and clear pending target after an uncertain write/readback
 - Exact bytes sent (if any): none
 - Exact bytes received: none
-- Observed result: 111 EW300 tests, 0 failures; rebuilt parity APK SHA-256 1599d98e9224264d7a88993a9e328159f63c6f256d12c422e339ddb86936e778
+- Observed result: 112 EW300 tests, 0 failures; rebuilt parity APK SHA-256 1599d98e9224264d7a88993a9e328159f63c6f256d12c422e339ddb86936e778
+- Follow-up confirmation: the first fix covered the verified no-op and rejected-write paths; the reviewer then required explicit coverage of the accepted-write/readback-mismatch branch, now added.
 - Result: PASS (finding fixed; confirmation pass pending)
 - What this proves: the reviewed stale-compensation defect now has explicit no-op and uncertain-write coverage.
 - What this does not prove: physical gain behavior.

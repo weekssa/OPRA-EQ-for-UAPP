@@ -17,7 +17,7 @@
 
 - Mac read-only probe complete: yes (256/256 registers, only 0x52)
 - Golden-frame tests complete: yes
-- JVM tests complete: yes (111 EW300 after the P1 fix / 852 full debug / 113 release EW300)
+- JVM tests complete: yes (112 EW300 after the P1 fix / 852 full debug / 113 release EW300)
 - Emulator UI tests complete: yes (4/4 on emulator-5554)
 - Emulator USB passthrough result: not attempted
 - Debug APK built and hashed: yes

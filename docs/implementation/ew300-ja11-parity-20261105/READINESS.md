@@ -37,7 +37,7 @@ Status: **local-ready; physical qualification pending.** No push, PR, merge, pub
 ## Local test results
 
 - Pre-change baseline: `./tools/codex-android :app:testDebugUnitTest --tests '*Ew300*'` — 15 classes, 97 tests, 0 failures.
-- Current EW300 JVM: 15 classes, 111 tests, 0 failures, 0 errors, 0 skipped.
+- Current EW300 JVM: 15 classes, 112 tests, 0 failures, 0 errors, 0 skipped.
 - Full debug JVM suite: 852 tests, 0 failures, 0 errors, 0 skipped.
 - Release EW300 JVM suite: 113 tests, 0 failures, 0 errors, 0 skipped.
 - Python probe tests: 7/7 pass; probe self-test PASS.
