@@ -485,10 +485,7 @@ class UiModernizationFlowsTest {
         captureV080Screenshot("app-shell-library-light-100")
 
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Output").assertIsDisplayed()
-        composeRule.onNodeWithText("This controls how EQs are prepared, exported, and flashed. It does not change Android's audio output.")
-            .performScrollTo()
-            .assertIsDisplayed()
+        composeRule.onNodeWithText("EQ target").assertIsDisplayed()
         composeRule.waitForIdle()
         captureV080Screenshot("app-shell-settings-light-100")
 
@@ -854,7 +851,7 @@ class UiModernizationFlowsTest {
         }
 
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Refresh now").performScrollTo().performClick()
+        composeRule.onNodeWithText("Refresh").performScrollTo().performClick()
         composeRule.onNodeWithText("Couldn’t refresh EQ Library. Using your saved catalog.")
             .assertIsDisplayed()
         composeRule.onNode(hasText("EQ Library").and(isSelectable())).performClick()
@@ -937,7 +934,7 @@ class UiModernizationFlowsTest {
 
         composeRule.onNodeWithText("Saved Headphone").assertIsDisplayed()
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Hidden EQs · 1").performScrollTo().performClick()
+        composeRule.onNodeWithText("View").performScrollTo().performClick()
         composeRule.onNodeWithText("Saved Headphone").performClick()
         composeRule.onNodeWithText("Unhide selected (1)").performClick()
         composeRule.waitForIdle()
@@ -977,7 +974,7 @@ class UiModernizationFlowsTest {
         }
 
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Output").assertIsDisplayed()
+        composeRule.onNodeWithText("EQ target").assertIsDisplayed()
         composeRule.onNodeWithText("Connected · State current").assertIsDisplayed()
         composeRule.onNodeWithText("Open My DAC").performClick()
         composeRule.onNodeWithText("Current hardware EQ").assertIsDisplayed()
@@ -986,7 +983,7 @@ class UiModernizationFlowsTest {
         composeRule.waitForIdle()
         captureV080Screenshot("my-dac-current-fiio-production-shell-fixture-light-100")
         composeRule.onNodeWithContentDescription("Back").performClick()
-        composeRule.onNodeWithText("Output").assertIsDisplayed()
+        composeRule.onNodeWithText("EQ target").assertIsDisplayed()
         composeRule.runOnIdle { assertEquals(0, connectRequests) }
     }
 
@@ -2298,12 +2295,9 @@ class UiModernizationFlowsTest {
 
         composeRule.waitForIdle()
         captureV080Screenshot("settings-light-100")
-        listOf("Output", "Library", "Appearance", "Updates", "Support & information").forEach { title ->
+        listOf("EQ target", "Outputs", "Library", "Appearance", "About").forEach { title ->
             composeRule.onNodeWithText(title).performScrollTo().assertIsDisplayed()
         }
-        composeRule.onNodeWithText("This controls how EQs are prepared, exported, and flashed. It does not change Android's audio output.")
-            .performScrollTo()
-            .assertIsDisplayed()
         composeRule.onNodeWithText("Help").performScrollTo().performClick()
         composeRule.onNodeWithText("Saving does not export a file or change connected hardware.", substring = true)
             .performScrollTo()

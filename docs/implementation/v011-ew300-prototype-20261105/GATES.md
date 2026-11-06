@@ -87,4 +87,8 @@ OWNS: GATES.md,
   app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/DacDeviceStatus.kt,
   app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/Ew300OperationStatusTest.kt,
   docs/screenshots/,
-  app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/MyDacSelectionTest.kt
+  app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/MyDacSelectionTest.kt,
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/MainActivityLifecycleTest.kt,
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/UiModernizationFlowsTest.kt,
+  docs/screenshots/v011/settings-after-top-412dp.png,
+  docs/screenshots/v011/settings-before-top-412dp.png

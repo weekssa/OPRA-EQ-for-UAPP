@@ -529,3 +529,13 @@ Add entries below in chronological order.
 - Device check: after reinstalling and restarting the app, My DAC showed "EW300 is attached. Connect to read its settings." with the Connect action.
 - Validation: JVM 883 tests, 0 failures; lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 (05:28:44Z).
 
+
+### T-038 — Settings v2: five groups, one control per row, 29% fewer words
+
+- Candidate: APK 1e97db8e076b78a36eb55acacd905c879b8ba41252b09ca8ea0ad91bcff53a02, built 2026-11-05 23:40:20 CST.
+- Structure: EQ target (Automatic / Manual with one-line descriptions, Current target, Default target with a picker dialog) → Outputs (Hardware DACs / Apps / Formats, short per-device subtitles, Direct Flash as a single indented switch row) → Library (Folder, Hidden EQs, Catalog with status and Refresh) → Appearance (System / Light / Dark, no descriptions) → About (Version, optional Update row, Help, About EQ Library, Data sources, Feedback).
+- Removed: the five stacked paragraphs around Output behaviour, both "Available outputs" intros, the duplicated default-target device list, the four-line folder explanation, the catalog explanation paragraph, the Updates section's release-channel paragraph, and all per-link descriptions.
+- Measured on the Settings root body: 93 → 81 user-facing strings and 867 → 616 words (-29%); the root now has five groups and one trailing control per row, with Direct Flash on its own row beneath the DAC.
+- Validation: JVM 883 tests, 0 failures; lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 (05:48:46Z). Device check: the phone shows the new groups, the Default target picker opens from Change, and the Catalog row reports its last refresh with a Refresh action.
+- Screenshots: docs/screenshots/v011/settings-before-top-412dp.png and settings-after-top-412dp.png.
+

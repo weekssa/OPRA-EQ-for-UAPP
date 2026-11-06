@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -95,6 +96,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     var pageName by rememberSaveable { mutableStateOf(SettingsPage.ROOT.name) }
+    var defaultTargetPickerOpen by rememberSaveable { mutableStateOf(false) }
     val page = runCatching { SettingsPage.valueOf(pageName) }.getOrDefault(SettingsPage.ROOT)
     val returnToRoot = { pageName = SettingsPage.ROOT.name }
 
@@ -136,6 +138,32 @@ fun SettingsScreen(
         SettingsPage.ROOT -> Unit
     }
 
+    if (defaultTargetPickerOpen) {
+        AlertDialog(
+            onDismissRequest = { defaultTargetPickerOpen = false },
+            title = { Text("Default target") },
+            text = {
+                Column {
+                    ExportDevice.selectableOutputs
+                        .filter(appPreferences.manualExportTargets::isSelected)
+                        .forEach { device ->
+                            ThemeOption(
+                                title = device.displayName,
+                                selected = device == appPreferences.manualExportTargets.activeTarget,
+                                onSelected = {
+                                    onActiveExportTargetChange(device)
+                                    defaultTargetPickerOpen = false
+                                },
+                            )
+                        }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { defaultTargetPickerOpen = false }) { Text("Done") }
+            },
+        )
+    }
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -158,68 +186,32 @@ fun SettingsScreen(
             )
         }
 
-        SectionTitle("Output")
-        Text(
-            "Output behavior",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-        )
+        SectionTitle("EQ target")
         ThemeOption(
-            title = "Automatic (recommended)",
-            description = "Use a connected supported DAC when one is available. Otherwise use your Default EQ target.",
+            title = "Automatic",
+            description = "Use a connected DAC when available.",
             selected = appPreferences.outputBehavior == OutputBehavior.Automatic,
             onSelected = { onOutputBehaviorChange(OutputBehavior.Automatic) },
         )
         ThemeOption(
             title = "Manual",
-            description = "Always use your Default EQ target, even when a supported DAC is connected.",
+            description = "Always use the default target.",
             selected = appPreferences.outputBehavior == OutputBehavior.Manual,
             onSelected = { onOutputBehaviorChange(OutputBehavior.Manual) },
         )
-        Text(
-            text = "Current EQ target: ${appPreferences.exportTargets.activeTarget.displayName}",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 4.dp),
+        SettingsValueRow(
+            label = "Current target",
+            value = appPreferences.exportTargets.activeTarget.displayName,
         )
-        Text(
-            text = "Default EQ target: ${appPreferences.manualExportTargets.activeTarget.displayName}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp),
-        )
-        Text(
-            text = "This controls how EQs are prepared, exported, and flashed. It does not change Android's audio output.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        if (appPreferences.outputBehavior == OutputBehavior.Automatic) {
-            Text(
-                text = "A connected supported DAC is temporary; it does not overwrite your Default EQ target.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-
-        Text(
-            "Available outputs",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
-        )
-        Text(
-            text = "Choose the apps, devices, and portable formats you use. These choices determine which options can be selected as your Default EQ target.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 6.dp),
-        )
-        Text(
-            text = "Direct Flash writes only the EQ you request. The DAC must be the active target, have Direct Flash on, and be connected.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 10.dp),
+        SettingsValueRow(
+            label = "Default target",
+            value = appPreferences.manualExportTargets.activeTarget.displayName,
+            actionLabel = "Change",
+            onAction = { defaultTargetPickerOpen = true },
         )
 
+        SectionDivider()
+        SectionTitle("Outputs")
         OutputCategory.entries.forEach { category ->
             val devices = ExportDevice.selectableOutputs.filter { it.category == category }
             if (devices.isNotEmpty()) {
@@ -252,121 +244,58 @@ fun SettingsScreen(
                 }
             }
         }
-
-        val manualChoices = ExportDevice.selectableOutputs.filter(appPreferences.manualExportTargets::isSelected)
-        if (manualChoices.isNotEmpty()) {
-            Text(
-                text = "Default EQ target",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
-            )
-            manualChoices.forEach { device ->
-                ThemeOption(
-                    title = device.displayName,
-                    description = if (device == appPreferences.manualExportTargets.activeTarget) {
-                        "Used in Manual mode and whenever Automatic has no single supported DAC to use."
-                    } else null,
-                    selected = device == appPreferences.manualExportTargets.activeTarget,
-                    onSelected = { onActiveExportTargetChange(device) },
-                )
-            }
-            if (appPreferences.outputBehavior == OutputBehavior.Automatic) {
-                Text(
-                    text = "Choosing a Default EQ target switches Output behavior to Manual. Turn Automatic back on above whenever you want connected supported DACs to take priority.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
         Text(
-            "Export folder",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
-        )
-        Text("EQ Library root folder")
-        Text(
-            text = appPreferences.exportTreeLabel ?: "Not chosen yet",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Saving an EQ to My EQs does not export it. Use Export when you want a file, or Flash to write to a supported DAC. Suggested file location: Documents/EQ Library.",
-            modifier = Modifier.padding(top = 4.dp),
+            text = "Direct Flash writes only when you tap Flash.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
         )
-        TextButton(onClick = onChangeExportFolder) {
-            Text(if (appPreferences.exportTreeUri == null) "Choose root folder" else "Change root folder")
-        }
-        if (appPreferences.exportTreeUri != null) {
-            Text(
-                text = "Changing the root affects future exports only. Existing files are not moved or deleted.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
 
         SectionDivider()
         SectionTitle("Library")
+        SettingsValueRow(
+            label = "Folder",
+            value = appPreferences.exportTreeLabel ?: "Not chosen",
+            actionLabel = if (appPreferences.exportTreeUri == null) "Choose" else "Change",
+            onAction = onChangeExportFolder,
+        )
+        SettingsValueRow(
+            label = "Hidden EQs",
+            value = hiddenCanonicalProfileIds.size.toString(),
+            actionLabel = "View",
+            onAction = { pageName = SettingsPage.HIDDEN_EQS.name },
+        )
         when (catalogState) {
-            CatalogState.Loading -> Text(
-                text = "Loading your saved EQ Library and checking available catalog state…",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            CatalogState.Loading -> SettingsValueRow(label = "Catalog", value = "Loading…")
             is CatalogState.Unavailable -> {
+                SettingsValueRow(
+                    label = "Catalog",
+                    value = "Offline",
+                    actionLabel = "Retry",
+                    onAction = onRefreshCatalog,
+                )
                 Text(
                     text = eqLibraryCatalogFailureMessage(catalogState.reason),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(onClick = onRefreshCatalog) { Text("Try refresh") }
             }
-            is CatalogState.Ready -> {
-                Text(
-                    text = if (catalogState.isRefreshing) "Refreshing EQ Library…" else "Saved EQ Library available",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    text = "${catalogState.catalog.vendors.size} manufacturers · ${catalogState.catalog.products.size} headphones · ${catalogState.catalog.profiles.size} EQ profiles",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "Last successful refresh ${formatCatalogTime(catalogState.lastSuccessfulRefreshMillis)}",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "EQ Library uses saved data immediately and opportunistically refreshes when the last successful refresh is about a day old. If you're offline, the saved library remains available.",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TextButton(
-                    onClick = onRefreshCatalog,
-                    enabled = !catalogState.isRefreshing,
-                ) { Text("Refresh now") }
-            }
+            is CatalogState.Ready -> SettingsValueRow(
+                label = "Catalog",
+                value = if (catalogState.isRefreshing) {
+                    "Refreshing…"
+                } else {
+                    "Updated " + formatCatalogTime(catalogState.lastSuccessfulRefreshMillis)
+                },
+                actionLabel = "Refresh",
+                onAction = onRefreshCatalog,
+            )
         }
-        TextButton(onClick = { pageName = SettingsPage.HIDDEN_EQS.name }) {
-            Text("Hidden EQs · ${hiddenCanonicalProfileIds.size}")
-        }
-        Text(
-            text = "Hidden EQs remain in the living archive and in any existing My EQs collection; this setting changes ordinary library visibility only.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
         SectionDivider()
         SectionTitle("Appearance")
         ThemeOption(
-            title = "System default",
-            description = "Follow your Android device appearance.",
+            title = "System",
             selected = appPreferences.themeMode == ThemeMode.System,
             onSelected = { onThemeModeChange(ThemeMode.System) },
         )
@@ -382,85 +311,60 @@ fun SettingsScreen(
         )
 
         SectionDivider()
-        SectionTitle("Updates")
-        Text("EQ Library")
-        Text(
-            text = "Installed version ${BuildConfig.VERSION_NAME}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        SectionTitle("About")
         val latestVersion = appPreferences.updates.latestVersion.takeIf { BuildConfig.UPDATE_CHECKS_ENABLED }
         val updateAvailable = latestVersion != null &&
             SemVer.parse(latestVersion)?.let { latest ->
                 SemVer.parse(BuildConfig.VERSION_NAME)?.let { installed -> latest > installed }
             } == true
-        if (BuildConfig.UPDATE_CHECKS_ENABLED) {
-            when {
-                updateAvailable -> Text(
-                    text = "Version $latestVersion is available.",
-                    modifier = Modifier.padding(top = 6.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                latestVersion != null -> Text(
-                    text = "You’re up to date.",
-                    modifier = Modifier.padding(top = 6.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                else -> Text(
-                    text = "Update status not available yet.",
-                    modifier = Modifier.padding(top = 6.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        if (BuildConfig.UPDATE_CHECKS_ENABLED) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onCheckForUpdates) { Text("Check for update") }
-                if (latestVersion != null && !appPreferences.updates.releaseNotes.isNullOrBlank()) {
-                    TextButton(onClick = onWhatsNew) { Text("What’s new") }
-                }
-                if (updateAvailable && appPreferences.updates.releaseUrl != null) {
-                    TextButton(onClick = onGetUpdate) { Text("Get update") }
-                }
-            }
-            Text(
-                text = "Updates are downloaded manually from the public GitHub Release page. EQ Library does not silently download or install APKs.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            Text(
-                text = "Beta updates are provided separately from the public release channel.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        SectionDivider()
-        SectionTitle("Support & information")
-        SettingsLinkRow(
-            title = "Feedback & EQ submissions",
-            description = "Report a problem, suggest an improvement, or submit an EQ source.",
-            onClick = { onOpenUrl(EQ_LIBRARY_FEEDBACK_URL) },
+        SettingsValueRow(
+            label = "Version",
+            value = BuildConfig.VERSION_NAME,
+            actionLabel = if (BuildConfig.UPDATE_CHECKS_ENABLED) "Check" else null,
+            onAction = if (BuildConfig.UPDATE_CHECKS_ENABLED) onCheckForUpdates else null,
         )
+        if (BuildConfig.UPDATE_CHECKS_ENABLED && updateAvailable) {
+            SettingsValueRow(
+                label = "Update",
+                value = latestVersion.orEmpty() + " available",
+                actionLabel = "Get",
+                onAction = onGetUpdate,
+            )
+        }
         SettingsLinkRow(
             title = "Help",
-            description = "Learn how saving, output targets, exports, and DAC actions work.",
             onClick = { pageName = SettingsPage.HELP.name },
         )
         SettingsLinkRow(
             title = "About EQ Library",
-            description = "Version, privacy, source code, licensing, and independence.",
             onClick = { pageName = SettingsPage.ABOUT.name },
         )
         SettingsLinkRow(
-            title = "Data sources & attribution",
-            description = "OPRA, AutoEq, ParaEQ, creators, repositories, and public communities.",
+            title = "Data sources",
             onClick = { pageName = SettingsPage.DATA_SOURCES.name },
         )
+        SettingsLinkRow(
+            title = "Feedback & EQ submissions",
+            onClick = { onOpenUrl(EQ_LIBRARY_FEEDBACK_URL) },
+        )
+
         Spacer(Modifier.height(24.dp))
     }
+}
+
+private fun outputSubtitle(device: ExportDevice): String = when (device) {
+    ExportDevice.BLACK_PEARL -> "10-band PEQ"
+    ExportDevice.FIIO_JA11 -> "5-band PEQ"
+    ExportDevice.SIMGOT_EW300 -> "5-band Peak PEQ"
+    ExportDevice.UAPP -> "ToneBoosters · 10 bands"
+    ExportDevice.EQUALIZER_APO -> "Parametric EQ"
+    ExportDevice.POWERAMP -> "Parametric · 64 bands"
+    ExportDevice.TOPPING_TUNE -> "Parametric · 10 bands"
+    ExportDevice.WAVELET -> "GraphicEQ · 127 points"
+    ExportDevice.EASY_EFFECTS -> "Parametric · 32 bands"
+    ExportDevice.UNIVERSAL_PARAMETRIC -> "Parametric text"
+    ExportDevice.UNIVERSAL_GRAPHIC_EQ -> "GraphicEQ · 127 points"
+    else -> device.settingsSubtitle
 }
 
 @Composable
@@ -484,7 +388,7 @@ private fun OutputOption(
             Column(modifier = Modifier.weight(1f)) {
                 Text(device.displayName)
                 Text(
-                    text = device.settingsSubtitle,
+                    text = outputSubtitle(device),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -512,29 +416,6 @@ private fun OutputOption(
                     Switch(
                         checked = directFlashChecked,
                         onCheckedChange = null,
-                    )
-                }
-                Text(
-                    text = when (device) {
-                        ExportDevice.BLACK_PEARL -> "Larger EQs are optimized to 10 bands"
-                        ExportDevice.FIIO_JA11 -> "Larger EQs are optimized to 5 bands"
-                        ExportDevice.SIMGOT_EW300 -> if (BuildConfig.EW300_SHELF_EDITOR_ENABLED) {
-                            "Shelf-free EQs use five Peak bands; native shelves inside the -6 dB / Q 0.707 envelope keep their type 3/4 words; anything else is fitted to five Peaks"
-                        } else {
-                            "Five Peak bands · shelf bands fitted and reported as Optimized"
-                        }
-                        else -> "EQ Library adapts the source to this device's hardware capabilities"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-                device.validationStatus?.let { status ->
-                    Text(
-                        text = status,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
             }
@@ -690,9 +571,36 @@ private fun SettingsSubpageHeader(
 }
 
 @Composable
+private fun SettingsValueRow(
+    label: String,
+    value: String,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (actionLabel != null && onAction != null) {
+            TextButton(onClick = onAction) { Text(actionLabel) }
+        }
+    }
+}
+
+@Composable
 private fun SettingsLinkRow(
     title: String,
-    description: String,
+    description: String = "",
     onClick: () -> Unit,
 ) {
     Column(
@@ -702,12 +610,14 @@ private fun SettingsLinkRow(
             .padding(vertical = 10.dp),
     ) {
         Text(text = title, style = MaterialTheme.typography.bodyLarge)
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp),
-        )
+        if (description.isNotBlank()) {
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
 
