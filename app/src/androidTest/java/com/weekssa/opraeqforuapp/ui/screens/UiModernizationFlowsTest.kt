@@ -581,6 +581,91 @@ class UiModernizationFlowsTest {
     }
 
     @Test
+    fun unpluggingKeepsTheBlockAndSaysNoDacAttached() {
+        val live = EqLibraryUiState(
+            catalogState = CatalogState.Loading,
+            appPreferences = AppPreferences(
+                exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                directFiioJa11FlashEnabled = true,
+            ),
+            dacRecognitionState = DacRecognitionState(
+                presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+            ),
+            fiioJa11ConnectionState = Kt02h20ConnectionState.Connected,
+            fiioJa11HardwareEqState = fiioJa11CurrentHardwareState(),
+        )
+        val state = mutableStateOf(live)
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(state = state.value, actions = noOpEqLibraryActions())
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Connected · State current").assertIsDisplayed()
+
+        composeRule.runOnIdle {
+            state.value = state.value.copy(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.UAPP),
+                    directFiioJa11FlashEnabled = true,
+                ),
+                dacRecognitionState = DacRecognitionState(recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11)),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+            )
+        }
+        composeRule.waitForIdle()
+        // The display anchor keeps the block after automatic resolution hands the target back.
+        composeRule.onNodeWithText("No DAC attached").assertIsDisplayed()
+        composeRule.onNodeWithText("Open My DAC").assertIsDisplayed()
+        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun pickingAnAppTargetRetiresTheAnchor() {
+        val state = mutableStateOf(
+            EqLibraryUiState(
+                catalogState = CatalogState.Loading,
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences()
+                        .withActiveTarget(ExportDevice.FIIO_JA11),
+                    directFiioJa11FlashEnabled = true,
+                ),
+                dacRecognitionState = DacRecognitionState(
+                    presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                    recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                ),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+                fiioJa11HardwareEqState = fiioJa11CurrentHardwareState(),
+            ),
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(state = state.value, actions = noOpEqLibraryActions())
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Not connected").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Target: FiiO JA11", substring = true).performClick()
+        composeRule.onNodeWithText("USB Audio Player PRO / ToneBoosters").performClick()
+        // The picker action is reported through actions; mirror the resulting preference here.
+        composeRule.runOnIdle {
+            state.value = state.value.copy(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.UAPP),
+                    directFiioJa11FlashEnabled = true,
+                ),
+            )
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Not connected").assertDoesNotExist()
+        composeRule.onNodeWithText("No DAC attached").assertDoesNotExist()
+    }
+
+    @Test
     fun keyboardAndDpadSearchOpensDirectModelResults() {
         val saveRequests = mutableListOf<Pair<String, Set<String>>>()
         lateinit var inputModeManager: InputModeManager
@@ -994,6 +1079,10 @@ class UiModernizationFlowsTest {
         var state = mutableStateOf(
             EqLibraryUiState(
                 catalogState = CatalogState.Ready(testCatalog(), lastSuccessfulRefreshMillis = 1L),
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                    directFiioJa11FlashEnabled = true,
+                ),
                 dacRecognitionState = DacRecognitionState(
                     presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
                     recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
@@ -1050,6 +1139,10 @@ class UiModernizationFlowsTest {
                 EqLibraryApp(
                     state = EqLibraryUiState(
                         catalogState = CatalogState.Ready(testCatalog(), lastSuccessfulRefreshMillis = 1L),
+                        appPreferences = AppPreferences(
+                            exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                            directFiioJa11FlashEnabled = true,
+                        ),
                         dacRecognitionState = DacRecognitionState(
                             recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
                         ),

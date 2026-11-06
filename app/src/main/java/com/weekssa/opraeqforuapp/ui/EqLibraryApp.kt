@@ -115,6 +115,14 @@ private fun ew300OperationSignature(trace: Ew300OperationTrace): String =
     listOf(trace.operationId, trace.outcome, trace.stateKnown, trace.finalReadbackMatched)
         .joinToString("|")
 
+
+private fun ExportDevice.toDacDeviceOrNull(): DacDeviceId? = when (this) {
+    ExportDevice.BLACK_PEARL -> DacDeviceId.TRN_BLACK_PEARL
+    ExportDevice.FIIO_JA11 -> DacDeviceId.FIIO_JA11
+    ExportDevice.SIMGOT_EW300 -> DacDeviceId.SIMGOT_EW300
+    else -> null
+}
+
 private enum class DeviceContextAction { CONNECT, OPEN_MY_DAC, OPEN_SETTINGS }
 
 private data class DeviceContextSummary(
@@ -127,11 +135,6 @@ private data class DeviceContextSummary(
 )
 
 
-/** A remembered readback keeps the device reviewable even when the target is an app. */
-private fun EqLibraryUiState.hasHistoricalDeviceRead(): Boolean =
-    blackPearlHardwareEqState.bundle != null ||
-        fiioJa11HardwareEqState.bundle != null ||
-        ew300HardwareEqState.bundle != null
 
 /** A live session or a failure is never hidden just because the EQ target is an app. */
 private fun EqLibraryUiState.hasLiveDeviceContext(): Boolean =
@@ -147,7 +150,7 @@ private fun EqLibraryUiState.hasLiveDeviceContext(): Boolean =
  * Device block for the active EQ target. It speaks only for the target the owner picked, so a
  * second attached DAC never changes what the bar says; picking another target changes the block.
  */
-private fun EqLibraryUiState.deviceContextSummary(): DeviceContextSummary? {
+private fun EqLibraryUiState.deviceContextSummary(rememberedHardwareTarget: DacDeviceId?): DeviceContextSummary? {
     val target = appPreferences.exportTargets.activeTarget
     val targetDevice = when (target) {
         ExportDevice.BLACK_PEARL -> DacDeviceId.TRN_BLACK_PEARL
@@ -155,7 +158,11 @@ private fun EqLibraryUiState.deviceContextSummary(): DeviceContextSummary? {
         ExportDevice.SIMGOT_EW300 -> DacDeviceId.SIMGOT_EW300
         else -> null
     }
-    val liveFallback = if (targetDevice == null && (hasLiveDeviceContext() || hasHistoricalDeviceRead())) {
+    // Display anchor: the bar keeps speaking for the last hardware target after Automatic output
+    // resolution hands the target back to an app, so an unplugged DAC still reports its state.
+    // It is cleared only when the owner explicitly picks a non-hardware output.
+    val anchorDevice = if (targetDevice == null) rememberedHardwareTarget else null
+    val liveFallback = if (targetDevice == null && anchorDevice == null && hasLiveDeviceContext()) {
         dacRecognitionState.recognizedDeviceIds.singleOrNull { candidate ->
             candidate == DacDeviceId.TRN_BLACK_PEARL ||
                 candidate == DacDeviceId.FIIO_JA11 ||
@@ -164,7 +171,7 @@ private fun EqLibraryUiState.deviceContextSummary(): DeviceContextSummary? {
     } else {
         null
     }
-    val device = targetDevice ?: liveFallback ?: return null
+    val device = targetDevice ?: anchorDevice ?: liveFallback ?: return null
     val title = when (device) {
         DacDeviceId.TRN_BLACK_PEARL -> "TRN Black Pearl"
         DacDeviceId.FIIO_JA11 -> "FiiO JA11"
@@ -421,7 +428,14 @@ fun EqLibraryApp(
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
         managedHeadphonesForUi.firstOrNull { it.productId == productId }
     }
-    val deviceContextSummary = state.deviceContextSummary()
+    var rememberedHardwareTargetName by rememberSaveable { mutableStateOf<String?>(null) }
+    val rememberedHardwareTarget = rememberedHardwareTargetName?.let { name ->
+        runCatching { DacDeviceId.valueOf(name) }.getOrNull()
+    }
+    LaunchedEffect(activeOutput) {
+        activeOutput.toDacDeviceOrNull()?.let { device -> rememberedHardwareTargetName = device.name }
+    }
+    val deviceContextSummary = state.deviceContextSummary(rememberedHardwareTarget)
 
     LaunchedEffect(
         pendingInitialMyDacOpenDeviceName,
@@ -1004,7 +1018,12 @@ fun EqLibraryApp(
                     TargetContextSelector(
                         activeTarget = activeOutput,
                         enabledTargets = enabledOutputs,
-                        onTargetChange = onSessionActiveExportTargetChange,
+                        onTargetChange = { device ->
+                            // Picking a non-hardware output retires the anchor; a hardware pick
+                            // replaces it with that device.
+                            rememberedHardwareTargetName = device.toDacDeviceOrNull()?.name
+                            onSessionActiveExportTargetChange(device)
+                        },
                     )
                     deviceContextSummary?.let { context ->
                         ConnectedDeviceSurface(

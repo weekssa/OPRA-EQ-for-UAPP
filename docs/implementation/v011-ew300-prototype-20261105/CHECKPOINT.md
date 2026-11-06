@@ -17,9 +17,9 @@ open findings and next steps for this branch.
 | Package | com.weekssa.opraeqforuapp.v011beta |
 | Build type | v011beta (release-derived, unminified, update checks off) |
 | APK path | app/build/outputs/apk/v011beta/app-v011beta.apk |
-| APK SHA-256 | a0a40f897b7a62fa643b7f77238f6e3bd1a679bef9b789d37bcb9b68d12bda3f |
+| APK SHA-256 | 7516516bba42c5683a9a0d78d1554dc7c7456eadf42b7f54603299e56660dc81 |
 | Signer SHA-256 | 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer) |
-| Build time | 2026-11-06 11:52:57 CST |
+| Build time | 2026-11-06 12:35:12 CST |
 
 The on-device base.apk hash matched this SHA-256 after install.
 
