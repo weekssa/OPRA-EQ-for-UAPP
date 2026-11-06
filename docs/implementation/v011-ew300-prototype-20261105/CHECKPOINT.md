@@ -122,3 +122,13 @@ from this candidate on emulator-5554), plus the earlier before-ew300-device-pixe
 a 360×640 viewport, so device-bottom.png was captured at 360×360 scrolled to the end to show the
 bottom rather than repeating the top.
 
+
+### Pixel qualification of this candidate (12974c73)
+
+- Installed on the Pixel 9 over wireless ADB; on-device base.apk hash matched.
+- DEVICE page verified live against the screenshots: Audio → USB & System → About, a single Device volume row, no Microphone section, About with model / USB identity / Filters / Device limitations.
+- Blocker copy verified: "Direct Flash unavailable · SIMGOT EW300 DSP is not connected" before the session, cleared once connected.
+- Flash: AFUL Explorer — LoboNautics, one Save, Optimized 8→5, −3.5 dB tracked gain, re-enumeration handled, exact saved-match readback (20 Hz +3.5 Q0.300; 3,500 Hz +3.0 Q0.825; 11,892 Hz +1.0 Q0.500; 1,784 Hz −0.5 Q1.000; 2,700 Hz +1.0 Q3.000).
+- Restoration: Reset to flat, one Save, back to Flat at 0.0 dB.
+- Save count: one target Save plus one restoration Save. The DAC was left flat at 0.0 dB.
+

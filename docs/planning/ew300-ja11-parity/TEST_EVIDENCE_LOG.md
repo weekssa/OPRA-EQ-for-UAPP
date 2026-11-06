@@ -478,3 +478,14 @@ Add entries below in chronological order.
 - Screenshots captured from this candidate on emulator-5554: device-top, about-expanded, device-bottom (360×360 scrolled end), limitations.
 - No Pixel interaction, no Flash, no Save, no Connect session for this candidate.
 
+
+### T-033 — Pixel qualification of the corrected DEVICE surface (candidate 12974c73)
+
+- Date: 2026-11-05
+- APK: 12974c73297479df9c53a360090d6a09b400ff2aefb85d25839cc5fb1ecba47e; on-device base.apk hash matched; package com.weekssa.opraeqforuapp.v011beta, 0.11.0-beta.1/23; Pixel 9 (tokay), Android 17, wireless ADB.
+- DEVICE page observed live: "Device settings" + Refresh; Audio with a single "Device volume 60 / 60" row (no Startup settings row because the saved state was unknown); USB & System with "Current sample rate 96,000 Hz" and "USB Audio Class UAC 1.0"; About expander showing Model SIMGOT EW300 DSP, USB identity 31B2:0111, Filters "Five-band Peak, verified", and the Device limitations sentence. Firmware omitted because it has not been read. No Microphone heading, no Output gain/Equalizer/Connection rows, no engineering controls.
+- Eligibility copy: before connecting, My EQs showed "Direct Flash unavailable · SIMGOT EW300 DSP is not connected. Connect it in My DAC." and cleared after connecting.
+- Flash: AFUL Explorer — LoboNautics via My EQs, one Save, "Optimized · 8 → 5 bands", −3.50 dB tracked gain, re-enumeration handled. Readback "Exact saved match": 20 Hz +3.5 dB Q 0.300; 3,500 Hz +3.0 dB Q 0.825; 11,892 Hz +1.0 dB Q 0.500; 1,784 Hz -0.5 dB Q 1.000; 2,700 Hz +1.0 dB Q 3.000; global gain -3.5 dB. The DEVICE volume row then read 57 / 60.
+- Restoration: "Reset to flat" with one Save returned Flat, five Peak 1 kHz/0 dB/Q1, gain 0.0 dB.
+- Save count: one target Save plus one restoration Save. No listening test. DAC left flat at 0.0 dB.
+
