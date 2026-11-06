@@ -19,7 +19,7 @@ history, memory, or cache. Everything below is in version control on the branch 
 | Branch | codex/v0.11-ew300-prototype |
 | Worktree | /Users/stephenweeks/.codex/worktrees/v011-ew300-prototype/OPRA-EQ-development |
 | Code head | 513755050711d5383d782cde8dc315c061da38e5 (APK built from it) |
-| Docs head at pause | this commit |
+| Docs head | tip of this branch at pause (`git rev-parse HEAD`) |
 | Working tree | clean |
 | Package | com.weekssa.opraeqforuapp.v011beta |
 | Version | 0.11.0-beta.1 / versionCode 23 |
@@ -32,6 +32,8 @@ history, memory, or cache. Everything below is in version control on the branch 
 
 Local commits, newest first (all on this branch, nothing pushed):
 
+8575ceb6 Close the session record in the evidence log
+2d891200 Record the handoff commits and code head
 615e9d42 Document the session handoff and resume pack
 51375505 Make My DAC reachable from the navigation bar
 a7d45114 Record the Settings v2 density and large-text check
