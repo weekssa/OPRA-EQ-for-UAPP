@@ -12,24 +12,28 @@ open findings and next steps for this branch.
 | Base | origin/main 97e72cc065edb948c121431aeaeb0e5e73576456 |
 | Branch | codex/v0.11-ew300-prototype |
 | Worktree | /Users/stephenweeks/.codex/worktrees/v011-ew300-prototype/OPRA-EQ-development |
-| Code head | c0cd517af96f505c2b53e20be638435650ec6511 |
+| Code head | 50a5c0eaf (docs head 3a0d910d) |
 | versionName / versionCode | 0.11.0-beta.1 / 23 |
 | Package | com.weekssa.opraeqforuapp.v011beta |
 | Build type | v011beta (release-derived, unminified, update checks off) |
 | APK path | app/build/outputs/apk/v011beta/app-v011beta.apk |
-| APK SHA-256 | 7516516bba42c5683a9a0d78d1554dc7c7456eadf42b7f54603299e56660dc81 |
+| APK SHA-256 | 1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3 |
 | Signer SHA-256 | 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer) |
-| Build time | 2026-11-06 12:35:12 CST |
+| Build time | 2026-11-06T19:51:34Z |
 
 The on-device base.apk hash matched this SHA-256 after install.
 
 ## Local validation
 
-- JVM debug suite: 878 tests, 0 failures.
-- Lint: 0 errors, 121 warnings, 3 hints.
-- Emulator (emulator-5554, API 36): connected v011beta instrumented suite 79/79, 0 failures.
-- Product-surface test asserts the device tab shows Device volume (0–60), Microphone mute, and
-  Current sample rate while the native shelf engineering controls are absent.
+- JVM debug suite: 885 tests, 0 failures.
+- Lint (`:app:lintV011beta`): 0 errors, 118 warnings, 2 hints.
+- Emulator (emulator-5580, API 36): connected v011beta instrumented suite 94/94, 0 failures.
+- Product-surface test asserts the device tab shows Device volume (0–60) and Current sample rate
+  while the native shelf engineering controls are absent; the microphone row is intentionally gone
+  because no effect on captured audio has been measured.
+
+Earlier rows in this file quote the numbers and artifacts of their own build (79/79 on 5554,
+92/92 and 7516516b on 5580). They are historical records of those runs, not the current head.
 
 ## Pixel qualification (this exact APK)
 
