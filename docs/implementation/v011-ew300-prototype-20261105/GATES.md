@@ -91,4 +91,5 @@ OWNS: GATES.md,
   app/src/androidTest/java/com/weekssa/opraeqforuapp/MainActivityLifecycleTest.kt,
   app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/UiModernizationFlowsTest.kt,
   docs/screenshots/v011/settings-after-top-412dp.png,
-  docs/screenshots/v011/settings-before-top-412dp.png
+  docs/screenshots/v011/settings-before-top-412dp.png,
+  docs/implementation/v011-ew300-prototype-20261105/SESSION_HANDOFF.md

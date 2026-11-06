@@ -1,5 +1,8 @@
 # v0.11 EW300 prototype — checkpoint
 
+Resume from [SESSION_HANDOFF.md](SESSION_HANDOFF.md): repository state, decisions, evidence,
+open findings and next steps for this branch.
+
 **Local v0.11 prototype ready; Pixel qualification complete on this artifact.**
 
 ## Artifact

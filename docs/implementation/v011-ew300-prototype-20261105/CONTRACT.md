@@ -74,6 +74,7 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "docs/implementation/v011-ew300-prototype-20261105/CONTRACT.md",
     "docs/implementation/v011-ew300-prototype-20261105/GATES.md",
     "docs/implementation/v011-ew300-prototype-20261105/GATES.md.sha",
+    "docs/implementation/v011-ew300-prototype-20261105/SESSION_HANDOFF.md",
     "docs/planning/ew300-ja11-parity/BRIEF.md",
     "docs/planning/ew300-ja11-parity/CHIP_CONFIDENCE.md",
     "docs/planning/ew300-ja11-parity/CHIP_MAP.md",
