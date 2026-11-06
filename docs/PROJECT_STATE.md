@@ -2,6 +2,13 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
+
+Candidate build: **v0.11.0**, versionCode `23`, package `com.weekssa.opraeqforuapp`. It advances the
+published v0.10.0 (code 22) with the EW300 device surface, the My EQs / EQ Library context bar,
+library backup and restore, and the flash read-retry fix. The locally tested prototype package
+`com.weekssa.opraeqforuapp.v011beta` is `0.11.0-beta.1` at the same code. Signed-candidate and
+publication identity are recorded here when the release gate produces them.
+
 ## v0.10.0 stable release (2026-11-04)
 
 Published stable release: [EQ Library v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0), release ID `434267766`, published `2026-11-04T18:04:05Z`, immutable, non-draft, non-prerelease and `/releases/latest`. versionName `0.10.0`, versionCode `22`, package `com.weekssa.opraeqforuapp`. It promotes the JA11 tuning and DEVICE work the owner confirmed working on the device in v0.9.0-beta.4; release notes are in docs/releases/v0.10.0.md and v0.9.0 is the previous stable release.
