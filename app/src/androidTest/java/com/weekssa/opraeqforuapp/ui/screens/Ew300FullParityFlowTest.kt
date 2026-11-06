@@ -66,7 +66,14 @@ class Ew300FullParityFlowTest {
             }
         }
 
-        composeRule.onNodeWithText("Device volume").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Device volume").performScrollTo().assertIsDisplayed()
+        if (!BuildConfig.EW300_PARITY_EXPERIMENT_ENABLED) {
+            // The parity surface is compiled off in this variant, so the row must not offer a
+            // dialog it cannot honour.
+            composeRule.onNodeWithText("Apply").assertDoesNotExist()
+            return
+        }
+        composeRule.onNodeWithText("Device volume").performClick()
         composeRule.onNodeWithText("Device volume").assertIsDisplayed()
         composeRule.onNodeWithText("Apply").performClick()
         assertEquals(30, selectedLevel)

@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
@@ -88,6 +89,11 @@ class Ew300ParityFlowTest {
         composeRule.onNodeWithText("Runtime only · EQ and output gain have not been saved to the DAC.")
             .performScrollTo()
             .assertIsDisplayed()
+        if (!BuildConfig.EW300_PARITY_EXPERIMENT_ENABLED) {
+            // The runtime-save control belongs to the parity surface and is compiled off here.
+            composeRule.onNodeWithText("Save EQ and output gain").assertDoesNotExist()
+            return
+        }
         composeRule.onNodeWithText("Save EQ and output gain").performScrollTo().assertIsEnabled().performClick()
         assertEquals(1, saves)
     }
