@@ -34,6 +34,12 @@ shows no bar, because it is configuration rather than listening.
 
 Connect appears only where it can actually connect; nothing here writes to the device.
 
+The table is ordered by precedence, not by independence. A connected device always offers
+"Open My DAC", including when Direct Flash is off: the banner then reads "Direct Flash unavailable ·
+Direct Flash is off. Enable it in Settings → SIMGOT EW300 DSP." The "Direct Flash off → Open Settings"
+row therefore applies only while the device is attached but not connected. Verified on the Pixel on
+2026-11-06 in both directions (T-049).
+
 ## Out of scope
 
 - No change to `AppPreferencesRepository`, Automatic/Manual resolution, or the fallback behaviour.

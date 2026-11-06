@@ -662,3 +662,20 @@ Add entries below in chronological order.
   issued in this session; the DAC is left exactly as the previous session left it.
 - This closes the copy and state-table question on the real device. It is not an acoustic test and
   says nothing about shelf behaviour.
+
+
+### T-049 — Direct Flash off on the Pixel: precedence recorded, settings restored
+
+- Artifact 1f1ea2c1, connected session. Settings → Outputs → SIMGOT EW300 DSP → Direct Flash was
+  turned off with the DAC attached and live.
+- My EQs then showed "SIMGOT EW300 DSP · Connected · State current · Open My DAC" with the banner
+  "Direct Flash unavailable · Direct Flash is off. Enable it in Settings → SIMGOT EW300 DSP."
+  The action did not become "Open Settings".
+- That is the shipped precedence, not a defect: a connected device always offers My DAC, and the
+  banner carries the Flash-off reason. The "Direct Flash off → Open Settings" row applies only while
+  the device is attached and not connected, which is how the earlier Pixel run reached it.
+  CONTEXT_BAR_DESIGN.md now states the ordering explicitly.
+- Screenshot: docs/screenshots/v011/context-bar-pixel-direct-flash-off.png.
+- The switch was turned back on and the bar verified again: "Connected · State current · Open My DAC"
+  with "Direct Flash ready · Flash is enabled for saved EQs and managed profiles." Device state is
+  unchanged: flat, 0 bands, 0.0 dB, still connected. No Flash, Save or write was issued.
