@@ -402,4 +402,5 @@ Add entries below in chronological order.
 - Shape: Peak-optimized, not native shelf — the source is a 10-band parametric profile fitted to the five-band bank.
 - Restoration: "Set Flat" (runtime, zero Save) plus output gain 0.0 dB (runtime, zero Save), then exactly one "Save EQ and output gain". Result "Saved in this session · final readback matched."; readback Flat, 0 active bands, five Peak 1 kHz/0 dB/Q1, gain 0.0 dB (60/60).
 - Save count for the session: 1 target Save + 1 restoration Save. No listening test was performed.
+- Follow-up gate: the EQ Library profile rows now hide their inline Flash action unless Direct Flash is enabled for the EW300 (previously they gated on connection alone). The managed-profile screen and My EQs keep showing the exact reason.
 

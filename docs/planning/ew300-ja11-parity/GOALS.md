@@ -40,7 +40,7 @@ The EQ Library Flash path is the existing single route: My EQs / EQ Library -> f
 |---|---|---|
 | Why Flash was unusable | DIAGNOSED | Direct Flash default off (parity package had never written preferences), empty parity database (0 saved EQs, 0 managed profiles), out-of-envelope shelves rejected with NotSuitable, and no surface naming the prerequisites. T-025 |
 | Parity setup path | DONE | Settings -> "Parity setup · Flash to SIMGOT EW300" with three explicit steps (active output, Direct Flash, connection) and a Ready line; nothing is enabled silently |
-| Eligibility reasons | DONE | Shared hardwareFlashUnavailableReason() drives My EQs and the managed-profile screen: no active output, Direct Flash off, not connected, or (for saved rows) no profile for this output |
+| Eligibility reasons | DONE | Shared hardwareFlashUnavailableReason() drives My EQs and the managed-profile screen: no active output, Direct Flash off, not connected, or (for saved rows) no profile for this output. EQ Library profile rows hide their inline Flash unless Direct Flash is on |
 | Library data | DOCUMENTED | The parity database starts empty; production is not debuggable, so entries move by export from production and import into parity. This session used the EQ Library catalog itself (Simgot Audio -> EW300 (silver) -> AutoEq) |
 | Shelf fallback | DONE | Native type 3/4 inside the -6 dB/Q0.707 envelope; anything else is fitted to five Peak bands by the shared SIMGOT_EW300 optimizer and reported as Optimized — no silent shelf drop, no acoustic claim |
 | Pixel Flash | PASS | One Save wrote the Peak-optimized AutoEq profile; readback matched the saved EQ exactly; one restoration Save returned flat/0 dB. T-026 |

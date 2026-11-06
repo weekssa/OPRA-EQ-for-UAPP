@@ -1222,7 +1222,11 @@ fun EqLibraryApp(
                                     onFlashFiioJa11FromMyDac(profile)
                                 }
                             },
-                            ew300ConnectionState = ew300ConnectionState,
+                            ew300ConnectionState = if (appPreferences.directEw300FlashEnabled) {
+                                ew300ConnectionState
+                            } else {
+                                com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState.Disconnected
+                            },
                             onFlashEw300Profile = { profile ->
                                 flashImmediateWithFeedback(ExportDevice.SIMGOT_EW300) {
                                     onFlashEw300FromMyDac(profile)
