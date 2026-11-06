@@ -113,7 +113,8 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedEqDao.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedGeneralEqRepository.kt",
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/data/library/LibraryBundleDatabaseTest.kt",
-    "app/src/main/java/com/weekssa/opraeqforuapp/domain/ew300/Ew300TransactionCoordinator.kt"
+    "app/src/main/java/com/weekssa/opraeqforuapp/domain/ew300/Ew300TransactionCoordinator.kt",
+    "docs/PUBLIC_RELEASE_CHECKLIST.md"
   ]
 }
 ```

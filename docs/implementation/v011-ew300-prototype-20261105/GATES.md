@@ -108,7 +108,8 @@ OWNS: GATES.md,
   app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedEqDao.kt,
   app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedGeneralEqRepository.kt,
   app/src/androidTest/java/com/weekssa/opraeqforuapp/data/library/LibraryBundleDatabaseTest.kt,
-  app/src/main/java/com/weekssa/opraeqforuapp/domain/ew300/Ew300TransactionCoordinator.kt
+  app/src/main/java/com/weekssa/opraeqforuapp/domain/ew300/Ew300TransactionCoordinator.kt,
+  docs/PUBLIC_RELEASE_CHECKLIST.md
 amendment: 2026-11-06 owner-approved — shared context bar surface, AppContextSurfaces.kt, required by the My EQs / EQ Library stateful bar.
 amendment: 2026-11-06 owner-approved — library export/import slice: EqLibraryBundle.kt,
   EqLibraryBundleImporter.kt, their two JVM test files and LIBRARY_TRANSFER.md, so saved EQs, managed
@@ -121,3 +122,5 @@ amendment: 2026-11-06 owner-approved — LibraryBundleDatabaseTest.kt proves the
   (export rows, wipe, import rows, compare) on the emulator, which a JVM test cannot reach.
 amendment: 2026-11-06 owner-approved — the baseline read retries one failed register read, which
   needs Ew300TransactionCoordinator.kt in scope; writes stay single-shot.
+amendment: 2026-11-06 owner-approved — the published beta candidate is recorded in the public
+  release checklist alongside Project State, the evidence log and the release notes.
