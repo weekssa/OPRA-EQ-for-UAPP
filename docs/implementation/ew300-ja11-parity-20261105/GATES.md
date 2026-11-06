@@ -137,9 +137,9 @@ OWNS: GATES.md,
 verdict: PASS
 reviewer: gpt-6-luna
 account: other
-reviewed_head: 165d4461140f9ab28824c8da835a445526fba2a6
+reviewed_head: 66f9b50ff92d8b48d19f5b340176c52f5e739e3a
 reviewed_code_head: 6c276b098a92e4bf169f06abe410e6ea99821eac
-review_scope: app/APK unchanged at 20993f8b; H12 adds frozen Pixel plans and docs only
+review_scope: Pixel-validated APK 487445cb; H14 includes the strict UAC claim/restore fix
 ran: full review at 0800e712; fixes at 4a87ce9b/66af7a03; findings-only confirmations at b0c8ded9 and 6c276b09
 confirmation: PASS
 findings:

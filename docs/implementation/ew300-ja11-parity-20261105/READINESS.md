@@ -1,6 +1,6 @@
 # EW300 / JA11 five-goal parity — readiness package
 
-Status: **five-goal test candidate built and locally tested; exact die KT0211L confirmed; microphone mute implemented; UAC mode CHIP-LIMITED; headset-disable open pending KT0211L GPIO/key/ADC research; physical qualification pending.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
+Status: **five-goal test candidate built and locally tested; exact die KT0211L confirmed; microphone mute implemented; UAC mode CHIP-LIMITED; headset-disable open pending KT0211L GPIO/key/ADC research; native shelf protocol demonstrated byte for byte with shelf acoustics UNMEASURED; physical qualification pending.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
 
 ## Candidate identity
 
@@ -8,20 +8,20 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - Branch: codex/ew300-ja11-parity
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
-- Code candidate head: 6c276b098a92e4bf169f06abe410e6ea99821eac
-- Frozen evidence head: 165d4461140f9ab28824c8da835a445526fba2a6
+- Code candidate head: 66f9b50ff92d8b48d19f5b340176c52f5e739e3a
+- Frozen evidence head: 66f9b50ff92d8b48d19f5b340176c52f5e739e3a
 - Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
 
 ## APK
 
 - Path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
 - File: app-ew300Parity.apk
-- SHA-256: 487445cb6779aa1da23eb5bdfacf126ec85b9f44e9871520ce2f93e2563ebf25
+- SHA-256: 69af25b33ec6749f152f743abfe53b76f684e476ba1d028cf2cfdf4e54799524
 - Package: com.weekssa.opraeqforuapp.ew300parity
 - versionName: 0.10.0-ew300parity
 - versionCode: 22
 - Signer SHA-256: 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer)
-- Build time: 2026-11-05T22:35:28Z (UTC), rebuilt from the frozen code head
+- Build time: 2026-11-06T00:57Z (UTC), rebuilt from the code head below
 - Updates: disabled in the parity variant
 
 ## Five-goal status
@@ -32,7 +32,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 | G2 mic/headset switches | MIC DONE / HEADSET CHIP-LIMITED | Exact die KT0211L (CHP 0211LC02). UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 → SET 1 → verify 1 → restore 0; mic volume 0xCE00..0x0000/0x8000. No headset feature unit; HID 0x01 failed; 0x54 ambiguous. Family firmware has OMTP/CTIA/key strings but no USB/HID disable control. |
 | G3 UAC mode switching | CHIP-LIMITED | KT0211L is UAC1.0 / 24-bit / 96 kHz with a mono ADC; exact EW300 descriptor is one UAC1 config, 44.1/48/96 kHz, 16/24-bit. No UAC2 silicon path. Descriptor sha256 e955ae8c…. |
 | G4 current sample rate | DONE (Pixel) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Pixel returned 96000 Hz with an active stream; AudioFlinger mixer 48000 Hz recorded separately. A zero result is treated as not read. |
-| G5 native shelves | DONE (implementation/tests; owner listening pending) | LS/HS editor/capture/Flash; type 3/4 bytes C4FFFA00/C3020300 and C4FFA00F/C3020400; Mac reversible and exact restore; graph says predicted/unmeasured. |
+| G5 native shelves | PROTOCOL DONE / ACOUSTICS UNMEASURED | LS/HS editor/capture/Flash; type 3/4 bytes C4FFFA00/C3020300 and C4FFA00F/C3020400; Mac reversible and exact restore; one-Save persistence across power removal; Pixel controls read back exactly; graph says predicted/acoustics unmeasured. No capture device exists on this Mac, so no acoustic claim is made. |
 
 ## Exact-device evidence
 
@@ -47,7 +47,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 
 ## Tests
 
-- Debug JVM: 866 tests, 123 EW300, 0 failures.
+- Debug JVM: 872 tests, 0 failures, including the shelf A/B envelope, exact-byte, zero-Save, and restore-on-mismatch tests.
 - Release EW300: 127 tests, 0 failures.
 - Emulator: Ew300FullParityFlowTest 3/3 on emulator-5554; prior parity flow 4/4.
 - Emulator install/launch: parity APK installed and MainActivity resumed on emulator-5554; screenshot sha256 a9549528fe4b03644eef89013a21c4d3508543048c5316220791af350b6446d6.
@@ -68,7 +68,7 @@ for a GPIO/key disable field. UAC mode is CHIP-LIMITED, not blocked.
 - Sample-rate Pixel validation: play a known-rate stream and compare UAC1 GET_CUR with the actual stream; a zero result must remain “not read.”
 - Pixel session: Plan A read-only PASS; Plan B runtime zero-Save + replug reversion PASS; Plan C one Save + power-cycle persistence + one restoration Save PASS. Plan D owner listening pending.
 - Pixel plans: docs/implementation/ew300-ja11-parity-20261105/PIXEL_SESSION.md
-- Owner listening: fixed 250 Hz Low Shelf and 4 kHz High Shelf, −6 dB, Q 0.707; owner performs the scored listening test.
+- Shelf acoustics: UNMEASURED. The blind 24-state runner was removed from the app as a research harness; only labeled engineering controls remain in the parity package. A measurement rig, or at minimum one flat-vs-low and one flat-vs-high region discrimination, would be required before any acoustic claim.
 - Physical persistence: one target Save and one restoration Save only after the owner approves the bounded session.
 
 ## Safety and rollback

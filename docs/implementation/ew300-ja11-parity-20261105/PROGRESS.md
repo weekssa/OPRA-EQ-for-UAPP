@@ -73,7 +73,11 @@
 - Mapping update: complete for implemented/open rows
 - Evidence-log entry: T-011
 
+- [x] Pixel shelf engineering-control self-check: Low Shelf, High Shelf, and Flat each applied and read back exactly; zero Save in the sequence.
+- [x] 24-state blind runner withdrawn from the app; shelf state controls relabelled engineering-only and kept behind the parity build flag.
+- [x] Acoustic measurement path evaluated: no input device on this Mac, no rig available; shelf acoustics marked UNMEASURED.
+
 ## Next action
 
-Run the single fresh gpt-6-luna review from the other account, close findings, and run one findings-only confirmation pass. Physical qualification remains pending.
+Run the single fresh gpt-6-luna review from the other account over the shelf A/B code, close findings, and run one findings-only confirmation pass. Acoustic qualification stays open and unclaimed.
 

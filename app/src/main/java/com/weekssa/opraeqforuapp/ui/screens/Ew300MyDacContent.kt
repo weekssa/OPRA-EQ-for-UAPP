@@ -57,6 +57,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResul
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300VolumeControl
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestTarget
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300QualificationExport
 import com.weekssa.opraeqforuapp.domain.ew300.resolveEw300HardwareEq
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
@@ -106,6 +107,7 @@ internal fun Ew300MyDacContent(
     onSetVolumeLevel: (Int) -> Unit = {},
     onRefreshUac: () -> Unit = {},
     onSetMicrophoneMuted: (Boolean) -> Unit = {},
+    onApplyShelfTestTarget: suspend (Ew300ShelfTestTarget) -> String = { "Shelf A/B is unavailable." },
     onCaptureDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     onOpenEditor: () -> Unit,
     onCloseEditor: () -> Unit,
@@ -212,6 +214,9 @@ internal fun Ew300MyDacContent(
                             runtimePersistence = runtimePersistence,
                             runtimeSaveState = runtimeSaveState,
                             onSaveRuntime = onSaveRuntime,
+                            onShelfTestTarget = { target ->
+                                scope.launch { onMessage(onApplyShelfTestTarget(target)) }
+                            },
                         )
                         if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
                             Text(
@@ -439,6 +444,7 @@ private fun Ew300EqStatus(
     runtimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
     runtimeSaveState: Ew300RuntimeSaveUiState = Ew300RuntimeSaveUiState(),
     onSaveRuntime: () -> Unit = {},
+    onShelfTestTarget: (Ew300ShelfTestTarget) -> Unit = {},
 ) {
     var resetConfirmationOpen by remember { mutableStateOf(false) }
     if (resetConfirmationOpen) {
@@ -576,7 +582,7 @@ private fun Ew300EqStatus(
         }
     ) {
         Text(
-            "Experimental native shelf response · predicted · unmeasured until the owner listening test.",
+            "Experimental native shelf response · predicted from the written parameters · acoustics unmeasured.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.tertiary,
         )
@@ -627,6 +633,35 @@ private fun Ew300EqStatus(
                 )
             },
         )
+    }
+
+    if (BuildConfig.EW300_PARITY_EXPERIMENT_ENABLED) {
+        PremiumSectionLabel(text = "Native shelf engineering controls", divider = false)
+        Text(
+            "Experimental and unmeasured. Runtime-only, zero Save: each control writes the fixed type 3 / type 4 shelf block and verifies readback. Not a product feature.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(
+                onClick = { onShelfTestTarget(Ew300ShelfTestTarget.FLAT) },
+                enabled = canEdit,
+                modifier = Modifier.weight(1f),
+            ) { Text("Flat") }
+            OutlinedButton(
+                onClick = { onShelfTestTarget(Ew300ShelfTestTarget.LOW_SHELF) },
+                enabled = canEdit,
+                modifier = Modifier.weight(1f),
+            ) { Text("Low Shelf") }
+            OutlinedButton(
+                onClick = { onShelfTestTarget(Ew300ShelfTestTarget.HIGH_SHELF) },
+                enabled = canEdit,
+                modifier = Modifier.weight(1f),
+            ) { Text("High Shelf") }
+        }
     }
 
     PremiumSectionLabel(text = "Saved settings", divider = false)
@@ -1052,7 +1087,7 @@ internal fun Ew300DeviceStatus(
     PremiumValueRow(
         title = "Experimental features",
         value = if (parityEnabled) "Runtime Apply and output gain" else "Not enabled",
-        supportingText = "Native Low/High Shelf controls remain dormant until the owner listening qualification.",
+        supportingText = "Native Low/High Shelf controls are experimental and acoustic response is unmeasured.",
     )
     Text(
         "App controls for presets, microphone, UAC switching, and tuning have not been established for this EW300.",

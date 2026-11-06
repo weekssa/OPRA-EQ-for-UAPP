@@ -568,6 +568,121 @@ class Ew300FlasherTest {
         assertTrue(trace.failureReason?.contains("after Save") == true)
     }
 
+    @Test
+    fun shelfTestTargetsUseTheFixedPrequalificationEnvelope() {
+        val flat = Ew300ShelfTestTarget.FLAT.bands()
+        assertEquals(5, flat.size)
+        assertTrue(flat.all { it.type == "peak_dip" && it.frequencyHz == 1_000.0 && it.gainDb == 0.0 && it.q == 1.0 })
+
+        val low = Ew300ShelfTestTarget.LOW_SHELF.bands()
+        assertEquals("low_shelf", low[0].type)
+        assertEquals(250.0, low[0].frequencyHz, 0.0)
+        assertEquals(-6.0, low[0].gainDb, 0.0)
+        assertEquals(0.707, low[0].q, 0.0)
+        assertTrue(low.drop(1).all { it.type == "peak_dip" })
+
+        val high = Ew300ShelfTestTarget.HIGH_SHELF.bands()
+        assertEquals("high_shelf", high[0].type)
+        assertEquals(4_000.0, high[0].frequencyHz, 0.0)
+        assertEquals(-6.0, high[0].gainDb, 0.0)
+        assertEquals(0.707, high[0].q, 0.0)
+        assertTrue(high.drop(1).all { it.type == "peak_dip" })
+    }
+
+    @Test
+    fun shelfTestLowShelfWritesTheMeasuredBytesWithZeroSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.LOW_SHELF)
+
+        assertEquals(Ew300ShelfTestResult.Verified(Ew300ShelfTestTarget.LOW_SHELF), result)
+        assertEquals(0, transport.commitCount)
+        assertEquals("C4FFFA00", hex(transport.state.getValue(Ew300Protocol.bandRegister(0))))
+        assertEquals("C3020300", hex(transport.state.getValue(Ew300Protocol.bandRegister(0) + 1)))
+        assertEquals(Ew300OperationOutcome.SUCCESS, requireNotNull(flasher.lastOperationTrace.value).outcome)
+    }
+
+    @Test
+    fun shelfTestHighShelfWritesTheMeasuredBytesWithZeroSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.HIGH_SHELF)
+
+        assertEquals(Ew300ShelfTestResult.Verified(Ew300ShelfTestTarget.HIGH_SHELF), result)
+        assertEquals(0, transport.commitCount)
+        assertEquals("C4FFA00F", hex(transport.state.getValue(Ew300Protocol.bandRegister(0))))
+        assertEquals("C3020400", hex(transport.state.getValue(Ew300Protocol.bandRegister(0) + 1)))
+    }
+
+    @Test
+    fun shelfTestFlatTargetWritesFivePeaksAndNoSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.FLAT)
+
+        assertEquals(Ew300ShelfTestResult.Verified(Ew300ShelfTestTarget.FLAT), result)
+        assertEquals(0, transport.commitCount)
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            assertEquals("0000E803", hex(transport.state.getValue(Ew300Protocol.bandRegister(index))))
+            assertEquals("E8030000", hex(transport.state.getValue(Ew300Protocol.bandRegister(index) + 1)))
+        }
+    }
+
+    @Test
+    fun shelfTestIsUnavailableWhenTheParityPackageFlagIsOff() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.LOW_SHELF)
+
+        assertTrue(result is Ew300ShelfTestResult.NotSuitable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun shelfTestReadbackMismatchRestoresTheVolatileBaselineWithoutSave() = runBlocking {
+        val transport = FakeTransport(
+            corruptWriteRegister = Ew300Protocol.bandRegister(0),
+            corruptWriteRegisterTimes = 1,
+        )
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.HIGH_SHELF)
+
+        assertTrue(result is Ew300ShelfTestResult.VerificationFailed)
+        assertEquals(0, transport.commitCount)
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            assertEquals("00000000", hex(transport.state.getValue(Ew300Protocol.bandRegister(index))))
+            assertEquals("00000000", hex(transport.state.getValue(Ew300Protocol.bandRegister(index) + 1)))
+        }
+    }
+
+    private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02X".format(it) }
+
     private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(
         id = "ew300-test",
         productId = "product",
@@ -595,7 +710,9 @@ class Ew300FlasherTest {
         private var transientReadFailuresAfterCommit: Int = 0,
         private val initialGain: ByteArray = bytes(0, 0, 0, 0),
         private val corruptWriteRegister: Int? = null,
+        corruptWriteRegisterTimes: Int = Int.MAX_VALUE,
     ) : Ew300Transport {
+        private var corruptWritesRemaining = corruptWriteRegisterTimes
         override var deviceFingerprintKey: String = "test-ew300"
         override var sessionGeneration: Long = 1L
         override var detachGeneration: Long = 0L
@@ -636,7 +753,9 @@ class Ew300FlasherTest {
         override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
             writes += register
             if (register == failWriteRegister) return false
-            state[register] = if (register == corruptWriteRegister) {
+            val corrupt = register == corruptWriteRegister && corruptWritesRemaining > 0
+            if (corrupt) corruptWritesRemaining--
+            state[register] = if (corrupt) {
                 data.copyOf().also { it[0] = (it[0].toInt() + 1).toByte() }
             } else {
                 data.copyOf()

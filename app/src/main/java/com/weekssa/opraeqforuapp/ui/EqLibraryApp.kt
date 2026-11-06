@@ -262,6 +262,7 @@ fun EqLibraryApp(
     val onSetEw300VolumeLevel = actions.onSetEw300VolumeLevel
     val onRefreshEw300Uac = actions.onRefreshEw300Uac
     val onSetEw300MicrophoneMuted = actions.onSetEw300MicrophoneMuted
+    val onApplyEw300ShelfTestTarget = actions.onApplyEw300ShelfTestTarget
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -1194,6 +1195,7 @@ fun EqLibraryApp(
                             onSetEw300VolumeLevel = onSetEw300VolumeLevel,
                             onRefreshEw300Uac = onRefreshEw300Uac,
                             onSetEw300MicrophoneMuted = onSetEw300MicrophoneMuted,
+                            onApplyEw300ShelfTestTarget = onApplyEw300ShelfTestTarget,
                             onMessage = ::showMessage,
                             onOperationStatus = ::showOperationStatus,
                                 modifier = Modifier.fillMaxSize(),

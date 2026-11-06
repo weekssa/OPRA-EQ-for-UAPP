@@ -71,6 +71,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeApplyResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeSaveResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300VolumeControl
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestTarget
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
@@ -716,6 +717,16 @@ class EqLibraryViewModel(
     fun setEw300VolumeLevel(level: Int) {
         setEw300PlaybackGain(Ew300VolumeControl.levelToGainDb(level))
     }
+
+    suspend fun applyEw300ShelfTestTarget(target: Ew300ShelfTestTarget): String =
+        when (val result = hardwareRepository.applyEw300ShelfTestTarget(target)) {
+            is com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestResult.Verified ->
+                "Shelf A/B target ${target.name.lowercase().replace('_', ' ')} applied and verified for this session."
+            is com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestResult.NotSuitable -> result.reason
+            is com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestResult.DeviceUnavailable -> result.reason
+            is com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestResult.TransferFailed -> result.reason
+            is com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestResult.VerificationFailed -> result.reason
+        }
 
     fun refreshEw300Uac() {
         if (mutableEw300UacState.value.busy) return

@@ -360,3 +360,20 @@ Add entries below in chronological order.
 - Pixel Plan A after rebuild: 96000 Hz, microphone mute Live, UAC 1.0; no writes.
 - Reviewer findings-only confirmation: PASS.
 
+### T-023 — Pixel shelf engineering controls: exact readback, harness withdrawal
+
+- Date: 2026-11-05
+- APK: 69af25b33ec6749f152f743abfe53b76f684e476ba1d028cf2cfdf4e54799524 (parity 0.10.0-ew300parity/22); on-device base.apk hash matched after install.
+- Low Shelf control: applied with the app connected to the exact EW300; readback "1 Low Shelf 250 Hz -6.0 dB Q 0.707", bands 2-5 Peak 1 kHz/0 dB/Q1; app message "Shelf A/B target low shelf applied and verified for this session."
+- High Shelf control: applied; readback "1 High Shelf 4,000 Hz -6.0 dB Q 0.707".
+- Flat control: applied; readback "Flat", 0 active bands, all five bands Peak 1 kHz/0 dB/Q1.
+- Zero Save: no Save was sent in this sequence; saved-state text stayed at its unknown/unsaved wording.
+- Harness withdrawal: the 24-state blind runner, its balanced shuffle helper, and its logcat order logging were removed from the app after this session. The three labeled state controls remain, reachable only in the parity package, relabelled "Native shelf engineering controls" with an explicit experimental/unmeasured notice.
+- Measurement path: macOS enumerates three audio output devices and no input device (system_profiler SPAudioDataType), and no measurement rig is attached. No objective acoustic capture was possible on this machine.
+
+### T-024 — Shelf acoustics: UNMEASURED disposition
+
+- The protocol layer is demonstrated byte for byte: type 3 A/B words C4FFFA00/C3020300, type 4 C4FFA00F/C3020400, decode, readback, zero-Save runtime apply, one-Save persistence across power removal (T-017/T-018), and exact restoration (T-019).
+- The acoustic result of those bytes is not measured. No capture device exists here, no published EW300 measurement uses these exact shelf writes, and the app curve is a prediction computed from the same parameters, so it cannot establish device DSP semantics.
+- Disposition: native shelves remain experimental and off by default in production; the app makes no acoustic claim and claims no full JA11 parity. Only a measurement rig, or at minimum a two-comparison region discrimination, could change this label.
+

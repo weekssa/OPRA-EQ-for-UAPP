@@ -43,6 +43,7 @@ import com.weekssa.opraeqforuapp.ui.Ew300PlaybackGainUiState
 import com.weekssa.opraeqforuapp.ui.Ew300RuntimeSaveUiState
 import com.weekssa.opraeqforuapp.ui.Ew300UacUiState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestTarget
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 
@@ -133,6 +134,7 @@ fun MyDacRootScreen(
     onSetEw300VolumeLevel: (Int) -> Unit = {},
     onRefreshEw300Uac: () -> Unit = {},
     onSetEw300MicrophoneMuted: (Boolean) -> Unit = {},
+    onApplyEw300ShelfTestTarget: suspend (Ew300ShelfTestTarget) -> String = { "Shelf A/B is unavailable." },
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -285,6 +287,7 @@ fun MyDacRootScreen(
             onSetVolumeLevel = onSetEw300VolumeLevel,
             onRefreshUac = onRefreshEw300Uac,
             onSetMicrophoneMuted = onSetEw300MicrophoneMuted,
+            onApplyShelfTestTarget = onApplyEw300ShelfTestTarget,
             onCaptureDacEq = onCaptureEw300DacEq,
             onOpenEditor = onOpenEw300Editor,
             onCloseEditor = onCloseEw300Editor,

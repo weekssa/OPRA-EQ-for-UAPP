@@ -31,6 +31,8 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300PlaybackGainResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeApplyResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeSaveResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestTarget
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -363,6 +365,17 @@ class HardwareEqRepository(
         return try {
             dacSessionRepository.withExclusiveEw300Mutation {
                 ew300Flasher.setPlaybackGainRuntime(gainDb)
+            }
+        } finally {
+            refreshEw300Snapshot()
+        }
+    }
+
+    suspend fun applyEw300ShelfTestTarget(target: Ew300ShelfTestTarget): Ew300ShelfTestResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Mutation {
+                ew300Flasher.applyShelfTestTarget(target)
             }
         } finally {
             refreshEw300Snapshot()

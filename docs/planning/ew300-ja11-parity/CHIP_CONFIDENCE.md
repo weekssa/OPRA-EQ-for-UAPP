@@ -53,12 +53,12 @@ The exact EW300 descriptor matches KT0211L’s UAC1-only profile: one UAC1 confi
 - **G2** MIC DONE / HEADSET CHIP-LIMITED: real UAC1 mic mute and mic volume. The family firmware shows internal OMTP/CTIA/lradc and key handling, but there is no USB/HID headset-disable control. Next only if exact firmware/config is obtained: locate the GPIO/key matrix field; no blind write. Do not inherit KT02H20 headset claims.
 - **G3** **CHIP-LIMITED**: KT0211L is UAC1-only; the EW300 descriptor matches. No UAC2 switch is expected. Do not chase JA11 0x20.
 - **G4** unchanged: UAC1 GET_CUR 48000/80BB00; Pixel active-stream check pending.
-- **G5** unchanged: native shelves and reversible Mac evidence; owner listening pending.
+- **G5** native shelf protocol demonstrated byte for byte (type 3/4 words, readback, one-Save persistence, exact restore) with **shelf acoustics UNMEASURED**: no capture device is attached to this Mac and no measurement rig exists here. Listening preference is not an acceptance criterion.
 
 ## 2026-11-05 Pixel device results
 
 - Plan A: exact Pixel 9 / Android 17 / EW300; APK installed and on-device hash matched; UAC1 GET_CUR 96000 Hz; microphone mute Live; UAC 1.0; no writes.
 - Plan B: runtime Low Shelf 250 Hz/-6 dB/Q0.707 + output gain -2.0 dB verified; physical replug returned flat/0 dB. Runtime-only claim qualified.
 - Plan C: one Save persisted the Low Shelf across a genuine power removal; one separate restoration Save returned flat/0 dB with final readback matched.
-- Plan D: owner listening pending at the fixed 250 Hz/4 kHz targets.
+- Plan D withdrawn: the 24-state blind runner was removed from the app as a research harness. Shelf acoustics remain UNMEASURED; only labeled engineering controls remain in the parity package.
 

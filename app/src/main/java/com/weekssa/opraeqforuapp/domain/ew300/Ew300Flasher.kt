@@ -52,6 +52,14 @@ enum class Ew300RuntimePersistenceState {
     SAVE_NOT_VERIFIED,
 }
 
+sealed interface Ew300ShelfTestResult {
+    data class Verified(val target: Ew300ShelfTestTarget) : Ew300ShelfTestResult
+    data class NotSuitable(val reason: String) : Ew300ShelfTestResult
+    data class DeviceUnavailable(val reason: String) : Ew300ShelfTestResult
+    data class TransferFailed(val reason: String) : Ew300ShelfTestResult
+    data class VerificationFailed(val reason: String) : Ew300ShelfTestResult
+}
+
 /** Guarded five-band EW300 transaction using the shared finite-target response optimizer. */
 class Ew300Flasher(
     private val transport: Ew300Transport,
@@ -346,6 +354,72 @@ class Ew300Flasher(
         mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVED_THIS_SESSION
         return@record Ew300RuntimeSaveResult.Verified
     }
+
+    /** Parity-only fixed A/B shelf state; zero Save and exact volatile readback. */
+    suspend fun applyShelfTestTarget(target: Ew300ShelfTestTarget): Ew300ShelfTestResult =
+        record("SHELF_TEST") { trace ->
+            trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+            val deviceKey = transport.deviceFingerprintKey
+                ?: return@record Ew300ShelfTestResult.DeviceUnavailable(
+                    "The exact EW300 device fingerprint is unavailable.",
+                )
+            if (!experimentalShelfEnabled) {
+                return@record Ew300ShelfTestResult.NotSuitable(
+                    "Native shelf A/B states are available only in the parity package.",
+                )
+            }
+            if (!mutationAuthorized(deviceKey)) {
+                return@record Ew300ShelfTestResult.NotSuitable(
+                    "EW300 shelf A/B states are unavailable for this exact device identity.",
+                )
+            }
+            val baseline = transactionCoordinator.captureBaseline()
+                ?: return@record Ew300ShelfTestResult.DeviceUnavailable(
+                    "Could not read the complete EW300 state before the shelf A/B target.",
+                )
+            val targetBands = target.bands()
+            val wires = targetBands.map { band ->
+                runCatching {
+                    Ew300Protocol.encodeBand(band, allowExperimentalShelf = true)
+                }.getOrElse {
+                    return@record Ew300ShelfTestResult.NotSuitable(
+                        it.message ?: "The shelf A/B target is not representable.",
+                    )
+                }.let { (gain, q) -> Ew300WireBandPair(gain, q) }
+            }
+            trace.markBeforeFirstWrite(transport.permissionRequestCount)
+            trace.stage(Ew300OperationStage.WRITING)
+            wires.forEachIndexed { index, wire ->
+                if (!transport.writeRegister(Ew300Protocol.bandRegister(index), wire.gain) ||
+                    !transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, wire.q)
+                ) {
+                    return@record if (transactionCoordinator.restoreVolatile(baseline)) {
+                        Ew300ShelfTestResult.TransferFailed(
+                            "EW300 stopped accepting the shelf A/B target; the original state was restored.",
+                        )
+                    } else {
+                        Ew300ShelfTestResult.TransferFailed(
+                            "EW300 stopped accepting the shelf A/B target and restoration failed; reconnect and read before any retry.",
+                        )
+                    }
+                }
+            }
+            if (readWireBands() != wires) {
+                return@record if (transactionCoordinator.restoreVolatile(baseline)) {
+                    Ew300ShelfTestResult.VerificationFailed(
+                        "EW300 shelf A/B readback did not match; the original state was restored.",
+                    )
+                } else {
+                    Ew300ShelfTestResult.VerificationFailed(
+                        "EW300 shelf A/B readback did not match and restoration failed; reconnect and read.",
+                    )
+                }
+            }
+            trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+            trace.stage(Ew300OperationStage.FINAL_READBACK)
+            transport.markRuntimeVerified()
+            Ew300ShelfTestResult.Verified(target)
+        }
 
     suspend fun flash(profile: OpraEqProfile): Kt02h20FlashResult = record("FLASH") { trace ->
         lastSuccessfulFlashBaseline = null
@@ -946,6 +1020,7 @@ class Ew300Flasher(
                 is Ew300PlaybackGainResult.Success,
                 is Ew300RuntimeApplyResult.Verified,
                 Ew300RuntimeSaveResult.Verified,
+                is Ew300ShelfTestResult.Verified,
                 -> true
                 else -> false
             }
@@ -1087,6 +1162,10 @@ class Ew300Flasher(
         is Ew300RuntimeSaveResult.DeviceUnavailable -> reason
         is Ew300RuntimeSaveResult.TransferFailed -> reason
         is Ew300RuntimeSaveResult.VerificationFailed -> reason
+        is Ew300ShelfTestResult.NotSuitable -> reason
+        is Ew300ShelfTestResult.DeviceUnavailable -> reason
+        is Ew300ShelfTestResult.TransferFailed -> reason
+        is Ew300ShelfTestResult.VerificationFailed -> reason
         else -> null
     }
 
@@ -1097,7 +1176,8 @@ class Ew300Flasher(
         Ew300RestorationResult.Verified,
         is Ew300PlaybackGainResult.Success,
         is Ew300RuntimeApplyResult.Verified,
-        Ew300RuntimeSaveResult.Verified -> Ew300OperationOutcome.SUCCESS
+        Ew300RuntimeSaveResult.Verified,
+        is Ew300ShelfTestResult.Verified -> Ew300OperationOutcome.SUCCESS
         is Kt02h20FlashResult.NotSuitable,
         is Kt02h20FlatResetResult.NotSuitable,
         is Ew300EditorApplyResult.InvalidPlan,
@@ -1139,6 +1219,10 @@ class Ew300Flasher(
         -> Ew300OperationOutcome.VERIFICATION_FAILED
         is Ew300RuntimeApplyResult.StaleBaseline -> Ew300OperationOutcome.STALE_BASELINE
         is Ew300RuntimeApplyResult.ConfirmationRequired -> Ew300OperationOutcome.CONFIRMATION_REQUIRED
+        is Ew300ShelfTestResult.NotSuitable -> Ew300OperationOutcome.NOT_SUITABLE
+        is Ew300ShelfTestResult.DeviceUnavailable -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
+        is Ew300ShelfTestResult.TransferFailed -> Ew300OperationOutcome.TRANSFER_FAILED
+        is Ew300ShelfTestResult.VerificationFailed -> Ew300OperationOutcome.VERIFICATION_FAILED
         else -> Ew300OperationOutcome.UNKNOWN
     }
 
