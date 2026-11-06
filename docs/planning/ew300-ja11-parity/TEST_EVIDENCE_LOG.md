@@ -679,3 +679,13 @@ Add entries below in chronological order.
 - The switch was turned back on and the bar verified again: "Connected · State current · Open My DAC"
   with "Direct Flash ready · Flash is enabled for saved EQs and managed profiles." Device state is
   unchanged: flat, 0 bands, 0.0 dB, still connected. No Flash, Save or write was issued.
+
+
+### T-050 — Bar scope on the Pixel: My EQs and EQ Library yes, Settings no
+
+- My EQs and EQ Library both show "EQ target: SIMGOT EW300 DSP ▾" and the device block.
+- Settings shows the "EQ target" group heading and the Default target row, and no instance of the bar
+  selector: the dump contains zero nodes matching "EQ target: ". The owner's rule — Settings keeps
+  the controls, the bar stays on the audio surfaces — holds on the device, not just in the emulator.
+- Read-only: three tab switches and three UI dumps. No setting was changed apart from the Direct Flash
+  toggle in T-049, which was restored and re-verified.
