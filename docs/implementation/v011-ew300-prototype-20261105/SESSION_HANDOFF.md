@@ -354,6 +354,14 @@ Final gates at this head: JVM 885 tests / 0 failures; `:app:lintV011beta` 0 erro
 UiModernizationFlowsTest. APK unchanged at
 7516516bba42c5683a9a0d78d1554dc7c7456eadf42b7f54603299e56660dc81 (no main-source change in D or E).
 
+Current artifact on the Pixel is newer, because 7516516b predated the vocabulary commit:
+1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3, built from head 50a5c0ea,
+installed and hash-verified on the device. Live on My EQs: "EQ target: SIMGOT EW300 DSP ▾",
+"Not connected · Connect" -> one Connect tap -> "Connected · State current · Open My DAC", with the
+Direct Flash banner switching from unavailable to ready. My DAC read Flat, 0 bands, 0.0 dB and no
+write was issued (T-048). Screenshots in docs/screenshots/v011/: context-bar-pixel-not-connected.png,
+context-bar-pixel-connected.png, pixel-mydac-flat-1f1ea2c1.png.
+
 Still open, unchanged by this cycle: native shelf acoustics are unmeasured and the shelf controls
 stay experimental; production EQ Library data cannot be migrated without a user-facing export; no
 push, PR, merge, release or signing change was made.

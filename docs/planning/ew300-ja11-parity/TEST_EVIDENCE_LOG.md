@@ -639,3 +639,26 @@ Add entries below in chronological order.
 - Gates: instrumented v011beta suite 94/94 on emulator-5580 (of which 43 are
   UiModernizationFlowsTest); JVM 885 / 0 failures; `:app:lintV011beta` 0 errors / 118 warnings /
   2 hints. No main-source change, so the APK is unchanged at 7516516b.
+
+
+### T-048 — Post-vocabulary build installed on the Pixel; bar copy verified live
+
+- The build installed on the phone at 12:46 predated commit 49ba05bf, so it still read
+  "Target: SIMGOT EW300 DSP". Rebuilt `:app:assembleV011beta` from head 50a5c0ea and reinstalled.
+- Artifact now on the device: APK
+  1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3, package
+  com.weekssa.opraeqforuapp.v011beta 0.11.0-beta.1/23. The on-device base.apk checksum matches the
+  local build byte for byte.
+- My EQs with the session closed: "EQ target: SIMGOT EW300 DSP ▾", interface
+  "SIMGOT EW300 DSP · Not connected · Connect", banner "Direct Flash unavailable · SIMGOT EW300 DSP
+  is not connected. Connect it in My DAC."
+  (docs/screenshots/v011/context-bar-pixel-not-connected.png)
+- After one Connect tap on the phone, which only opens the read-only session: interface
+  "SIMGOT EW300 DSP · Connected · State current · Open My DAC", banner "Direct Flash ready · Flash is
+  enabled for saved EQs and managed profiles."
+  (docs/screenshots/v011/context-bar-pixel-connected.png)
+- My DAC read back Flat, 0 active Peak bands, playback/global gain 0.0 dB
+  (docs/screenshots/v011/pixel-mydac-flat-1f1ea2c1.png). No Flash, no Save, no write of any kind was
+  issued in this session; the DAC is left exactly as the previous session left it.
+- This closes the copy and state-table question on the real device. It is not an acoustic test and
+  says nothing about shelf behaviour.

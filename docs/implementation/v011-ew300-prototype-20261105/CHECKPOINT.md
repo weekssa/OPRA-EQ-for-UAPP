@@ -188,3 +188,11 @@ Final gates on this head: JVM 885 tests / 0 failures; `:app:lintV011beta` 0 erro
 2 hints; instrumented v011beta suite 94/94 on emulator-5580. The APK is unchanged at
 7516516bba42c5683a9a0d78d1554dc7c7456eadf42b7f54603299e56660dc81 because no main source changed
 in D or E.
+
+That 7516516b build predated the vocabulary commit, so it was replaced: the phone now runs
+1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3, rebuilt from head 50a5c0ea and
+verified byte for byte on the device. On My EQs it reads "EQ target: SIMGOT EW300 DSP ▾" with
+"Not connected · Connect" and the Direct Flash unavailable banner; one Connect tap moved it to
+"Connected · State current · Open My DAC" and the Direct Flash ready banner (T-048). My DAC then read
+Flat, 0 bands, 0.0 dB, and no Flash, Save or write was issued. Screenshots:
+context-bar-pixel-not-connected.png, context-bar-pixel-connected.png, pixel-mydac-flat-1f1ea2c1.png.
