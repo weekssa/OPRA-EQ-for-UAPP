@@ -50,6 +50,13 @@ Native User1 defaults is implemented for computer qualification with unchanged f
 
 The exact APK/source tuple proves public release identity. It does **not** prove which artifact is currently installed on an owner's phone.
 
+The Pixel also carries a local prototype that is not a release:
+`com.weekssa.opraeqforuapp.v011beta` 0.11.0-beta.1 / 23, installed 2026-11-06 from
+`codex/v0.11-ew300-prototype`, current on-device `base.apk` SHA-256
+`1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3` with the local test signer. It is a
+separate package, never published, never a public hardware claim. See
+[`releases/v0.11.0-beta.1.md`](releases/v0.11.0-beta.1.md).
+
 ## Installed device state
 
 Current v0.10.0 install state: **UNKNOWN / NOT VERIFIED.** The owner confirmed the v0.9.0-beta.4 build working on the device on 2026-11-04, but the published v0.10.0 APK has not been re-read from the phone, so the installed-bytes claim below still describes the earlier v0.9.0 install.
