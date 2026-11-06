@@ -66,15 +66,14 @@ class Ew300FullParityFlowTest {
             }
         }
 
-        composeRule.onNodeWithText("Device volume (0–60)").performScrollTo().assertIsDisplayed().performClick()
-        composeRule.onNodeWithText("EW300 device volume (0–60)").assertIsDisplayed()
-        composeRule.onNodeWithText("Apply for this session").performClick()
+        composeRule.onNodeWithText("Device volume").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Device volume").assertIsDisplayed()
+        composeRule.onNodeWithText("Apply").performClick()
         assertEquals(30, selectedLevel)
     }
 
     @Test
-    fun uacRowsShowCurrentRateAndExposeTheVerifiedMicControl() {
-        var muted: Boolean? = null
+    fun uacRowsShowCurrentRateAndNoUnprovenMicrophoneToggle() {
         composeRule.setContent {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Ew300DeviceStatus(
@@ -96,15 +95,17 @@ class Ew300FullParityFlowTest {
                             blockedReasons = listOf("One configuration exposes UAC 1.0; no exact UAC mode switch control was located."),
                         ),
                     ),
-                    onSetMicrophoneMuted = { muted = it },
                 )
             }
         }
 
         composeRule.onNodeWithText("Current sample rate").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("48000 Hz").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Microphone mute").performScrollTo().assertIsDisplayed().performClick()
-        assertEquals(true, muted)
+        composeRule.onNodeWithText("48,000 Hz").assertIsDisplayed()
+        composeRule.onNodeWithText("Microphone").assertDoesNotExist()
+        composeRule.onNodeWithText("Microphone input").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Microphone mute").assertDoesNotExist()
+        composeRule.onNodeWithText("Headset remote").assertDoesNotExist()
+        composeRule.onNodeWithText("Read USB audio").assertDoesNotExist()
     }
 
     @Test
@@ -186,8 +187,8 @@ class Ew300FullParityFlowTest {
             }
         }
 
-        composeRule.onNodeWithText(
-            "The feature unit exists but GET_CUR did not return a value. Read USB audio again.",
-        ).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Current sample rate").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Microphone").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Microphone mute").assertDoesNotExist()
     }
 }

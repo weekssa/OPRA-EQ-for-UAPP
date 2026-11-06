@@ -82,4 +82,8 @@ OWNS: GATES.md,
   tools/test_ew300_readonly_probe.py,
   tools/test_ew300_reversible_shelf_probe.py,
   tools/verify_ew300_parity_readiness.py,
-  tools/verify_ew300_parity_review.py
+  tools/verify_ew300_parity_review.py,
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/Ew300DeviceScreenshotTest.kt,
+  app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/DacDeviceStatus.kt,
+  app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/Ew300OperationStatusTest.kt,
+  docs/screenshots/

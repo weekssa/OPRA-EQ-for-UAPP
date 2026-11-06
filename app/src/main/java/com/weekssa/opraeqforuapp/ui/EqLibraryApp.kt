@@ -261,7 +261,6 @@ fun EqLibraryApp(
     val onSaveEw300Runtime = actions.onSaveEw300Runtime
     val onSetEw300VolumeLevel = actions.onSetEw300VolumeLevel
     val onRefreshEw300Uac = actions.onRefreshEw300Uac
-    val onSetEw300MicrophoneMuted = actions.onSetEw300MicrophoneMuted
     val onApplyEw300ShelfTestTarget = actions.onApplyEw300ShelfTestTarget
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
@@ -1194,7 +1193,6 @@ fun EqLibraryApp(
                             onSaveEw300Runtime = onSaveEw300Runtime,
                             onSetEw300VolumeLevel = onSetEw300VolumeLevel,
                             onRefreshEw300Uac = onRefreshEw300Uac,
-                            onSetEw300MicrophoneMuted = onSetEw300MicrophoneMuted,
                             onApplyEw300ShelfTestTarget = onApplyEw300ShelfTestTarget,
                             onMessage = ::showMessage,
                             onOperationStatus = ::showOperationStatus,

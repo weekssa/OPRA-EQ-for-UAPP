@@ -13,7 +13,7 @@ class Ew300OperationStatusTest {
     @Test
     fun resetShowsPersistentProgressWhileFlashUsesTheSharedFlashSurface() {
         assertEquals(
-            "Resetting EW300 EQ… Keep the DAC connected while final readback is verified.",
+            "Resetting EW300 EQ… Keep the DAC connected while the final check completes.",
             ew300OperationInProgressMessage(Ew300OperationStatus.Running("operation-1", "RESET")),
         )
         assertNull(ew300OperationInProgressMessage(Ew300OperationStatus.Running("operation-1", "FLASH")))
@@ -26,7 +26,7 @@ class Ew300OperationStatusTest {
         assertTrue(presentation.verified)
         assertTrue(presentation.message.contains("Flash successful"))
         assertTrue(presentation.message.contains("reconnected"))
-        assertTrue(presentation.message.contains("Final hardware readback matched"))
+        assertTrue(presentation.message.contains("Final hardware check matched"))
     }
 
     @Test
@@ -38,7 +38,7 @@ class Ew300OperationStatusTest {
         assertFalse(presentation.verified)
         assertTrue(presentation.message.contains("not verified"))
         assertTrue(presentation.message.contains("previous Save may have completed"))
-        assertFalse(presentation.message.contains("final hardware readback matched"))
+        assertFalse(presentation.message.contains("final hardware check matched"))
     }
 
     @Test

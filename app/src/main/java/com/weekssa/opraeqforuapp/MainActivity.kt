@@ -187,7 +187,6 @@ class MainActivity : ComponentActivity() {
         onSaveEw300Runtime = viewModel::saveEw300Runtime,
         onSetEw300VolumeLevel = viewModel::setEw300VolumeLevel,
         onRefreshEw300Uac = viewModel::refreshEw300Uac,
-        onSetEw300MicrophoneMuted = viewModel::setEw300MicrophoneMuted,
         onApplyEw300ShelfTestTarget = viewModel::applyEw300ShelfTestTarget,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {

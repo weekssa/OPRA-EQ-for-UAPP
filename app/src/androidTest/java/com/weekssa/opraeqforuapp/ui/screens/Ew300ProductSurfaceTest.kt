@@ -7,18 +7,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300UacStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import com.weekssa.opraeqforuapp.ui.Ew300UacUiState
+import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
+import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
 /**
- * The v0.11 prototype device surface: proven EW300 controls only, no engineering panel.
+ * The v0.11 product device surface: JA11 layout, proven EW300 controls only, no microphone
+ * section while the mute request has no measured effect on captured audio.
  */
 class Ew300ProductSurfaceTest {
     @get:Rule
@@ -35,14 +42,10 @@ class Ew300ProductSurfaceTest {
                 verifiedAtEpochMillis = 1,
             ),
         )
-        return HardwareEqSnapshotState(
-            bundle = bundle,
-            freshness = com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness.CURRENT,
-        )
+        return HardwareEqSnapshotState(bundle = bundle, freshness = DacStateFreshness.CURRENT)
     }
 
-    @Test
-    fun deviceSurfaceShowsProvenControlsAndNoEngineeringPanel() {
+    internal fun renderDevice() {
         composeRule.setContent {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Ew300DeviceStatus(
@@ -65,12 +68,56 @@ class Ew300ProductSurfaceTest {
                 )
             }
         }
+    }
 
-        composeRule.onNodeWithText("Device volume (0–60)").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Microphone mute").performScrollTo().assertIsDisplayed()
+    @Test
+    fun deviceSurfaceUsesAudioUsbAndAboutInThatOrder() {
+        renderDevice()
+
+        val audio = composeRule.onNodeWithText("Audio").fetchSemanticsNode().boundsInRoot.top
+        val usb = composeRule.onNodeWithText("USB & System").fetchSemanticsNode().boundsInRoot.top
+        val about = composeRule.onNodeWithText("About").fetchSemanticsNode().boundsInRoot.top
+
+        assertTrue("Audio must precede USB & System", audio < usb)
+        assertTrue("USB & System must precede About", usb < about)
+        composeRule.onNodeWithText("Microphone").assertDoesNotExist()
+    }
+
+    @Test
+    fun deviceSurfaceKeepsProvenRowsAndDropsTheRest() {
+        renderDevice()
+
+        composeRule.onNodeWithText("Device volume").performScrollTo().assertIsDisplayed()
+        // Startup settings is hidden while the saved state is unknown.
+        composeRule.onNodeWithText("Startup settings").assertDoesNotExist()
         composeRule.onNodeWithText("Current sample rate").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("96,000 Hz").assertIsDisplayed()
+        composeRule.onNodeWithText("USB Audio Class").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("UAC 1.0").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Output gain").assertDoesNotExist()
+        composeRule.onNodeWithText("Equalizer").assertDoesNotExist()
+        composeRule.onNodeWithText("Connection").assertDoesNotExist()
+        composeRule.onNodeWithText("Headset remote").assertDoesNotExist()
+        composeRule.onNodeWithText("Read USB audio").assertDoesNotExist()
+        composeRule.onNodeWithText("Experimental features").assertDoesNotExist()
+        composeRule.onNodeWithText("Microphone input").assertDoesNotExist()
+        composeRule.onNodeWithText("Microphone mute").assertDoesNotExist()
         composeRule.onNodeWithText("Native shelf engineering controls").assertDoesNotExist()
         composeRule.onNodeWithText("Set Low Shelf").assertDoesNotExist()
+    }
+
+    @Test
+    fun aboutListsIdentityAndTheOneLineLimitations() {
+        renderDevice()
+
+        composeRule.onNodeWithText("About this DAC").performScrollTo().performClick()
+        composeRule.onNodeWithText("SIMGOT EW300 DSP").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("31B2:0111").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Device limitations").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(
+            "Headset-remote disable and UAC mode switching are chip-limited; native shelf acoustics are unmeasured; the device accepts a microphone mute request, but no effect on captured audio has been measured.",
+        ).assertIsDisplayed()
     }
 }
 

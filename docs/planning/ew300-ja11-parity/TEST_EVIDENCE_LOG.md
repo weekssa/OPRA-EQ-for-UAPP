@@ -466,3 +466,15 @@ Add entries below in chronological order.
 - Save count: one target Save plus one restoration Save. No listening test.
 - Engineering surfaces: no shelf A/B controls or engineering panel appeared in either tab.
 
+
+### T-032 — v0.11 DEVICE surface UX correction and microphone disposition
+
+- Date: 2026-11-05
+- Candidate: package com.weekssa.opraeqforuapp.v011beta, 0.11.0-beta.1/23, APK 12974c73297479df9c53a360090d6a09b400ff2aefb85d25839cc5fb1ecba47e, built 2026-11-06T04:18:41Z, local debug signer.
+- Section map: Device settings header + Refresh → Audio (Device volume 0–60; Startup settings only when Saved or Not saved) → USB & System (Current sample rate; USB Audio Class) → About (Model, USB identity, Filters, Device limitations; Firmware only when read).
+- Removed rows: Output gain, Equalizer, Connection, Headset remote, Read USB audio, Experimental features, native-shelf engineering section, and all raw descriptor/GET_CUR prose.
+- Microphone: the device accepts a UAC1 mute request and the value verifies, but the Pixel audio policy exposes no USB input device (only built-in microphones), no capture path reaches the EW300, and the owner heard no difference in either position. The toggle and the Microphone section are removed; the About limitations line records that no effect on captured audio has been measured. UI plumbing for the mute was deleted; the transport capability remains unused.
+- Validation on this candidate: JVM 878 tests, 0 failures (completed 04:20:40Z); lint 0 errors / 121 warnings / 2 hints (report 22:20:34 CST); connected v011beta instrumented suite 83/83 on emulator-5554 (BUILD SUCCESSFUL 04:23:33Z).
+- Screenshots captured from this candidate on emulator-5554: device-top, about-expanded, device-bottom (360×360 scrolled end), limitations.
+- No Pixel interaction, no Flash, no Save, no Connect session for this candidate.
+

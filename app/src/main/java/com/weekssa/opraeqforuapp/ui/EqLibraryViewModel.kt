@@ -744,20 +744,6 @@ class EqLibraryViewModel(
         }
     }
 
-    fun setEw300MicrophoneMuted(muted: Boolean) {
-        if (mutableEw300UacState.value.busy) return
-        mutableEw300UacState.value = mutableEw300UacState.value.copy(busy = true, error = null)
-        viewModelScope.launch {
-            val ok = runCatching { hardwareRepository.setEw300MicrophoneMuted(muted) }.getOrDefault(false)
-            val status = runCatching { hardwareRepository.readEw300UacStatus() }.getOrNull()
-            mutableEw300UacState.value = Ew300UacUiState(
-                status = status ?: mutableEw300UacState.value.status,
-                busy = false,
-                error = if (ok) null else "The exact EW300 microphone mute control did not verify.",
-            )
-        }
-    }
-
     private fun writeFiioJa11Control(controlId: DacControlId, value: DacControlValue) {
         val state = mutableFiioJa11DeviceState.value
         val snapshot = state.snapshot

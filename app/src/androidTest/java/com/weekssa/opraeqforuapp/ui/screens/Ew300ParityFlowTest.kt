@@ -170,11 +170,12 @@ class Ew300ParityFlowTest {
 
         composeRule.onNodeWithText("DEVICE").performClick()
         composeRule.onNodeWithText("About").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("About this DAC").performScrollTo().performClick()
         composeRule.onNodeWithText("Model").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Firmware").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("31B2:0111 · revision 1.01 · HID interface 3").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Firmware").assertDoesNotExist()
+        composeRule.onNodeWithText("31B2:0111").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(
-            "App controls for presets, microphone, UAC switching, and tuning have not been established for this EW300.",
+            "Headset-remote disable and UAC mode switching are chip-limited; native shelf acoustics are unmeasured; the device accepts a microphone mute request, but no effect on captured audio has been measured.",
         ).performScrollTo().assertIsDisplayed()
     }
 

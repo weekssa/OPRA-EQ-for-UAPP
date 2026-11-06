@@ -14,9 +14,9 @@
 | Package | com.weekssa.opraeqforuapp.v011beta |
 | Build type | v011beta (release-derived, unminified, update checks off) |
 | APK path | app/build/outputs/apk/v011beta/app-v011beta.apk |
-| APK SHA-256 | 9c2d78d018909aed778c79f496f58822beaa296b6f2a3ecb1bf1fc98eb1d366d |
+| APK SHA-256 | 12974c73297479df9c53a360090d6a09b400ff2aefb85d25839cc5fb1ecba47e |
 | Signer SHA-256 | 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer) |
-| Build time | 2026-11-06T02:35:39Z (2026-11-05 20:35:39 CST) |
+| Build time | 2026-11-06T04:18:41Z (2026-11-05 22:18:41 CST) |
 
 The on-device base.apk hash matched this SHA-256 after install.
 
@@ -84,4 +84,41 @@ persistent device identity; the DAC was left Flat at 0.0 dB.
 
 Owner review of this artifact as a possible next beta; any further work starts from the recorded
 APK and code head.
+
+
+## Device surface after the UX correction (v0.11 candidate 84c36b93)
+
+The DEVICE page now follows the JA11 structure and shares its components:
+
+- Header: DeviceOperationStatusHeader with the device state and the single Refresh action.
+- Audio: one Device volume row (0–60, tap to set) and Startup settings only when the saved state is
+  actually known (Saved / Not saved). An unknown state renders no row.
+- USB & System: Current sample rate and USB Audio Class as read-only values.
+- About (expander): Model, USB identity, Filters ("Five-band Peak, verified"), and one Device
+  limitations line. Firmware is shown only when it has been read.
+
+Removed from the product surface: Output gain (duplicate of the same 0x66 control), Equalizer,
+Connection, Headset remote, Read USB audio, the raw GET_CUR/feature-unit copy, the blocked-reason
+paragraphs, the Experimental features row, and the native-shelf engineering section. Those
+engineering surfaces remain only in the local ew300Engineering variant.
+
+### Microphone decision (recorded)
+
+The EW300 accepts a UAC1 feature-unit mute request and the app can verify that value. No capture
+path reaches it from this Pixel: the audio policy exposes only the built-in microphones, with no USB
+input device, and the owner heard no difference with the control in either position. A GET_CUR
+acknowledgement is not a working mute, so the toggle and the Microphone section are removed. The
+About limitations line states: the device accepts a microphone mute request, but no effect on
+captured audio has been measured.
+
+The unused UI plumbing (Ew300MyDacContent.onSetMicrophoneMuted, MyDacRootScreen/EqLibraryApp/
+EqLibraryActions wiring, EqLibraryViewModel.setEw300MicrophoneMuted) was deleted in the same change.
+The transport-level mute capability remains in the device layer, unused by the product surface.
+
+### Screenshots
+
+docs/screenshots/v011/device-top.png, about-expanded.png, device-bottom.png, limitations.png (all
+from this candidate on emulator-5554), plus the earlier before-ew300-device-pixel.png. The page fits
+a 360×640 viewport, so device-bottom.png was captured at 360×360 scrolled to the end to show the
+bottom rather than repeating the top.
 

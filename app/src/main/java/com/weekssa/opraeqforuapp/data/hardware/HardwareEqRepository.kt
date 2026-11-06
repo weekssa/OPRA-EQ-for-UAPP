@@ -80,8 +80,6 @@ class HardwareEqRepository(
     suspend fun readEw300UacStatus(): com.weekssa.opraeqforuapp.domain.ew300.Ew300UacStatus? =
         dacSessionRepository.readEw300UacStatus()
 
-    suspend fun setEw300MicrophoneMuted(muted: Boolean): Boolean =
-        dacSessionRepository.setEw300MicrophoneMuted(muted)
     val fiioJa11OperationTrace: StateFlow<FiioJa11OperationTrace?> = fiioJa11Flasher.lastOperationTrace
     val fiioJa11OperationStatus: StateFlow<FiioJa11OperationStatus> = fiioJa11Flasher.operationStatus
 

@@ -81,7 +81,6 @@ class EqLibraryActions(
     val onSaveEw300Runtime: () -> Unit = {},
     val onSetEw300VolumeLevel: (Int) -> Unit = {},
     val onRefreshEw300Uac: () -> Unit = {},
-    val onSetEw300MicrophoneMuted: (Boolean) -> Unit = {},
     val onApplyEw300ShelfTestTarget: suspend (Ew300ShelfTestTarget) -> String = { "Shelf A/B is unavailable." },
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
