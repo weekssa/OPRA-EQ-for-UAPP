@@ -152,3 +152,7 @@ bottom rather than repeating the top.
 My EQs and EQ Library now carry the target selector plus a state-driven device block:
 Connect / Open Settings / Open My DAC with the status table in SESSION_HANDOFF.md. Settings keeps
 the full target group and shows no bar. The My DAC root tab stays removed.
+
+### Pixel verification of the anchor (7516516b)
+- Unplugged with SIMGOT EW300 DSP targeted: the target row fell back to "USB Audio Player PRO / ToneBoosters" while the block persisted as "SIMGOT EW300 DSP · No DAC attached · Open My DAC". The fallback and the anchor are therefore both visible at once, which is the rule.
+- Replugged: the target returned to SIMGOT EW300 DSP and the block returned to "Not connected" with Connect. No Save, no Flash.
