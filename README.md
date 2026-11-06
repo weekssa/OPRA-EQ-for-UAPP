@@ -10,26 +10,38 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.10.0** is the current stable public Android release. v0.9.0 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
+**v0.11.0** is the current stable public Android release. v0.10.0 is the previous stable release; earlier stable and beta releases remain available as historical evidence.
 
-[Download EQ Library v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.10.0/EQ-Library-v0.10.0.apk).
+[Download EQ Library v0.11.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.11.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.11.0/EQ-Library-v0.11.0.apk).
 
-- Package: `com.weekssa.opraeqforuapp`; versionName `0.10.0`; versionCode `22`
+- Package: `com.weekssa.opraeqforuapp`; versionName `0.11.0`; versionCode `23`
 - Android 8.0 / API 26 or newer
-- Install over v0.9.0 or v0.9.0-beta.4 to keep local app data
-- Signed with the project's permanent Android release identity
+- Install over v0.10.0 or v0.9.0 to keep local app data
+- Signed with the project permanent Android release identity
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
-The public APK SHA-256 is:
-
-`755fe80c0f8fb1a3276814a5c372d669d35f9e87d4f328e683d5b90bd8f9d7ae`
-
-The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.10.0/EQ-Library-v0.10.0.apk.sha256) is published with the release.
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.11.0/EQ-Library-v0.11.0.apk.sha256) is published with the release, together with the exact APK digest on the [Project State](docs/PROJECT_STATE.md) record.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## v0.10.0 highlights
+## v0.11.0 highlights
+
+- SIMGOT EW300 DSP support in the JA11-style device layout: 0-60 device volume on register 0x66, current sample rate, runtime edits versus one explicit Save, and About identity.
+- A context bar on My EQs and EQ Library: the EQ target, that device state, and one action - Connect, Open My DAC, or Open Settings when Direct Flash is off. An unplugged DAC reads "No DAC attached" instead of vanishing.
+- Settings - Library gains Backup and Restore: one JSON file carries saved EQs and General EQs between installs without replacing anything you already have.
+- A flash retries one empty register read before refusing, and a session that stops answering reports "Connection issue" with a Connect that re-opens the device.
+- Evidence is one Pixel 9 with a SIMGOT EW300. No listening test was run; native shelf acoustics remain unmeasured, so those controls stay compiled off.
+
+See the [v0.11.0 release notes](docs/releases/v0.11.0.md) for scope, compatibility, installation, and evidence boundaries.
+
+## v0.10.0 (previous stable release)
+
+v0.10.0 added the FiiO JA11 Tuning (Ellyn) toggle and the DEVICE page redesign. See the [v0.10.0 release notes](docs/releases/v0.10.0.md).
+
+The v0.10.0 public APK SHA-256 is `755fe80c0f8fb1a3276814a5c372d669d35f9e87d4f328e683d5b90bd8f9d7ae`.
+
+### v0.10.0 highlights
 
 - My DAC → DEVICE gains a Tuning (Ellyn) toggle that writes KT config registers 0x3A and 0x3B, verifies each readback, and persists on write across a genuine power cycle. The USB identity register 0x5B is refused by the transport and covered by a regression test.
 - DEVICE is reorganised around Device settings (volume slider, EQ program, Tuning, Startup settings), Microphone, USB & System and About, with Startup settings showing Not saved / Save / Saved.
