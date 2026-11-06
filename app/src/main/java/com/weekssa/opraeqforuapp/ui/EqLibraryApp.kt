@@ -326,19 +326,6 @@ fun EqLibraryApp(
     val myDacDestinationStateHolder = rememberSaveableStateHolder()
 
     val rootDestinations = remember { eqLibraryRootDestinations() }
-    // My DAC is reachable as its own destination whenever a supported production DAC is recognized,
-    // so the device workspace never depends on the status card alone. An unsupported identity
-    // (JCALLY) deliberately does not create a My DAC entry.
-    val hasSupportedProductionDac = remember(state.dacRecognitionState.recognizedDeviceIds) {
-        state.dacRecognitionState.recognizedDeviceIds.any { deviceId ->
-            deviceId == DacDeviceId.TRN_BLACK_PEARL ||
-                deviceId == DacDeviceId.FIIO_JA11 ||
-                deviceId == DacDeviceId.SIMGOT_EW300
-        }
-    }
-    val navigationDestinations = remember(rootDestinations, hasSupportedProductionDac) {
-        eqLibraryAvailableDestinations(hasSupportedProductionDac)
-    }
     val selectedRootDestination = restoreEqLibraryDestination(selectedDestinationName, rootDestinations)
     val selectedDestination = if (
         myDacWorkspaceOpen && state.dacRecognitionState.hasRecognizedDevice
@@ -936,17 +923,10 @@ fun EqLibraryApp(
         bottomBar = {
             if (!useNavigationRail) {
                 NavigationBar {
-                    navigationDestinations.forEach { destination ->
-                        val isMyDac = destination == EqLibraryDestination.MyDac
+                    rootDestinations.forEach { destination ->
                         NavigationBarItem(
-                            selected = if (isMyDac) {
-                                myDacWorkspaceOpen
-                            } else {
-                                !myDacWorkspaceOpen && selectedRootDestination == destination
-                            },
-                            onClick = {
-                                if (isMyDac) myDacWorkspaceOpen = true else selectRootDestination(destination)
-                            },
+                            selected = !myDacWorkspaceOpen && selectedRootDestination == destination,
+                            onClick = { selectRootDestination(destination) },
                             icon = { RootDestinationIcon(destination) },
                             label = { Text(stringResource(destination.labelResId)) },
                         )
@@ -961,17 +941,10 @@ fun EqLibraryApp(
         ) {
             if (useNavigationRail) {
                 NavigationRail(modifier = Modifier.fillMaxHeight()) {
-                    navigationDestinations.forEach { destination ->
-                        val isMyDac = destination == EqLibraryDestination.MyDac
+                    rootDestinations.forEach { destination ->
                         NavigationRailItem(
-                            selected = if (isMyDac) {
-                                myDacWorkspaceOpen
-                            } else {
-                                !myDacWorkspaceOpen && selectedRootDestination == destination
-                            },
-                            onClick = {
-                                if (isMyDac) myDacWorkspaceOpen = true else selectRootDestination(destination)
-                            },
+                            selected = !myDacWorkspaceOpen && selectedRootDestination == destination,
+                            onClick = { selectRootDestination(destination) },
                             icon = { RootDestinationIcon(destination) },
                             label = { Text(stringResource(destination.labelResId)) },
                         )
