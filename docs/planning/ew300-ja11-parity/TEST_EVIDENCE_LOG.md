@@ -521,3 +521,11 @@ Add entries below in chronological order.
 - Device check on APK 43534eb3a70efde2bb9ef9dc35f205a984e1ce770d03ffd27383ad75859d87aa: after reinstall the My DAC entry opened on SIMGOT EW300 DSP with the Connect action, and Connect established the session (readback Flat, 0.0 dB).
 - Validation: JVM 883 tests, 0 failures (05:17Z); lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 on emulator-5554 (05:20:05Z).
 
+
+### T-037 — Accurate copy when the EW300 is attached but not connected
+
+- Candidate: APK 5e073d9db2311d552e908936cf9fef17e8f7aba75392f4b83e1f2622e32635c9, built 2026-11-05 23:23:59 CST.
+- Change: Ew300MyDacContent takes deviceAttached from recognitionState.presentDeviceIds. The disconnected page now says "EW300 is attached. Connect to read its settings." when the cable is present and keeps "Connect the EW300 USB cable to manage its EQ." when it is not.
+- Device check: after reinstalling and restarting the app, My DAC showed "EW300 is attached. Connect to read its settings." with the Connect action.
+- Validation: JVM 883 tests, 0 failures; lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 (05:28:44Z).
+

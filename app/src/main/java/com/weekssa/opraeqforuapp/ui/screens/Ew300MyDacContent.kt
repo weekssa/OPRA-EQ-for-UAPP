@@ -85,6 +85,7 @@ internal fun ew300OperationControlsEnabled(operationStatus: Ew300OperationStatus
 @Composable
 internal fun Ew300MyDacContent(
     connectionState: Kt02h20ConnectionState,
+    deviceAttached: Boolean = false,
     hardwareEqState: HardwareEqSnapshotState,
     editorState: MyDacEditorUiState,
     operationTrace: Ew300OperationTrace?,
@@ -336,7 +337,13 @@ internal fun Ew300MyDacContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    Text("Connect the EW300 USB cable to manage its EQ.")
+                    Text(
+                        if (deviceAttached) {
+                            "EW300 is attached. Connect to read its settings."
+                        } else {
+                            "Connect the EW300 USB cable to manage its EQ."
+                        },
+                    )
                     Button(onClick = onConnect) { Text("Connect") }
                 }
             }

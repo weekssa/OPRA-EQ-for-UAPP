@@ -266,6 +266,7 @@ fun MyDacRootScreen(
 
         DacDeviceId.SIMGOT_EW300 -> Ew300MyDacContent(
             connectionState = ew300ConnectionState,
+            deviceAttached = DacDeviceId.SIMGOT_EW300 in recognitionState.presentDeviceIds,
             hardwareEqState = ew300HardwareEqState,
             editorState = ew300EditorState,
             operationTrace = ew300OperationTrace,
