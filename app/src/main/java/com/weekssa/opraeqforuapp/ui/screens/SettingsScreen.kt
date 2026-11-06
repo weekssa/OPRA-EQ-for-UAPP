@@ -518,8 +518,11 @@ private fun OutputOption(
                     text = when (device) {
                         ExportDevice.BLACK_PEARL -> "Larger EQs are optimized to 10 bands"
                         ExportDevice.FIIO_JA11 -> "Larger EQs are optimized to 5 bands"
-                        ExportDevice.SIMGOT_EW300 ->
+                        ExportDevice.SIMGOT_EW300 -> if (BuildConfig.EW300_SHELF_EDITOR_ENABLED) {
                             "Shelf-free EQs use five Peak bands; native shelves inside the -6 dB / Q 0.707 envelope keep their type 3/4 words; anything else is fitted to five Peaks"
+                        } else {
+                            "Shelf-free EQs use five Peak bands; shelf bands are fitted to those five Peaks and reported as Optimized"
+                        }
                         else -> "EQ Library adapts the source to this device's hardware capabilities"
                     },
                     style = MaterialTheme.typography.bodySmall,

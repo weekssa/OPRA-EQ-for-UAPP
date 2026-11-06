@@ -450,3 +450,19 @@ Add entries below in chronological order.
 - APK: built locally; identity frozen in the session checkpoint (no Pixel install).
 - Not claimed: native-shelf acoustics, headset-remote control, UAC mode switching, full JA11 parity.
 
+
+### T-031 — v0.11 prototype Pixel qualification (this exact APK)
+
+- Date: 2026-11-05
+- APK: 9c2d78d018909aed778c79f496f58822beaa296b6f2a3ecb1bf1fc98eb1d366d; package com.weekssa.opraeqforuapp.v011beta, 0.11.0-beta.1/23; on-device base.apk hash matched.
+- Device: Pixel 9 (tokay), Android 17, wireless ADB.
+- Setup path: Settings → SIMGOT EW300 DSP output selected, Direct Flash switch on. Before connection the app showed "Direct Flash unavailable · SIMGOT EW300 DSP is not connected" and after connection the line cleared, proving the reason follows the real prerequisite.
+- Device checks: 31B2:0111 · revision 1.01 · HID interface 3; current sample rate 96000 Hz; UAC 1.0 read-only; microphone mute Live; headset remote "No disable control"; 0–60 volume 60/60 at 0.0 dB.
+- Flash: AFUL Explorer — LoboNautics (community, Reddit, 8 filters) via My EQs → Flash; one Save; "Optimized · 8 → 5 bands · full-response fit"; -3.50 dB tracked playback gain; re-enumeration handled by the app.
+- Readback: "Exact saved match": 20 Hz +3.5 dB Q 0.300; 3,500 Hz +3.0 dB Q 0.825; 11,892 Hz +1.0 dB Q 0.500; 1,784 Hz -0.5 dB Q 1.000; 2,700 Hz +1.0 dB Q 3.000; global gain -3.5 dB.
+- Shape: five-Peak fallback, not native shelf.
+- Restoration: "Reset to flat" → one Save → Flat, 0 active bands, five Peak 1 kHz/0 dB/Q1, gain 0.0 dB.
+- Persistence: owner power-cycled the EW300 (unplug, five seconds, replug); readback after reconnection remained Flat at 0.0 dB, so the restoration Save persisted.
+- Save count: one target Save plus one restoration Save. No listening test.
+- Engineering surfaces: no shelf A/B controls or engineering panel appeared in either tab.
+
