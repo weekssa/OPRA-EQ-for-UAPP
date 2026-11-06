@@ -335,3 +335,26 @@ enabled in Settings, unannotated.
 
 Shipped instead: commit ba915feb removes the root tab and restores the contextual card and its tests.
 
+
+## Autonomous hardening cycle — outcome
+
+Sealed plan: PLAN_AUTONOMOUS_HARDENING.md (seal f64dea46f4101dd7), worked A -> E without stopping.
+
+| # | Workstream | Outcome |
+|---|---|---|
+| A | Reset persistence | Shipped. Model separates volatile from persisted state; one Save, fail-closed rejection; Pixel run passed (T-043, T-044) |
+| B | Vocabulary | Shipped. "EQ target: <name> ▾"; duplicate disclaimer removed (T-045) |
+| C | M3 audit | Shipped. Settings and My DAC scored 4/5 across ten categories |
+| D | Lint and dead code | Attempted, reverted, nothing shipped (T-046) |
+| E | Regression hardening | Shipped. Two bar tests added (T-047) |
+| F | Documentation | This section, CHECKPOINT.md, PLAN checklist, TEST_EVIDENCE_LOG |
+
+Final gates at this head: JVM 885 tests / 0 failures; `:app:lintV011beta` 0 errors / 118 warnings /
+2 hints; instrumented v011beta suite 94/94 on emulator-5580, of which 43 are
+UiModernizationFlowsTest. APK unchanged at
+7516516bba42c5683a9a0d78d1554dc7c7456eadf42b7f54603299e56660dc81 (no main-source change in D or E).
+
+Still open, unchanged by this cycle: native shelf acoustics are unmeasured and the shelf controls
+stay experimental; production EQ Library data cannot be migrated without a user-facing export; no
+push, PR, merge, release or signing change was made.
+

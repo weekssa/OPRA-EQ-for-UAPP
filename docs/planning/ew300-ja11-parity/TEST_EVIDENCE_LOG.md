@@ -598,3 +598,44 @@ Add entries below in chronological order.
 - The bar's selector now reads "EQ target: <name> ▾", matching the Settings "EQ target" group; the duplicate disclaimer line under it ("Prepares EQ files or actions…") is removed.
 - Fixed vocabulary in use: **EQ target** is the single active destination; **Outputs** is the list you enable in Settings; **Direct Flash** is the per-DAC write switch; **Save** is the persistence action; **Flash** is the verb on the button that writes a preset.
 - JVM 885 / 0 failures, lint 0 errors, instrumented 92/92 on emulator-5580 (19:53:57Z).
+
+
+### T-046 — Lint and dead-code cleanup: attempted, reverted, no change shipped
+
+- Lint reports 18 parameters of `CapabilityDrivenDeviceStatus` as unused in its body:
+  `fiioJa11DeviceState`, `fiioJa11Connected`, `onReadFiioJa11DeviceControls`,
+  `onSetFiioJa11OutputVolume`, `onSetFiioJa11EqProgram`, `onSetFiioJa11Defaults`,
+  `onSetFiioJa11HeadsetControl`, `onSetFiioJa11UacMode`, `fiioJa11OperationBusy`,
+  `ja11DcrTuningState`, `onSetJa11DcrTuning` and the Black Pearl pairs they mirror.
+- They are not dead. Every one is forwarded unchanged into `FiioJa11DeviceStatus(...)` or
+  `BlackPearlDeviceStatus(...)` in the same function, so the composable is a pass-through
+  dispatcher and the lint finding is a false positive for this shape.
+- The removal was attempted and the compiler rejected the result: three androidTest call sites
+  (`Ew300DeviceStatusTest`, `Ew300ParityFlowTest`, `Ew300DeviceScreenshotTest`) and two
+  composables that pass the JA11 device state down stopped compiling.
+- The attempt was reverted with `git checkout -- app/` before any commit. Nothing shipped, no
+  warning count changed, no behaviour changed. The 118 `:app:lintV011beta` warnings are accepted
+  as-is for this candidate; suppressing them would hide the real shape of the API.
+- Gates on the unchanged tree: JVM 885 tests / 0 failures; `:app:lintV011beta` 0 errors / 118
+  warnings / 2 hints; instrumented v011beta suite 94/94 on emulator-5580.
+
+
+### T-047 — Bar tests: connect targeting and the several-DACs picker
+
+- `barConnectTargetsTheSelectedDacWhileAnotherSessionIsOpen`: target FIIO JA11, both DACs present,
+  EW300 connected and FIIO disconnected. The bar shows "Not connected" and its Connect action
+  dispatches `onConnectFiioJa11` exactly once and `onConnectEw300` never, so a live session on a
+  second DAC neither changes the block nor redirects the connect. The first draft asserted
+  `onConnectDacForMyDac(deviceId)`; the bar routes through the per-device connect actions, so the
+  test was corrected to the shipped wiring rather than the wiring to the test.
+- `pickerSwitchesTheBlockBetweenTwoRecognizedDacs`: both DACs recognised and enabled as outputs,
+  FIIO active and connected, EW300 disconnected. Picking SIMGOT EW300 DSP from the "EQ target:"
+  row moves the block to the EW300 and shows "Not connected" with no "No DAC attached" anchor
+  left behind. This is the first test that exercises the picker with two recognised hardware DACs;
+  the earlier draft failed because the picker lists only outputs enabled in Settings, which is the
+  intended behaviour, not a defect.
+- `noOpEqLibraryActions` gained defaulted `onConnectFiioJa11` and `onConnectEw300` so the bar's
+  actions can be observed without touching any other test.
+- Gates: instrumented v011beta suite 94/94 on emulator-5580 (of which 43 are
+  UiModernizationFlowsTest); JVM 885 / 0 failures; `:app:lintV011beta` 0 errors / 118 warnings /
+  2 hints. No main-source change, so the APK is unchanged at 7516516b.

@@ -163,3 +163,28 @@ the full target group and shows no bar. The My DAC root tab stays removed.
   -no-dac, -eq-library, -360dp-font200.
 - Final gates on this code: JVM 883 tests / 0 failures (19:19:41Z); lint 0 errors / 121 warnings /
   2 hints; instrumented 92/92 on emulator-5580 (19:22:23Z). APK 7516516b.
+
+
+## Autonomous hardening cycle (2026-11-06, branch codex/v0.11-ew300-prototype)
+
+Five workstreams were sealed in PLAN_AUTONOMOUS_HARDENING.md and worked in order. A, B and C shipped;
+D was attempted and reverted; E added the two missing bar tests; F is this pass.
+
+- A — Reset persistence. Two fake-transport tests separate volatile from persisted device state.
+  Reset writes five flat bands, sends exactly one Save, and the persisted gain survives a simulated
+  power cycle; a rejected Save fails closed and keeps the previous EQ. The app-side transaction is
+  sound, and the earlier field observation did not reproduce on the Pixel (T-043, T-044).
+- B — Vocabulary. The bar selector reads "EQ target: <name> ▾" and the duplicate disclaimer line is
+  gone, so one word covers one concept from Settings to the flash dialogs (T-045).
+- C — M3 audit. Settings and My DAC are scored across ten categories at 4/5 in
+  V0.11_PROTOTYPE_DESIGN_LANGUAGE.md, with the reason recorded per category.
+- D — Lint and dead code. Reverted. The 18 "unused" parameters of CapabilityDrivenDeviceStatus are
+  forwarded into the device-status composables; removal broke three androidTest call sites and two
+  composables, so nothing shipped and the warnings are accepted rather than suppressed (T-046).
+- E — Regression hardening. Two tests: the bar's Connect targets the selected DAC while a second
+  DAC holds a live session, and the picker moves the block between two recognised DACs (T-047).
+
+Final gates on this head: JVM 885 tests / 0 failures; `:app:lintV011beta` 0 errors / 118 warnings /
+2 hints; instrumented v011beta suite 94/94 on emulator-5580. The APK is unchanged at
+7516516bba42c5683a9a0d78d1554dc7c7456eadf42b7f54603299e56660dc81 because no main source changed
+in D or E.

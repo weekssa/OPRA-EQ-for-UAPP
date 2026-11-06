@@ -45,12 +45,16 @@ itself is approved and the gate is resealed with it in scope.
 - [x] B2 copy applied: bar selector now says EQ target; duplicate disclaimer removed
 - [x] C1 M3 audit scored for Settings (4/5)
 - [x] C2 M3 audit scored for My DAC (4/5)
-- [ ] D1 dead code and unused parameters removed
-- [ ] D2 lint warning count recorded before and after
-- [ ] E1 bar-connect-while-other-session test
-- [ ] E2 several-DACs picker test
-- [ ] F1 documentation updated for every workstream
-- [ ] F2 final gates recorded and the tree left clean
+- [x] D1 attempted and reverted: the 18 flagged parameters are forwarded into the device-status
+      composables, so removing them broke three androidTest call sites and two composables. No
+      change shipped (T-046).
+- [x] D2 warning count recorded: `:app:lintV011beta` 0 errors / 118 warnings / 2 hints, unchanged
+      by the revert because nothing shipped.
+- [x] E1 bar-connect-while-other-session test (T-047)
+- [x] E2 several-DACs picker test (T-047)
+- [x] F1 documentation updated for every workstream (T-046, T-047, CHECKPOINT, handoff)
+- [x] F2 final gates recorded: JVM 885 / 0 failures, lint 0 errors / 118 warnings / 2 hints,
+      instrumented 94/94 on emulator-5580; tree clean after the E commit
 
 ## Stop conditions (only these)
 

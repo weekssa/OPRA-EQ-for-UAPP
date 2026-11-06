@@ -666,6 +666,87 @@ class UiModernizationFlowsTest {
     }
 
     @Test
+    fun barConnectTargetsTheSelectedDacWhileAnotherSessionIsOpen() {
+        var fiioConnects = 0
+        var ew300Connects = 0
+        val state = EqLibraryUiState(
+            catalogState = CatalogState.Loading,
+            appPreferences = AppPreferences(
+                exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                directFiioJa11FlashEnabled = true,
+                directEw300FlashEnabled = true,
+            ),
+            dacRecognitionState = DacRecognitionState(
+                presentDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+                recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+            ),
+            fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+            ew300ConnectionState = Kt02h20ConnectionState.Connected,
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(
+                    state = state,
+                    actions = noOpEqLibraryActions(
+                        onConnectFiioJa11 = { fiioConnects++ },
+                        onConnectEw300 = { ew300Connects++ },
+                    ),
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        // The target is the FiiO, so its block offers Connect even though the EW300 is live.
+        composeRule.onNodeWithText("Not connected").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect").performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, fiioConnects)
+            assertEquals(0, ew300Connects)
+        }
+    }
+
+    @Test
+    fun pickerSwitchesTheBlockBetweenTwoRecognizedDacs() {
+        val state = mutableStateOf(
+            EqLibraryUiState(
+                catalogState = CatalogState.Loading,
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences()
+                        .withActiveTarget(ExportDevice.FIIO_JA11)
+                        .withTarget(ExportDevice.SIMGOT_EW300, true),
+                    directFiioJa11FlashEnabled = true,
+                    directEw300FlashEnabled = true,
+                ),
+                dacRecognitionState = DacRecognitionState(
+                    presentDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+                    recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+                ),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Connected,
+                ew300ConnectionState = Kt02h20ConnectionState.Disconnected,
+            ),
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(state = state.value, actions = noOpEqLibraryActions())
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("EQ target: FiiO JA11", substring = true).performClick()
+        composeRule.onNodeWithText("SIMGOT EW300 DSP").performClick()
+        // The picker reports through actions; mirror the resulting preference.
+        composeRule.runOnIdle {
+            state.value = state.value.copy(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.SIMGOT_EW300),
+                    directEw300FlashEnabled = true,
+                ),
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("No DAC attached").assertDoesNotExist()
+        composeRule.onNodeWithText("Not connected").assertIsDisplayed()
+    }
+    @Test
     fun keyboardAndDpadSearchOpensDirectModelResults() {
         val saveRequests = mutableListOf<Pair<String, Set<String>>>()
         lateinit var inputModeManager: InputModeManager
@@ -2921,6 +3002,8 @@ class UiModernizationFlowsTest {
 
 internal fun noOpEqLibraryActions(
     onConnectDacForMyDac: (DacDeviceId) -> Unit = {},
+    onConnectFiioJa11: () -> Unit = {},
+    onConnectEw300: () -> Unit = {},
     onApplyFiioJa11Editor: () -> Unit = {},
     onRefreshCatalog: () -> String = { "Fixture catalog is current." },
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
@@ -2984,9 +3067,9 @@ internal fun noOpEqLibraryActions(
         onSetEw300PlaybackGain = {},
         onConnectBlackPearl = {},
         onResetBlackPearl = { error("Hardware writes are not part of the app-shell test") },
-        onConnectFiioJa11 = {},
+        onConnectFiioJa11 = onConnectFiioJa11,
         onResetFiioJa11 = { error("Hardware writes are not part of the app-shell test") },
-        onConnectEw300 = {},
+        onConnectEw300 = onConnectEw300,
         onResetEw300 = { error("Hardware writes are not part of the app-shell test") },
         onConnectJcallyJm12 = {},
         onResetJcallyJm12 = { error("Unsupported hardware is not part of the app-shell test") },
