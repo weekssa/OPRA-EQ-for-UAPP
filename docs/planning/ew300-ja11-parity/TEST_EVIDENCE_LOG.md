@@ -404,3 +404,34 @@ Add entries below in chronological order.
 - Save count for the session: 1 target Save + 1 restoration Save. No listening test was performed.
 - Follow-up gate: the EQ Library profile rows now hide their inline Flash action unless Direct Flash is enabled for the EW300 (previously they gated on connection alone). The managed-profile screen and My EQs keep showing the exact reason.
 
+### T-027 — Production library inventory and the migration method actually used
+
+- Date: 2026-11-05
+- Production package: com.weekssa.opraeqforuapp (release, not debuggable). No adb or run-as database access was used.
+- Production My EQs contained: **AFUL Explorer → LoboNautics** (community submission, Source Reddit, 8 filters, preamp -3.7 dB, canonical id community-96571b708868cdf52c109d5f) and **TANGZU Wan'er 2 → AutoEq / Jaytiss** (Source AutoEQ, 10 filters). Personal EQs: none. Saved General EQs: none.
+- Export capability: the active production output for these entries is SIMGOT EW300 DSP, which is hardware-only (supportsFileExport = false). Its profile rows offer Source, Flash, and Remove — no Export action — so these entries cannot be written to a text file from production today.
+- Migration used: re-select the same canonical catalog profiles in the parity package. The parity app shares the EQ Library catalog, so the profile id, creator, source, filter values, and EW300 output association are identical; the parity entry reproduces "AFUL · 1 selected · 5 available", LoboNautics, "Optimized · 8 → 5 bands · full-response fit" exactly as production shows it.
+- What is lost: production's own record timestamps and its "latest revision seen" bookkeeping. Nothing about the curve, name, or provenance. A profile the owner had edited away from the catalog original would not transfer this way.
+- What could not be exercised: a file export/import of a Personal EQ or a General EQ, because production contains none. The parity package's user-facing "Import Personal EQ" flow remains the path for those, and it was left untouched.
+
+### T-028 — Final-artifact hardware Flash (owner library EQ), one Save, one restoration Save
+
+- Date: 2026-11-05
+- APK: f43f9ac1f814bcac20b3a1dd4282b9d84e7c8cc9efe6a042242a97e49d713b57; package com.weekssa.opraeqforuapp.ew300parity, 0.10.0-ew300parity/22; on-device base.apk hash matched after install.
+- Device: Pixel 9 (tokay), Android 17, wireless ADB.
+- Prerequisite state: DAC Flat, 0.0 dB, before the Flash.
+- Profile: AFUL Explorer — LoboNautics (owner library entry, community/Reddit, 8 filters), EW300 output, tracked headroom -3.50 dB.
+- Shape: **five-Peak fallback**, not native shelf — the source's two low shelves use Q 0.3, outside the -6 dB / Q 0.707 envelope. The confirmation read "Optimized · 8 → 5 bands · full-response fit".
+- Result: one Save; expected re-enumeration; readback reported "Exact saved match" for Explorer · LoboNautics.
+- Final readback: 1: 20 Hz +3.5 dB Q 0.300; 2: 3,500 Hz +3.0 dB Q 0.825; 3: 11,892 Hz +1.0 dB Q 0.500; 4: 1,784 Hz -0.5 dB Q 1.000; 5: 2,700 Hz +1.0 dB Q 3.000; playback/global gain -3.5 dB.
+- Restoration: "Set Flat" and output gain 0.0 dB as runtime writes (zero Save each), then exactly one "Save EQ and output gain" -> "Saved in this session · final readback matched." Final readback: Flat, 0 active bands, five Peak 1 kHz/0 dB/Q1, gain 0.0 dB.
+- Save count: 1 target Save + 1 restoration Save. No listening test.
+
+### T-029 — Final-artifact UI verification of the Flash prerequisites
+
+- Parity setup panel: 1 Active output = SIMGOT EW300 DSP · Done; 2 Direct Flash = Enabled · Done; 3 Connection = Connected · Done; "Ready · Flash actions are enabled for saved EQs and managed profiles."
+- Direct Flash turned off (preference only, no write): panel showed "Off · Flash stays disabled"; My EQs showed "Direct Flash unavailable · Direct Flash is off. Enable it in Settings → SIMGOT EW300 DSP."; the managed-profile screen showed "Enable direct Flash in Settings → SIMGOT EW300 DSP before connecting to the DAC." with Flash disabled; EQ Library profile rows contained no Flash action at all.
+- Direct Flash re-enabled: the EQ Library Flash action returned, and the panel returned to Ready.
+- Non-hardware target check: selecting USB Audio Player PRO as the active target removed the hardware Flash surface entirely and showed the export state instead.
+- No Save or register write occurred during these checks; only preference and navigation state changed.
+

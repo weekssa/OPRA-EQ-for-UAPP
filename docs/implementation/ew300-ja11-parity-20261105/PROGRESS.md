@@ -82,6 +82,9 @@
 - [x] Out-of-envelope shelves now fit to five Peak bands through the shared optimizer instead of failing.
 - [x] Routing tests added (saved EQ, managed profile, Direct Flash off, disconnected) plus shelf fallback tests.
 - [x] Pixel run: one Save flashed an AutoEq library profile, readback matched, one restoration Save returned flat/0 dB.
+- [x] Production library inventoried through its UI: two managed profiles, no Personal or General EQs; its EW300 output has no file export.
+- [x] Owner entry (AFUL Explorer — LoboNautics) migrated by canonical catalog identity and flashed on the final artifact with one Save; one restoration Save returned flat/0 dB.
+- [x] Final-artifact UI checks: setup panel, My EQs reason, managed-profile reason, library row gating, and no unintended writes.
 
 ## Next action
 

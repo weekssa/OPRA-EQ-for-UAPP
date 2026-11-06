@@ -1,6 +1,6 @@
 # EW300 / JA11 five-goal parity — readiness package
 
-Status: **five-goal test candidate built and locally tested; exact die KT0211L confirmed; microphone mute implemented; UAC mode CHIP-LIMITED; headset-disable open pending KT0211L GPIO/key/ADC research; native shelf protocol demonstrated byte for byte with shelf acoustics UNMEASURED; EQ Library → EW300 Flash usable from the parity package and verified on the Pixel with one Save plus one restoration Save.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
+Status: **five-goal test candidate built and locally tested; exact die KT0211L confirmed; microphone mute implemented; UAC mode CHIP-LIMITED; headset-disable open pending KT0211L GPIO/key/ADC research; native shelf protocol demonstrated byte for byte with shelf acoustics UNMEASURED; EQ Library → EW300 Flash verified on the exact final artifact with an owner library EQ, one Save and one restoration Save.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
 
 ## Candidate identity
 
@@ -22,6 +22,7 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - versionCode: 22
 - Signer SHA-256: 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer)
 - Build time: 2026-11-06T01:45Z (UTC), rebuilt from the code head below
+- Hardware qualification: Flash, readback, and restoration were performed on this exact SHA-256 (T-028), not on an earlier build.
 - Updates: disabled in the parity variant
 
 ## Five-goal status
@@ -42,8 +43,9 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - Setup path: Settings → "Parity setup · Flash to SIMGOT EW300" shows three explicit steps (active output, Direct Flash, connection) with a Ready line. Nothing is enabled silently.
 - Eligibility: hardwareFlashUnavailableReason() is shared by My EQs and the managed-profile screen and names the exact blocker (no active output, Direct Flash off, not connected, or profile not saved for this output).
 - Fallback: native type 3/4 words are kept only inside the −6 dB / Q 0.707 envelope; every other profile is fitted to five Peak bands by the shared SIMGOT_EW300 optimizer and reported as Optimized. No shelf is silently dropped and no acoustic claim is made.
-- Library data: the parity package starts empty. Production (com.weekssa.opraeqforuapp) is not debuggable, so its database cannot be copied; entries move by export and import. The Pixel run used the in-app EQ Library catalog (Simgot Audio → EW300 (silver) → AutoEq).
-- Pixel result: one Save wrote the Peak-optimized AutoEq profile ("Exact saved match" on readback, five Peak bands, −5.0 dB tracked gain); one restoration Save returned Flat with 0 dB gain and final readback matched.
+- Library data: production holds two managed profiles (AFUL Explorer → LoboNautics, community/Reddit, 8 filters; TANGZU Wan'er 2 → AutoEq/Jaytiss, 10 filters) and no Personal or General EQs. Its EW300 output is hardware-only, so those entries have no file export. The owner entry was migrated by re-selecting the same canonical catalog profile in parity, which preserves name, filter values, provenance, and the EW300 association without copying any database.
+- Limitation: an owner Personal EQ or General EQ could only move through a file export from production, and production has neither today; the parity "Import Personal EQ" flow is the path when one exists. A profile the owner had edited off-catalog would not transfer by catalog identity.
+- Pixel result (final artifact f43f9ac1): one Save wrote AFUL Explorer — LoboNautics through the five-Peak fallback ("Exact saved match" on readback, five Peak bands, −3.5 dB tracked gain); one restoration Save returned Flat with 0 dB gain and final readback matched.
 
 - Configuration descriptor: 303 bytes, UAC1, AC interface 0, mic feature unit 2 (master mute), playback endpoint 0x01/interface 2 (44.1/48/96 kHz), capture endpoint 0x81/interface 1, HID interface 3.
 - UAC evidence JSON: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-uac-descriptor.json (file sha256 a65245351b68e4a5d750e623aa771cb9c385c85baa7283477e420cbcc034566b).
