@@ -158,3 +158,26 @@ connected v011beta instrumented suite 84/84 on emulator-5554 (2026-11-06 06:24Z)
 - Device state at pause: the EW300 was left Flat at 0.0 dB with the prototype installed; the owner
   is disconnecting wireless debugging.
 
+
+## Attempted and reverted: the stateful context bar
+
+After the tab was removed, a target-driven bar was implemented (target row plus a device block
+whose action is Connect / Open Settings / Open My DAC, driven by the active target). It compiled
+and ran, and it was reverted before commit because four UI tests still encode the previous card
+contract and the migration was not finished:
+
+- UiModernizationFlowsTest.recognizedDacStaysContextualAndRemainsSeparateFromTheExportTarget (~line 573)
+- UiModernizationFlowsTest.productionMyDacContextShowsCurrentReadbackAndReturnsToTheSameRoot (~line 978)
+- UiModernizationFlowsTest.productionMyDacContextExplainsUsbPermissionAndKeepsHistoricalStateStale (~line 1026)
+- UiModernizationFlowsTest.productionMyDacRecoveryStateWarnsAgainstRepeatingAnUnverifiedApply (~line 1066)
+
+The design that was agreed but not shipped: target line first on My EQs and EQ Library only; the
+device block appears only when the active target is a hardware DAC (or when a live session/error
+must stay visible); status copy "Not connected", "Allow USB access", "Connection issue",
+"No DAC attached", "Direct Flash off", connected states; actions Connect (ready, permission retry,
+error retry), Open Settings (Direct Flash off), Open My DAC (otherwise); the card body opens My DAC
+while the trailing button performs the action; the target picker stays the plain list of outputs
+enabled in Settings, unannotated.
+
+Shipped instead: commit ba915feb removes the root tab and restores the contextual card and its tests.
+
