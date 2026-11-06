@@ -104,7 +104,12 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "tools/test_ew300_readonly_probe.py",
     "tools/test_ew300_reversible_shelf_probe.py",
     "tools/verify_ew300_parity_readiness.py",
-    "tools/verify_ew300_parity_review.py"
+    "tools/verify_ew300_parity_review.py",
+    "app/src/main/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundle.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleImporter.kt",
+    "app/src/test/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleTest.kt",
+    "app/src/test/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleImporterTest.kt",
+    "docs/implementation/v011-ew300-prototype-20261105/LIBRARY_TRANSFER.md"
   ]
 }
 ```

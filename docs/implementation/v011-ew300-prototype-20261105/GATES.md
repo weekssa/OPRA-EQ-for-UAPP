@@ -99,5 +99,14 @@ OWNS: GATES.md,
   app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/ContextBarScreenshotTest.kt,
   docs/implementation/v011-ew300-prototype-20261105/PLAN_AUTONOMOUS_HARDENING.md,
   app/src/main/java/com/weekssa/opraeqforuapp/ui/components/TargetContextSelector.kt,
-  app/src/main/res/values/premium_ux_strings.xml
+  app/src/main/res/values/premium_ux_strings.xml,
+  app/src/main/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundle.kt,
+  app/src/main/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleImporter.kt,
+  app/src/test/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleTest.kt,
+  app/src/test/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleImporterTest.kt,
+  docs/implementation/v011-ew300-prototype-20261105/LIBRARY_TRANSFER.md
 amendment: 2026-11-06 owner-approved — shared context bar surface, AppContextSurfaces.kt, required by the My EQs / EQ Library stateful bar.
+amendment: 2026-11-06 owner-approved — library export/import slice: EqLibraryBundle.kt,
+  EqLibraryBundleImporter.kt, their two JVM test files and LIBRARY_TRANSFER.md, so saved EQs, managed
+  selections and general EQs can be carried between com.weekssa.opraeqforuapp and the v011beta
+  prototype through one user-chosen JSON file.
