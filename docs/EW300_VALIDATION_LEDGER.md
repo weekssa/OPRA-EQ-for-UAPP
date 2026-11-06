@@ -109,3 +109,37 @@ Current physical evidence includes E037-E040 on source 381 and E043-E046 on exac
 At report time, signed candidate E047 and its six gates passed on source 7599dd5. The documentation-only closeout produces a new branch SHA, so the older artifact/checks are no longer current-head provenance; verify fresh gates and signature in PR #23. No physical retest is justified because only documentation changes. E001 Save qualification and all reported mutations must not be repeated; uncertain mutation is never automatically retried.
 
 | Historical candidate snapshot (legacy duplicate label E041; not hardware evidence) | Source `02f2697e20dda0c33f72973cb140a3be5d592cef`; signed workflow [#1314](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35761742008); artifact `EQ-Library-signed-beta-02f2697e20dda0c33f72973cb140a3be5d592cef` (artifact id `10710314946`, digest `sha256:0b2460e79d09d915c770f6d609e80706772ed86c0dea3856a36c4188da7e623e`); APK `EQ-Library-v0.7.0-beta-02f2697.apk` (SHA-256 `39737d9a2aeddc6c2db1e4724c3875286bf2c2236cf858f88f5b98e854ed8314`); signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Historical exact-head software/security/signing/install/launch/publication gates passed for the public My DAC UX alignment and validation-control visibility coverage. This checkpoint does not alter EW300 transport or mutation sequencing. | Historical only; superseded by later candidate sources and live PR #23 head. It does not authorize another owner session or release. |
+
+## 2026-11-05 local parity candidate — software evidence only
+
+This is not a new physical ledger entry. No E-number is assigned and no hardware mutation occurred.
+
+- Base `180f4a962a53d22d294311121dd49d92a570d89a`; branch `codex/ew300-ja11-parity`; local only.
+- Package `com.weekssa.opraeqforuapp.ew300parity`, versionName `0.10.0-ew300parity`, versionCode 22, local debug signer `945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5`, APK SHA-256 `63c71d85195f01f2f07c7cb341efbc55ba21c6dcc1e61c2a0a2003101c8689a7`.
+- JVM evidence: 109 EW300 tests; Compose evidence: 4 explicit-emulator tests. These prove the app contract, not the DAC.
+- Read-only live capture: 256/256 registers, only command `0x52`; file SHA-256 `030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71`; internal capture SHA-256 `f54de03cd8ff0a6a104b54936f130346dd0d086cf7ecebe5178d1bfe094bf17a`.
+- Accepted physical records E001 and E037-E046 remain tied to their original sources and artifacts. This candidate did not repeat or extend them.
+- Physical qualification, shelf listening, Save persistence on this candidate, Pixel install/launch, and restoration are **pending**. No public support claim or release is authorized.
+
+### 2026-11-05 five-goal parity extension (software + reversible Mac)
+
+This remains software/reversible evidence, not a new physical persistence qualification.
+
+- 0-60 volume: Mac reversible 0x66 reads/writes at 0/30/60 and exact restore; no Save. File sha256 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c.
+- Native shelves: reversible 0x26/0x27 LS/HS writes and exact restore; no Save. File sha256 cdba8d041947132fd175a01668034977153a72d22994ec58a117939f4e296f2d; internal sha256 37c4db310c85e7ed43758e42bd35d5e4950e8234bdeb6a30511ef030a50ecb89.
+- UAC descriptor: exact 303-byte configuration descriptor, UAC1 only, mic feature unit 2 master mute, playback endpoint 0x01/interface 2; descriptor sha256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907.
+- Microphone mute: live GET 0 -> SET 1 -> verify 1 -> restore 0.
+- UAC mode and headset-disable: BLOCKED with exact descriptor/HID evidence; no firmware, identity, or arbitrary register write.
+
+### 2026-11-05 chip-first coverage (software/descriptors/static)
+
+- CHIP_MAP.md records 256/256 register reads, UAC1 feature units 2/4/7, playback endpoint 0x01/interface 2 at 48000 Hz, HID 0x01/0x4B/0x54, vendor APK 1.1.2 (sha256 eec1e6b9…), and firmware assets (firmware.bin f5230b21…, update1.fot 2fd471a2…, ufw f1020ec9…).
+- Coverage 96%; residual 4% = headset-disable vendor control, UAC mode vendor control, unit-4/0x54 semantics.
+- No firmware flash, identity write, or arbitrary register write. Physical/owner/Pixel session remains pending.
+
+### 2026-11-05 exact die CHP — KT0211L
+
+- Read-only CHP through the KTMicro bootloader: KTM 1e4b544d, CHP d2434850; reply 12 40 85 B2 30 32 31 31 4C 43 30 32 3E; chip ID 0211LC02 = KT0211L.
+- Pre/post normal baseline: 0x00=5245473A, 0x26=0000E803, 0x66=00000000; exact 31B2:0111 HID restored after owner replug.
+- No flash/erase/identity/firmware write. G3 becomes CHIP-LIMITED (KT0211L UAC1-only); G2-headset remains open for KT0211L GPIO/key/ADC/bias research.
+- Evidence: ~/.codex/evidence/ew300/2026-11-05/ew300-chip-id-chp.json sha256 d037f7b57a6549d53224178cf33a08ba3aef5c0257bf1966eb8555bf3dbc69bb.

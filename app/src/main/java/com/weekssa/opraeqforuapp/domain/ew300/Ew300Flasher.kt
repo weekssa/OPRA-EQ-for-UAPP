@@ -10,6 +10,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface Ew300Transport {
@@ -32,6 +33,31 @@ interface Ew300Transport {
     suspend fun readRegister(register: Int): ByteArray?
     suspend fun writeRegister(register: Int, data: ByteArray): Boolean
     suspend fun commit(): Boolean
+
+    /** Confirms a successful no-Save runtime transaction so its session may reconnect safely. */
+    fun markRuntimeVerified() = Unit
+
+    /** Read-only UAC1 descriptor/control facts; null when the exact path is unavailable. */
+    suspend fun readUacStatus(): Ew300UacStatus? = null
+
+    /** Evidence-backed UAC microphone mute; false when no exact feature unit exists. */
+    suspend fun setMicrophoneMuted(muted: Boolean): Boolean = false
+}
+
+enum class Ew300RuntimePersistenceState {
+    UNKNOWN,
+    RUNTIME_ONLY,
+    SAVING,
+    SAVED_THIS_SESSION,
+    SAVE_NOT_VERIFIED,
+}
+
+sealed interface Ew300ShelfTestResult {
+    data class Verified(val target: Ew300ShelfTestTarget) : Ew300ShelfTestResult
+    data class NotSuitable(val reason: String) : Ew300ShelfTestResult
+    data class DeviceUnavailable(val reason: String) : Ew300ShelfTestResult
+    data class TransferFailed(val reason: String) : Ew300ShelfTestResult
+    data class VerificationFailed(val reason: String) : Ew300ShelfTestResult
 }
 
 /** Guarded five-band EW300 transaction using the shared finite-target response optimizer. */
@@ -43,6 +69,7 @@ class Ew300Flasher(
     private val sourceCommit: String = "unknown",
     private val appVersion: String = "unknown",
     private val signerVerified: Boolean = false,
+    private val experimentalShelfEnabled: Boolean = false,
 ) {
     private val transactionCoordinator = Ew300TransactionCoordinator(transport)
     @Volatile
@@ -52,6 +79,10 @@ class Ew300Flasher(
 
     val lastOperationTrace: StateFlow<Ew300OperationTrace?> = traceStore.lastTrace
     val operationStatus: StateFlow<Ew300OperationStatus> = traceStore.status
+    private val mutableRuntimePersistence = MutableStateFlow(Ew300RuntimePersistenceState.UNKNOWN)
+    val runtimePersistence: StateFlow<Ew300RuntimePersistenceState> = mutableRuntimePersistence
+    @Volatile
+    private var pendingRuntimeTarget: Ew300RuntimeTarget? = null
 
     suspend fun applyEditorWorkingCopy(
         workingCopy: com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy,
@@ -81,7 +112,7 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.BASELINE_CAPTURED)
-        return Ew300EditorApplier(transport).apply(
+        return Ew300EditorApplier(transport, experimentalShelfEnabled).apply(
             workingCopy = workingCopy,
             allowCautions = allowCautions,
             isSessionCurrent = isSessionCurrent,
@@ -104,6 +135,291 @@ class Ew300Flasher(
             },
         )
     }
+
+    /**
+     * Experimental runtime-only editor Apply. Every write is read back in the same session and
+     * zero Save commands are sent. The verified target remains pending for an explicit Save.
+     */
+    suspend fun applyEditorRuntime(
+        workingCopy: com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy,
+        allowCautions: Boolean,
+        isSessionCurrent: (Long) -> Boolean,
+    ): Ew300RuntimeApplyResult = record("APPLY_RUNTIME") { trace ->
+        lastSuccessfulFlashBaseline = null
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return@record Ew300RuntimeApplyResult.DeviceUnavailable(
+                "The exact EW300 device fingerprint is unavailable.",
+            )
+        if (!mutationAuthorized(deviceKey)) {
+            return@record Ew300RuntimeApplyResult.InvalidPlan(
+                "EW300 editor Apply is unavailable for this device identity or hardware profile.",
+            )
+        }
+        trace.stage(Ew300OperationStage.BASELINE_CAPTURED)
+        val result = Ew300EditorApplier(transport, experimentalShelfEnabled).applyRuntime(
+            workingCopy = workingCopy,
+            allowCautions = allowCautions,
+            isSessionCurrent = isSessionCurrent,
+            beforeFirstWrite = {
+                trace.markBeforeFirstWrite(transport.permissionRequestCount)
+                trace.stage(Ew300OperationStage.WRITING)
+            },
+        )
+        when (result) {
+            is Ew300RuntimeApplyResult.Verified -> {
+                pendingRuntimeTarget = result.target
+                mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
+                trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+                trace.stage(Ew300OperationStage.FINAL_READBACK)
+                transport.markRuntimeVerified()
+            }
+            else -> pendingRuntimeTarget = null
+        }
+        result
+    }
+
+    /**
+     * Runtime-only absolute output-gain change. It never sends Save; the pending EQ/gain target is
+     * offered to the explicit Save action. The tracked EQ delta is rebased so a later profile Flash
+     * cannot subtract stale compensation twice.
+     */
+    suspend fun setPlaybackGainRuntime(gainDb: Double): Ew300PlaybackGainResult = record("SET_GAIN_RUNTIME") { trace ->
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "The exact EW300 device fingerprint is unavailable; no gain write was sent.",
+            )
+        if (!mutationAuthorized(deviceKey)) {
+            return@record Ew300PlaybackGainResult.NotSuitable(
+                "EW300 output gain is unavailable for this exact device identity.",
+            )
+        }
+        val requestedSteps = runCatching {
+            Ew300DeviceControls.playbackGainDescriptor.validateForWrite(
+                com.weekssa.opraeqforuapp.domain.dac.DacControlValue.Numeric(gainDb),
+            )
+        }.getOrElse {
+            return@record Ew300PlaybackGainResult.NotSuitable(
+                "The requested EW300 output gain is not representable safely.",
+            )
+        }.let { validation ->
+            if (validation !is com.weekssa.opraeqforuapp.domain.dac.DacControlValidation.Valid) {
+                return@record Ew300PlaybackGainResult.NotSuitable(
+                    "Choose an EW300 output gain from -64.0 dB through 0.0 dB in 0.5 dB steps.",
+                )
+            }
+            Ew300Protocol.gainDbToSteps(gainDb)
+        }
+        val baseline = transactionCoordinator.captureBaseline()
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Could not read the complete EW300 state before changing output gain.",
+            )
+        trace.recordBaseline(baseline)
+        val currentGain = baseline.value(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Could not read the EW300 output gain before changing it.",
+            )
+        val protocolFlags = baseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Could not read the EW300 protocol layout before changing output gain.",
+            )
+        val currentSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags)
+            ?: return@record Ew300PlaybackGainResult.NotSuitable(
+                "EW300 stereo output-gain channels are unequal. Refresh or reconnect before changing gain.",
+            )
+        val targetGain = Ew300Protocol.withGlobalGainSteps(currentGain, requestedSteps, protocolFlags)
+        if (currentGain.contentEquals(targetGain)) {
+            // A verified no-op absolute set still rebases the tracked EQ delta. Leaving a stale
+            // compensation here would make a later profile Flash read the wrong user baseline.
+            pendingRuntimeTarget = runtimeTargetFromBaseline(baseline, currentGain, requestedSteps)
+            gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+            gainStateStore.writeUserBaselineGainSteps(deviceKey, requestedSteps)
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
+            trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+            trace.stage(Ew300OperationStage.FINAL_READBACK)
+            transport.markRuntimeVerified()
+            return@record Ew300PlaybackGainResult.Success(requestedSteps / Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB)
+        }
+        trace.markBeforeFirstWrite(transport.permissionRequestCount)
+        trace.stage(Ew300OperationStage.WRITING)
+        if (!transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, targetGain)) {
+            pendingRuntimeTarget = null
+            gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+            gainStateStore.writeUserBaselineGainSteps(deviceKey, currentSteps)
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.UNKNOWN
+            return@record Ew300PlaybackGainResult.TransferFailed(
+                "EW300 did not accept the output-gain change. No Save command was sent.",
+            )
+        }
+        val volatileGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        if (volatileGain == null || !volatileGain.contentEquals(targetGain)) {
+            pendingRuntimeTarget = null
+            gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+            gainStateStore.writeUserBaselineGainSteps(deviceKey, currentSteps)
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.UNKNOWN
+            return@record Ew300PlaybackGainResult.VerificationFailed(
+                "EW300 output-gain readback did not match the requested value.",
+            )
+        }
+        pendingRuntimeTarget = runtimeTargetFromBaseline(baseline, targetGain, requestedSteps)
+        gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+        gainStateStore.writeUserBaselineGainSteps(deviceKey, requestedSteps)
+        mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
+        trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        trace.stage(Ew300OperationStage.FINAL_READBACK)
+        transport.markRuntimeVerified()
+        return@record Ew300PlaybackGainResult.Success(requestedSteps / Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB)
+    }
+
+    /**
+     * Explicit one-Save persistence of the exact runtime target verified in this session.
+     * A fresh comparison precedes the single Save; an uncertain Save is never replayed.
+     */
+    suspend fun saveRuntime(): Ew300RuntimeSaveResult = record("SAVE_RUNTIME") { trace ->
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        val target = pendingRuntimeTarget
+            ?: return@record Ew300RuntimeSaveResult.NotSuitable(
+                "No verified runtime change is pending in this session. Read the DAC and reapply before saving.",
+            )
+        val deviceKey = transport.deviceFingerprintKey
+        if (deviceKey == null || deviceKey != target.deviceFingerprintKey ||
+            transport.sessionGeneration != target.sessionGeneration
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.UNKNOWN
+            return@record Ew300RuntimeSaveResult.NotSuitable(
+                "The runtime target belongs to an earlier USB session. Read the DAC again; no Save was sent.",
+            )
+        }
+        val currentBands = readWireBands()
+        val currentGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        val protocolFlags = transport.readRegister(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+        val expectedBands = expectedRuntimeBands(target)
+        if (currentBands != expectedBands || currentGain == null || protocolFlags == null ||
+            !Ew300Protocol.globalGainMatches(currentGain, target.gainSteps, protocolFlags)
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.RUNTIME_ONLY
+            return@record Ew300RuntimeSaveResult.NotSuitable(
+                "The live EW300 state changed after the runtime Apply. No Save was sent; read the DAC again.",
+            )
+        }
+        trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVING
+        val sessionGenerationBeforeSave = transport.sessionGeneration
+        val detachGenerationBeforeSave = transport.detachGeneration
+        if (!transport.commit()) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED
+            return@record Ew300RuntimeSaveResult.TransferFailed(
+                "EW300 Save was not confirmed. It may have completed; reconnect and read the DAC before any retry.",
+            )
+        }
+        trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
+        if (!recordCommitBoundary(
+                trace = trace,
+                expectedFingerprint = deviceKey,
+                sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+                detachGenerationBeforeSave = detachGenerationBeforeSave,
+            )
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED
+            return@record Ew300RuntimeSaveResult.VerificationFailed(
+                "EW300 Save returned on an unverified USB session. The Save may have completed; stop and read before any later write.",
+            )
+        }
+        trace.stage(Ew300OperationStage.FINAL_READBACK)
+        val finalBands = Ew300ReadbackRetry.read(
+            read = { readWireBands() },
+            matches = { it == expectedBands },
+        )
+        val finalGain = Ew300ReadbackRetry.read(
+            read = { transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER) },
+            matches = { gain -> gain != null && Ew300Protocol.globalGainMatches(gain, target.gainSteps, protocolFlags) },
+        )
+        if (finalBands != expectedBands || finalGain == null ||
+            !Ew300Protocol.globalGainMatches(finalGain, target.gainSteps, protocolFlags)
+        ) {
+            pendingRuntimeTarget = null
+            mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED
+            return@record Ew300RuntimeSaveResult.VerificationFailed(
+                "EW300 Save could not be verified by final readback. Read the DAC before any later action.",
+            )
+        }
+        pendingRuntimeTarget = null
+        gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+        gainStateStore.writeUserBaselineGainSteps(deviceKey, target.gainSteps)
+        mutableRuntimePersistence.value = Ew300RuntimePersistenceState.SAVED_THIS_SESSION
+        return@record Ew300RuntimeSaveResult.Verified
+    }
+
+    /** Parity-only fixed A/B shelf state; zero Save and exact volatile readback. */
+    suspend fun applyShelfTestTarget(target: Ew300ShelfTestTarget): Ew300ShelfTestResult =
+        record("SHELF_TEST") { trace ->
+            trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+            val deviceKey = transport.deviceFingerprintKey
+                ?: return@record Ew300ShelfTestResult.DeviceUnavailable(
+                    "The exact EW300 device fingerprint is unavailable.",
+                )
+            if (!experimentalShelfEnabled) {
+                return@record Ew300ShelfTestResult.NotSuitable(
+                    "Native shelf A/B states are available only in the parity package.",
+                )
+            }
+            if (!mutationAuthorized(deviceKey)) {
+                return@record Ew300ShelfTestResult.NotSuitable(
+                    "EW300 shelf A/B states are unavailable for this exact device identity.",
+                )
+            }
+            val baseline = transactionCoordinator.captureBaseline()
+                ?: return@record Ew300ShelfTestResult.DeviceUnavailable(
+                    "Could not read the complete EW300 state before the shelf A/B target.",
+                )
+            val targetBands = target.bands()
+            val wires = targetBands.map { band ->
+                runCatching {
+                    Ew300Protocol.encodeBand(band, allowExperimentalShelf = true)
+                }.getOrElse {
+                    return@record Ew300ShelfTestResult.NotSuitable(
+                        it.message ?: "The shelf A/B target is not representable.",
+                    )
+                }.let { (gain, q) -> Ew300WireBandPair(gain, q) }
+            }
+            trace.markBeforeFirstWrite(transport.permissionRequestCount)
+            trace.stage(Ew300OperationStage.WRITING)
+            wires.forEachIndexed { index, wire ->
+                if (!transport.writeRegister(Ew300Protocol.bandRegister(index), wire.gain) ||
+                    !transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, wire.q)
+                ) {
+                    return@record if (transactionCoordinator.restoreVolatile(baseline)) {
+                        Ew300ShelfTestResult.TransferFailed(
+                            "EW300 stopped accepting the shelf A/B target; the original state was restored.",
+                        )
+                    } else {
+                        Ew300ShelfTestResult.TransferFailed(
+                            "EW300 stopped accepting the shelf A/B target and restoration failed; reconnect and read before any retry.",
+                        )
+                    }
+                }
+            }
+            if (readWireBands() != wires) {
+                return@record if (transactionCoordinator.restoreVolatile(baseline)) {
+                    Ew300ShelfTestResult.VerificationFailed(
+                        "EW300 shelf A/B readback did not match; the original state was restored.",
+                    )
+                } else {
+                    Ew300ShelfTestResult.VerificationFailed(
+                        "EW300 shelf A/B readback did not match and restoration failed; reconnect and read.",
+                    )
+                }
+            }
+            trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+            trace.stage(Ew300OperationStage.FINAL_READBACK)
+            transport.markRuntimeVerified()
+            Ew300ShelfTestResult.Verified(target)
+        }
 
     suspend fun flash(profile: OpraEqProfile): Kt02h20FlashResult = record("FLASH") { trace ->
         lastSuccessfulFlashBaseline = null
@@ -142,7 +458,16 @@ class Ew300Flasher(
                 "Persistent EW300 Flash is unavailable for this device identity or hardware profile.",
             )
         }
-        val representation = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)) {
+        val hasNativeShelf = experimentalShelfEnabled && profile.bands.orEmpty().any {
+            it.type == "low_shelf" || it.type == "high_shelf"
+        }
+        // A shelf profile inside the prequalified envelope keeps its native type 3/4 words.
+        // Anything else is fitted to the five Peak bands with the shared SIMGOT_EW300 optimizer,
+        // so a library profile never fails only because its shelf sits outside that envelope.
+        val nativeShelf = if (hasNativeShelf) nativeShelfRepresentation(profile) else null
+        val representation = nativeShelf ?: when (
+            val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)
+        ) {
             is FiveBandOptimizationResult.NotSuitable -> return Kt02h20FlashResult.NotSuitable(result.reason)
             is FiveBandOptimizationResult.Ready -> result.representation
         }
@@ -179,7 +504,9 @@ class Ew300Flasher(
             )
         }
         val targetWires = target.map { band ->
-            runCatching { Ew300Protocol.encodeBand(band) }.getOrElse {
+            runCatching {
+                Ew300Protocol.encodeBand(band, allowExperimentalShelf = experimentalShelfEnabled)
+            }.getOrElse {
                 return Kt02h20FlashResult.NotSuitable(it.message ?: "EW300 band is not representable.")
             }
         }
@@ -206,7 +533,7 @@ class Ew300Flasher(
                 )
             }
         }
-        if (verify(target) != null) {
+        if (verify(target, allowExperimentalShelf = experimentalShelfEnabled) != null) {
             return restoreBeforeCommit(
                 baseline = baseline,
                 reason = "EW300 volatile PEQ readback did not match before Save.",
@@ -248,7 +575,7 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.FINAL_READBACK)
-        val finalReadback = reconcileFinalReadback(target, targetGain)
+        val finalReadback = reconcileFinalReadback(target, targetGain, experimentalShelfEnabled)
         if (finalReadback.bandFailure != null) {
             val verificationFailure = finalReadback.bandFailure
             return Kt02h20FlashResult.VerificationFailed(
@@ -690,6 +1017,9 @@ class Ew300Flasher(
                 Ew300EditorApplyResult.Verified,
                 Ew300RestorationResult.Verified,
                 is Ew300PlaybackGainResult.Success,
+                is Ew300RuntimeApplyResult.Verified,
+                Ew300RuntimeSaveResult.Verified,
+                is Ew300ShelfTestResult.Verified,
                 -> true
                 else -> false
             }
@@ -717,6 +1047,55 @@ class Ew300Flasher(
                 ),
             )
         }
+    }
+
+    private fun runtimeTargetFromBaseline(
+        baseline: Ew300RawBaseline,
+        gain: ByteArray,
+        gainSteps: Int,
+    ): Ew300RuntimeTarget {
+        require(baseline.isComplete())
+        val registers = buildMap {
+            baseline.bands().forEachIndexed { index, (bandGain, q) ->
+                put(Ew300Protocol.bandRegister(index), bandGain.copyOf())
+                put(Ew300Protocol.bandRegister(index) + 1, q.copyOf())
+            }
+            put(Ew300Protocol.GLOBAL_GAIN_REGISTER, gain.copyOf())
+        }
+        return Ew300RuntimeTarget(
+            deviceFingerprintKey = baseline.deviceFingerprintKey,
+            sessionGeneration = transport.sessionGeneration,
+            detachGeneration = transport.detachGeneration,
+            registers = registers,
+            gainSteps = gainSteps,
+        )
+    }
+
+    private fun expectedRuntimeBands(target: Ew300RuntimeTarget): List<Ew300WireBandPair> = buildList {
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            val gain = target.registers[Ew300Protocol.bandRegister(index)] ?: return emptyList()
+            val q = target.registers[Ew300Protocol.bandRegister(index) + 1] ?: return emptyList()
+            add(Ew300WireBandPair(gain.copyOf(), q.copyOf()))
+        }
+    }
+
+    private suspend fun readWireBands(): List<Ew300WireBandPair>? = buildList {
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            val gain = transport.readRegister(Ew300Protocol.bandRegister(index)) ?: return null
+            val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1) ?: return null
+            if (gain.size != 4 || q.size != 4) return null
+            add(Ew300WireBandPair(gain, q))
+        }
+    }
+
+    private data class Ew300WireBandPair(
+        val gain: ByteArray,
+        val q: ByteArray,
+    ) {
+        override fun equals(other: Any?): Boolean = other is Ew300WireBandPair &&
+            gain.contentEquals(other.gain) && q.contentEquals(other.q)
+
+        override fun hashCode(): Int = 31 * gain.contentHashCode() + q.contentHashCode()
     }
 
     private fun expectedRegisters(
@@ -771,6 +1150,21 @@ class Ew300Flasher(
         is Ew300PlaybackGainResult.DeviceUnavailable -> reason
         is Ew300PlaybackGainResult.TransferFailed -> reason
         is Ew300PlaybackGainResult.VerificationFailed -> reason
+        is Ew300RuntimeApplyResult.InvalidPlan -> reason
+        is Ew300RuntimeApplyResult.StaleBaseline -> reason
+        is Ew300RuntimeApplyResult.DeviceUnavailable -> reason
+        is Ew300RuntimeApplyResult.TransferFailed -> reason
+        is Ew300RuntimeApplyResult.VerificationFailed -> reason
+        is Ew300RuntimeApplyResult.ConfirmationRequired ->
+            "The reviewed EQ has ${cautionCount} caution(s); confirm before applying."
+        is Ew300RuntimeSaveResult.NotSuitable -> reason
+        is Ew300RuntimeSaveResult.DeviceUnavailable -> reason
+        is Ew300RuntimeSaveResult.TransferFailed -> reason
+        is Ew300RuntimeSaveResult.VerificationFailed -> reason
+        is Ew300ShelfTestResult.NotSuitable -> reason
+        is Ew300ShelfTestResult.DeviceUnavailable -> reason
+        is Ew300ShelfTestResult.TransferFailed -> reason
+        is Ew300ShelfTestResult.VerificationFailed -> reason
         else -> null
     }
 
@@ -779,7 +1173,10 @@ class Ew300Flasher(
         is Kt02h20FlatResetResult.Success,
         Ew300EditorApplyResult.Verified,
         Ew300RestorationResult.Verified,
-        is Ew300PlaybackGainResult.Success -> Ew300OperationOutcome.SUCCESS
+        is Ew300PlaybackGainResult.Success,
+        is Ew300RuntimeApplyResult.Verified,
+        Ew300RuntimeSaveResult.Verified,
+        is Ew300ShelfTestResult.Verified -> Ew300OperationOutcome.SUCCESS
         is Kt02h20FlashResult.NotSuitable,
         is Kt02h20FlatResetResult.NotSuitable,
         is Ew300EditorApplyResult.InvalidPlan,
@@ -807,10 +1204,31 @@ class Ew300Flasher(
         is Ew300PlaybackGainResult.DeviceUnavailable -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
         is Ew300PlaybackGainResult.TransferFailed -> Ew300OperationOutcome.TRANSFER_FAILED
         is Ew300PlaybackGainResult.VerificationFailed -> Ew300OperationOutcome.VERIFICATION_FAILED
+        is Ew300RuntimeApplyResult.InvalidPlan,
+        is Ew300RuntimeSaveResult.NotSuitable,
+        -> Ew300OperationOutcome.NOT_SUITABLE
+        is Ew300RuntimeApplyResult.DeviceUnavailable,
+        is Ew300RuntimeSaveResult.DeviceUnavailable,
+        -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
+        is Ew300RuntimeApplyResult.TransferFailed,
+        is Ew300RuntimeSaveResult.TransferFailed,
+        -> Ew300OperationOutcome.TRANSFER_FAILED
+        is Ew300RuntimeApplyResult.VerificationFailed,
+        is Ew300RuntimeSaveResult.VerificationFailed,
+        -> Ew300OperationOutcome.VERIFICATION_FAILED
+        is Ew300RuntimeApplyResult.StaleBaseline -> Ew300OperationOutcome.STALE_BASELINE
+        is Ew300RuntimeApplyResult.ConfirmationRequired -> Ew300OperationOutcome.CONFIRMATION_REQUIRED
+        is Ew300ShelfTestResult.NotSuitable -> Ew300OperationOutcome.NOT_SUITABLE
+        is Ew300ShelfTestResult.DeviceUnavailable -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
+        is Ew300ShelfTestResult.TransferFailed -> Ew300OperationOutcome.TRANSFER_FAILED
+        is Ew300ShelfTestResult.VerificationFailed -> Ew300OperationOutcome.VERIFICATION_FAILED
         else -> Ew300OperationOutcome.UNKNOWN
     }
 
-    private suspend fun verify(expected: List<Kt02h20Band>): VerificationFailure? {
+    private suspend fun verify(
+        expected: List<Kt02h20Band>,
+        allowExperimentalShelf: Boolean = false,
+    ): VerificationFailure? {
         expected.indices.forEach { index ->
             val gain = transport.readRegister(Ew300Protocol.bandRegister(index))
                 ?: return VerificationFailure(index, expected[index], null)
@@ -820,7 +1238,9 @@ class Ew300Flasher(
             // Verify the device's encoded fields, not the display-layer Double values. The
             // EW300 stores integer tenths/thousandths, so 0.7 and 0.7000000000000001 are the
             // same hardware value even though Kotlin data-class equality treats them as distinct.
-            val expectedWire = runCatching { Ew300Protocol.encodeBand(expected[index]) }.getOrNull()
+            val expectedWire = runCatching {
+                Ew300Protocol.encodeBand(expected[index], allowExperimentalShelf)
+            }.getOrNull()
             val matchesWire = expectedWire != null &&
                 expectedWire.first.contentEquals(gain) &&
                 expectedWire.second.contentEquals(q)
@@ -840,10 +1260,11 @@ class Ew300Flasher(
     private suspend fun reconcileFinalReadback(
         expected: List<Kt02h20Band>,
         expectedGain: ByteArray,
+        allowExperimentalShelf: Boolean = false,
     ): FinalReadback = Ew300ReadbackRetry.read(
         read = {
             FinalReadback(
-                bandFailure = verify(expected),
+                bandFailure = verify(expected, allowExperimentalShelf),
                 gain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER),
             )
         },
@@ -866,6 +1287,41 @@ class Ew300Flasher(
 
     private fun completeBands(bands: List<Kt02h20Band>): List<Kt02h20Band> =
         bands + List(Ew300Protocol.BAND_COUNT - bands.size) { Kt02h20Band("peak_dip", 1000.0, 0.0, 1.0) }
+
+    private fun nativeShelfRepresentation(
+        profile: OpraEqProfile,
+    ): FiveBandRepresentation? {
+        val source = profile.bands.orEmpty()
+        if (source.isEmpty() || source.size > Ew300Protocol.BAND_COUNT) return null
+        val converted = source.map { band ->
+            val type = band.type ?: return null
+            if (type !in setOf("peak_dip", "low_shelf", "high_shelf")) return null
+            Kt02h20Band(
+                type = type,
+                frequencyHz = band.frequency ?: return null,
+                gainDb = band.gainDb ?: return null,
+                q = band.q ?: return null,
+            )
+        }
+        val target = completeBands(converted)
+        target.forEach { band ->
+            runCatching {
+                Ew300Protocol.encodeBand(band, allowExperimentalShelf = true)
+            }.getOrElse { return null }
+        }
+        return FiveBandRepresentation(
+            bands = target,
+            playbackGainDb = 0.0,
+            fidelity = DevicePresetFidelity.OPTIMIZED,
+            rmsErrorDb = 0.0,
+            maxAbsoluteErrorDb = 0.0,
+            usesGeneratedHeadroom = false,
+            representationVersion = HardwareEqDeviceSpecs.SIMGOT_EW300.representationVersion,
+            sourceBandCount = source.size,
+            usedResponseFit = false,
+            usesNativeQuantization = true,
+        )
+    }
 
     private fun formatDb(value: Double): String = String.format(java.util.Locale.US, "%.2f", value)
 }

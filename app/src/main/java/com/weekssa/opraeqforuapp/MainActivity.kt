@@ -184,6 +184,11 @@ class MainActivity : ComponentActivity() {
         onRunEw300CapabilityBatch = viewModel::runEw300CapabilityBatch,
         onAdvanceEw300PersistenceQualification = viewModel::advanceEw300PersistenceQualification,
         onSetEw300PlaybackGain = viewModel::setEw300PlaybackGain,
+        onSaveEw300Runtime = viewModel::saveEw300Runtime,
+        onSetEw300VolumeLevel = viewModel::setEw300VolumeLevel,
+        onRefreshEw300Uac = viewModel::refreshEw300Uac,
+        onSetEw300MicrophoneMuted = viewModel::setEw300MicrophoneMuted,
+        onApplyEw300ShelfTestTarget = viewModel::applyEw300ShelfTestTarget,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())

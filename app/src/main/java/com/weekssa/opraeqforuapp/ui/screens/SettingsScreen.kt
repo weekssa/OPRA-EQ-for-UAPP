@@ -46,6 +46,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.OutputCategory
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -86,6 +87,8 @@ fun SettingsScreen(
     onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
     onDirectFiioJa11FlashEnabledChange: (Boolean) -> Unit,
     onDirectEw300FlashEnabledChange: (Boolean) -> Unit,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onConnectEw300: () -> Unit = {},
     hiddenCanonicalProfileIds: Set<String>,
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
     onMessage: (String) -> Unit,
@@ -138,6 +141,23 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
+        if (BuildConfig.EW300_ENGINEERING_CONTROLS) {
+            Ew300ParitySetup(
+                appPreferences = appPreferences,
+                ew300ConnectionState = ew300ConnectionState,
+                onUseEw300Target = {
+                    onExportTargetChange(ExportDevice.SIMGOT_EW300, true)
+                    onActiveExportTargetChange(ExportDevice.SIMGOT_EW300)
+                    onMessage("SIMGOT EW300 DSP is now the active EQ target in this parity build.")
+                },
+                onEnableDirectFlash = {
+                    onDirectEw300FlashEnabledChange(true)
+                    onMessage("Direct Flash is enabled for SIMGOT EW300 DSP.")
+                },
+                onConnect = onConnectEw300,
+            )
+        }
+
         SectionTitle("Output")
         Text(
             "Output behavior",
@@ -194,7 +214,7 @@ fun SettingsScreen(
             modifier = Modifier.padding(bottom = 6.dp),
         )
         Text(
-            text = "Direct Flash writes only the EQ transaction you explicitly request. My DAC device controls are shown separately and only for capabilities established for the connected model.",
+            text = "Direct Flash writes only the EQ transaction you explicitly request. A hardware DAC must be the active EQ target, its Direct Flash switch must be on, and the device must be connected; My EQs and the headphone screen name the exact missing step. My DAC device controls are shown separately and only for capabilities established for the connected model.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 10.dp),
@@ -498,6 +518,8 @@ private fun OutputOption(
                     text = when (device) {
                         ExportDevice.BLACK_PEARL -> "Larger EQs are optimized to 10 bands"
                         ExportDevice.FIIO_JA11 -> "Larger EQs are optimized to 5 bands"
+                        ExportDevice.SIMGOT_EW300 ->
+                            "Shelf-free EQs use five Peak bands; native shelves inside the -6 dB / Q 0.707 envelope keep their type 3/4 words; anything else is fitted to five Peaks"
                         else -> "EQ Library adapts the source to this device's hardware capabilities"
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -894,3 +916,99 @@ private fun eqLibraryCatalogFailureMessage(reason: CatalogRefreshFailureReason):
     CatalogRefreshFailureReason.InvalidCatalog -> "The downloaded EQ Library catalog could not be validated. Your last known-good library remains unchanged."
     CatalogRefreshFailureReason.Storage -> "EQ Library couldn’t save the refreshed catalog on this device."
 }
+
+@Composable
+private fun Ew300ParitySetup(
+    appPreferences: AppPreferences,
+    ew300ConnectionState: Kt02h20ConnectionState,
+    onUseEw300Target: () -> Unit,
+    onEnableDirectFlash: () -> Unit,
+    onConnect: () -> Unit,
+) {
+    val targetReady = appPreferences.exportTargets.activeTarget == ExportDevice.SIMGOT_EW300
+    val flashReady = appPreferences.directEw300FlashEnabled
+    val connected = ew300ConnectionState is Kt02h20ConnectionState.Connected
+    val allReady = targetReady && flashReady && connected
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
+        Text(
+            "Parity setup · Flash to SIMGOT EW300",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            "This panel exists only in the ew300parity test build. A library EQ can be flashed only when all three steps show Done; nothing here is enabled silently.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp, bottom = 4.dp),
+        )
+        ParitySetupStep(
+            index = 1,
+            title = "Active output",
+            value = if (targetReady) {
+                "SIMGOT EW300 DSP · Done"
+            } else {
+                "Current: ${appPreferences.exportTargets.activeTarget.displayName} · not the EW300"
+            },
+            actionLabel = if (targetReady) null else "Use EW300",
+            onAction = onUseEw300Target,
+        )
+        ParitySetupStep(
+            index = 2,
+            title = "Direct Flash",
+            value = if (flashReady) "Enabled · Done" else "Off · Flash stays disabled",
+            actionLabel = if (flashReady) null else "Enable Direct Flash",
+            onAction = onEnableDirectFlash,
+        )
+        ParitySetupStep(
+            index = 3,
+            title = "Connection",
+            value = when (ew300ConnectionState) {
+                is Kt02h20ConnectionState.Connected -> "Connected · Done"
+                is Kt02h20ConnectionState.Connecting -> "Connecting…"
+                is Kt02h20ConnectionState.PermissionRequired -> "USB permission required"
+                is Kt02h20ConnectionState.Error -> "Error · ${ew300ConnectionState.message}"
+                is Kt02h20ConnectionState.Disconnected -> "Not connected"
+            },
+            actionLabel = when {
+                connected -> null
+                ew300ConnectionState is Kt02h20ConnectionState.Connecting -> null
+                else -> "Connect EW300"
+            },
+            onAction = onConnect,
+        )
+        Text(
+            if (allReady) {
+                "Ready · Flash actions are enabled for saved EQs and managed profiles."
+            } else {
+                "Flash stays disabled until every step shows Done. The reason is shown next to each Flash action."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = if (allReady) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
+    }
+}
+
+@Composable
+private fun ParitySetupStep(
+    index: Int,
+    title: String,
+    value: String,
+    actionLabel: String?,
+    onAction: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("$index. $title", style = MaterialTheme.typography.titleSmall)
+            Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (actionLabel != null) {
+            TextButton(onClick = onAction) { Text(actionLabel) }
+        }
+    }
+}
+

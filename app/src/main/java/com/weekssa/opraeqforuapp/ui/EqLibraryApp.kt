@@ -258,6 +258,11 @@ fun EqLibraryApp(
     val onRunEw300CapabilityBatch = actions.onRunEw300CapabilityBatch
     val onAdvanceEw300PersistenceQualification = actions.onAdvanceEw300PersistenceQualification
     val onSetEw300PlaybackGain = actions.onSetEw300PlaybackGain
+    val onSaveEw300Runtime = actions.onSaveEw300Runtime
+    val onSetEw300VolumeLevel = actions.onSetEw300VolumeLevel
+    val onRefreshEw300Uac = actions.onRefreshEw300Uac
+    val onSetEw300MicrophoneMuted = actions.onSetEw300MicrophoneMuted
+    val onApplyEw300ShelfTestTarget = actions.onApplyEw300ShelfTestTarget
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -1129,6 +1134,9 @@ fun EqLibraryApp(
                             fiioJa11DeviceState = state.fiioJa11DeviceState,
                             ja11DcrTuningState = state.ja11DcrTuningState,
                             ew300PlaybackGainState = state.ew300PlaybackGainState,
+                            ew300RuntimePersistence = state.ew300RuntimePersistence,
+                            ew300RuntimeSaveState = state.ew300RuntimeSaveState,
+                            ew300UacState = state.ew300UacState,
                             onConnectDac = onConnectDacForMyDac,
                             onOpenBlackPearlEditor = onOpenBlackPearlEditor,
                             onCloseBlackPearlEditor = onCloseMyDacEditor,
@@ -1183,6 +1191,11 @@ fun EqLibraryApp(
                             onRunEw300CapabilityBatch = onRunEw300CapabilityBatch,
                             onAdvanceEw300PersistenceQualification = onAdvanceEw300PersistenceQualification,
                             onSetEw300PlaybackGain = onSetEw300PlaybackGain,
+                            onSaveEw300Runtime = onSaveEw300Runtime,
+                            onSetEw300VolumeLevel = onSetEw300VolumeLevel,
+                            onRefreshEw300Uac = onRefreshEw300Uac,
+                            onSetEw300MicrophoneMuted = onSetEw300MicrophoneMuted,
+                            onApplyEw300ShelfTestTarget = onApplyEw300ShelfTestTarget,
                             onMessage = ::showMessage,
                             onOperationStatus = ::showOperationStatus,
                                 modifier = Modifier.fillMaxSize(),
@@ -1209,7 +1222,11 @@ fun EqLibraryApp(
                                     onFlashFiioJa11FromMyDac(profile)
                                 }
                             },
-                            ew300ConnectionState = ew300ConnectionState,
+                            ew300ConnectionState = if (appPreferences.directEw300FlashEnabled) {
+                                ew300ConnectionState
+                            } else {
+                                com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState.Disconnected
+                            },
                             onFlashEw300Profile = { profile ->
                                 flashImmediateWithFeedback(ExportDevice.SIMGOT_EW300) {
                                     onFlashEw300FromMyDac(profile)
@@ -1246,6 +1263,8 @@ fun EqLibraryApp(
                             onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
                             onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
                             onDirectEw300FlashEnabledChange = onDirectEw300FlashEnabledChange,
+                            ew300ConnectionState = ew300ConnectionState,
+                            onConnectEw300 = onConnectEw300,
                             hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                             onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
                             onMessage = ::showMessage,

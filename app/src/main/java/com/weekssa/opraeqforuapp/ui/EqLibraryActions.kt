@@ -13,6 +13,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11DefaultsRequest
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestTarget
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -77,6 +78,11 @@ class EqLibraryActions(
     val onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     val onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     val onSetEw300PlaybackGain: (Double) -> Unit,
+    val onSaveEw300Runtime: () -> Unit = {},
+    val onSetEw300VolumeLevel: (Int) -> Unit = {},
+    val onRefreshEw300Uac: () -> Unit = {},
+    val onSetEw300MicrophoneMuted: (Boolean) -> Unit = {},
+    val onApplyEw300ShelfTestTarget: suspend (Ew300ShelfTestTarget) -> String = { "Shelf A/B is unavailable." },
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
     val onConnectFiioJa11: () -> Unit,

@@ -157,6 +157,17 @@ fun MyEqsHomeScreen(
         directEw300FlashEnabled = directEw300FlashEnabled,
         ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
     )
+    val flashUnavailableReason = hardwareFlashUnavailableReason(
+        activeOutput = activeOutput,
+        directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+        directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+        directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+        jcallyJm12Connected = jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected,
+        directEw300FlashEnabled = directEw300FlashEnabled,
+        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
+    )
 
     if (importOpen) {
         PersonalEqImportScreen(
@@ -340,6 +351,25 @@ fun MyEqsHomeScreen(
                 }
             }
             HorizontalDivider()
+        }
+
+        if (hardwareFlashOutput) {
+            item(key = "my-eqs-flash-status") {
+                Text(
+                    text = if (flashUnavailableReason == null) {
+                        "Direct Flash ready · Flash is enabled for saved EQs and managed profiles."
+                    } else {
+                        "Direct Flash unavailable · $flashUnavailableReason"
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (flashUnavailableReason == null) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                )
+            }
         }
 
         if (unclaimedEqs.isNotEmpty()) {

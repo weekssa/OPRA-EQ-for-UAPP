@@ -258,6 +258,7 @@ class SavedEqRepository(
             captureId = id,
             snapshotBundle = snapshotBundle,
             association = association,
+            allowExperimentalShelf = com.weekssa.opraeqforuapp.BuildConfig.EW300_SHELF_EDITOR_ENABLED,
         )
         val now = nowMillis()
         val captureEpochSeconds = draft.captureMetadata.verifiedAtEpochMillis / 1_000L

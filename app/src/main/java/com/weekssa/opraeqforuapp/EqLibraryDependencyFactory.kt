@@ -137,6 +137,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             sourceCommit = BuildConfig.CANDIDATE_SOURCE_SHA,
             appVersion = BuildConfig.VERSION_NAME,
             signerVerified = ReleaseSignatureGate.isPinnedReleaseSigner(appContext),
+            experimentalShelfEnabled = BuildConfig.EW300_SHELF_EDITOR_ENABLED,
         ),
         ew300CapabilityBatch = Ew300CapabilityBatch(ew300Transport),
         ew300PersistenceQualifier = Ew300PersistenceQualifier(

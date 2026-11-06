@@ -307,3 +307,81 @@ A full PASS qualifies Save, Peak persistence, playback-gain persistence, and exa
 for the connected exact fingerprint. A first-cycle exact baseline result is reported as safely not
 persistent and leaves persistent features locked. No outcome qualifies shelf acoustics, firmware,
 bootloader, erase, calibration, recovery, cross-flash, or arbitrary KT02H20-family behavior.
+
+## 2026-11-05 experimental runtime/save boundary and read-only probe
+
+The local EW300 parity experiment adds an opt-in runtime path; it does not change the production
+Peak-only policy or the exact fingerprint.
+
+- `APPLY_RUNTIME` and `SET_GAIN_RUNTIME` write product-allowlisted band/gain registers, verify a
+  same-session readback, send zero `0x53` commands, and record a session-scoped pending target.
+- `SAVE_RUNTIME` re-reads the live EQ/gain, requires an exact match with that pending target, sends
+  exactly one `0x53`, tolerates expected re-enumeration, and verifies the final readback. Any
+  uncertainty clears the pending target and is not replayed.
+- A verified runtime operation is a healthy no-Save completion: the reconnect gate may release a
+  later automatic reconnect. A failed pre-verification operation stays fenced.
+- Explicit absolute runtime gain rebases the tracked EQ delta to zero and records the new user
+  baseline, preventing a later profile Flash from subtracting stale compensation twice.
+- The new `tools/ew300_readonly_probe.py` accepts only `0x52`. Its self-test proves it rejects
+  `0x57`, `0x53`, `0x43`, `0x08`, and `0x54`, and a missing/foreign reply stops the capture.
+
+The 2026-11-05 live capture is a read-only snapshot, not a new physical transaction. Identity
+`31B2:0111`, manufacturer `LE XIAN`, product `SIMGOT EW300 DSP`, HID interface 3; firmware bytes
+decode `1.0.0`; all 256 registers were read; every emitted command was `0x52`; the unit currently
+reports flat five-band Peak EQ and 0 gain. Capture file SHA-256
+`030a38cd6cfd75661c9c935e509f7cbcd358747c131d91aa80314838bb672d71`; internal capture SHA-256
+`f54de03cd8ff0a6a104b54936f130346dd0d086cf7ecebe5178d1bfe094bf17a`.
+
+Native Low Shelf / High Shelf type bytes remain transport evidence only. The fixed 250 Hz and
+4 kHz, -6 dB, Q 0.707 research targets are hypotheses for the future owner listening session; no
+acoustic, Q-semantics, or persistence claim follows from a type echo.
+
+## 2026-11-05 five-goal parity evidence
+
+The parity test package adds an EW300-native 0-60 volume mapping, a real UAC1 microphone mute, a
+read-only UAC1 current-rate path, and experimental native shelves. These are test-package features;
+production flags remain false.
+
+- 0-60 volume: 60 = 0 dB, 0 = -60 dB, 1 dB per step, written to both active 0x66 channel bytes.
+  Mac reversible evidence: 00000000 -> level 0 88880000 -> level 30 C4C40000 -> level 60
+  00000000 -> restore 00000000; zero Save. This is an EW300 mapping, not JA11 command 0x02.
+- UAC1 descriptor: one configuration, AudioControl interface 0 subclass 1; microphone feature unit
+  2 (source terminal 0x0201) with master mute; playback AS interface 2 endpoint 0x01
+  (44.1/48/96 kHz); capture AS interface 1 endpoint 0x81 (44.1/48 kHz); HID interface 3.
+  Descriptor SHA-256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907.
+- Microphone mute: UAC1 GET_CUR 0 -> SET_CUR 1 -> verify 1 -> restore 0. This is a real
+  feature-unit control, not a JA11 command or a HID consumer-report switch.
+- Current sample rate: GET_CUR SAMPLING_FREQ_CONTROL to endpoint 0x01 (wIndex 0x0001) returned
+  48000 (80BB00) on the Mac. The app treats a zero result as "not read," not as 0 Hz.
+- UAC mode: no UAC2 alternate or mode selector is present in the exact descriptor. JA11 command
+  0x20 is not reused. Headset-disable has no exact descriptor/HID control; both remain BLOCKED
+  with the descriptor/HID evidence and a vendor-static-analysis next experiment.
+- Native shelves: exact type 3/4 A/B bytes are C4 FF FA 00 / C3 02 03 00 (Low Shelf 250 Hz,
+  -6 dB, Q 0.707) and C4 FF A0 0F / C3 02 04 00 (High Shelf 4 kHz, -6 dB, Q 0.707). Mac
+  reversible test restored the exact flat bytes. Acoustic meaning remains unmeasured until the
+  owner listening test.
+
+## 2026-11-05 chip-first coverage and vendor static pass
+
+Full register/UAC/HID classification is in docs/planning/ew300-ja11-parity/CHIP_MAP.md. All 256
+registers were read; only 0x26-0x2F and 0x66 have a tested write path. UAC1 feature unit 2 is the
+microphone mute (master) and volume (channel 1); unit 7 is output volume; unit 4 returned no usable
+payload. HID 0x01 GET_REPORT failed; HID 0x4B and 0x54 GET_REPORT returned the same ambiguous
+10-byte packet. There is no headset feature unit and no UAC2 alternate.
+
+The official SIMGOT Control APK 1.1.2 (sha256 eec1e6b9...) supports EG280/DEW0S/DEW4U/DEW1U only
+and uses a 64-byte report 0x4B framing, not the EW300 11-byte framing. Its firmware assets
+(firmware.bin f5230b21..., update1.fot 2fd471a2..., ufw f1020ec9...) are family-level only; no
+EW300 version/control table was found. No firmware was flashed. Chip-matrix coverage is 96%, with
+the 4% residual being the two vendor-only control gaps plus unresolved unit-4/0x54 semantics.
+
+## 2026-11-05 exact die: KT0211L
+
+Read-only bootloader CHP (KTM handshake 1e4b544d, CHP d2434850) returned
+`12 40 85 B2 30 32 31 31 4C 43 30 32 3E` → chip ID `0211LC02` = **KT0211L**. The EW300 returned
+normal mode after an owner replug, with the exact flat baseline restored. This is not KT02H20.
+
+KT0211L's public profile is UAC1.0, 24-bit/96 kHz DAC, 24-bit/96 kHz mono ADC microphone input,
+mic preamp/adjustable bias, six GPIOs, up to four function keys, auxiliary ADC, 2-wire, and
+external interrupt. The exact descriptor matches UAC1-only. G3 is **CHIP-LIMITED**; there is no
+UAC2 mode to chase. G2-headset remains open for KT0211L GPIO/key/aux-ADC/mic-bias research.
