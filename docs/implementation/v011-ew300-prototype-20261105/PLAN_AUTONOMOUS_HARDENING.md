@@ -43,8 +43,8 @@ itself is approved and the gate is resealed with it in scope.
 - [x] A3 no code fix warranted: model shows correct single Save and fail-closed rejection
 - [x] B1 vocabulary sheet written (T-045)
 - [x] B2 copy applied: bar selector now says EQ target; duplicate disclaimer removed
-- [ ] C1 M3 audit scored for Settings
-- [ ] C2 M3 audit scored for My DAC
+- [x] C1 M3 audit scored for Settings (4/5)
+- [x] C2 M3 audit scored for My DAC (4/5)
 - [ ] D1 dead code and unused parameters removed
 - [ ] D2 lint warning count recorded before and after
 - [ ] E1 bar-connect-while-other-session test
