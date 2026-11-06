@@ -214,7 +214,7 @@ fun SettingsScreen(
             modifier = Modifier.padding(bottom = 6.dp),
         )
         Text(
-            text = "Direct Flash writes only the EQ transaction you explicitly request. A hardware DAC must be the active EQ target, its Direct Flash switch must be on, and the device must be connected; My EQs and the headphone screen name the exact missing step. My DAC device controls are shown separately and only for capabilities established for the connected model.",
+            text = "Direct Flash writes only the EQ you request. The DAC must be the active target, have Direct Flash on, and be connected.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 10.dp),
@@ -521,7 +521,7 @@ private fun OutputOption(
                         ExportDevice.SIMGOT_EW300 -> if (BuildConfig.EW300_SHELF_EDITOR_ENABLED) {
                             "Shelf-free EQs use five Peak bands; native shelves inside the -6 dB / Q 0.707 envelope keep their type 3/4 words; anything else is fitted to five Peaks"
                         } else {
-                            "Shelf-free EQs use five Peak bands; shelf bands are fitted to those five Peaks and reported as Optimized"
+                            "Five Peak bands · shelf bands fitted and reported as Optimized"
                         }
                         else -> "EQ Library adapts the source to this device's hardware capabilities"
                     },

@@ -25,6 +25,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300UacStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import com.weekssa.opraeqforuapp.ui.Ew300UacUiState
@@ -82,6 +83,7 @@ class Ew300DeviceScreenshotTest {
                                 headsetFeaturePresent = false,
                             ),
                         ),
+                        runtimePersistence = Ew300RuntimePersistenceState.RUNTIME_ONLY,
                         running = false,
                         onRun = {},
                         onShareReadable = {},
@@ -113,6 +115,7 @@ class Ew300DeviceScreenshotTest {
         composeRule.waitForIdle()
         capture("about-expanded.png")
         val limitations = composeRule.onNodeWithText("Device limitations")
+            .performScrollTo()
             .captureToImage()
             .asAndroidBitmap()
         File(dir(), "limitations.png").outputStream().use { stream ->

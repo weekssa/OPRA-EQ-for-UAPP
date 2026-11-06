@@ -13,12 +13,14 @@ import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300UacStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import com.weekssa.opraeqforuapp.ui.Ew300UacUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -45,7 +47,10 @@ class Ew300ProductSurfaceTest {
         return HardwareEqSnapshotState(bundle = bundle, freshness = DacStateFreshness.CURRENT)
     }
 
-    internal fun renderDevice() {
+    internal fun renderDevice(
+        runtimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
+        onSaveRuntime: () -> Unit = {},
+    ) {
         composeRule.setContent {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Ew300DeviceStatus(
@@ -61,6 +66,8 @@ class Ew300ProductSurfaceTest {
                             headsetFeaturePresent = false,
                         ),
                     ),
+                    runtimePersistence = runtimePersistence,
+                    onSaveRuntime = onSaveRuntime,
                     running = false,
                     onRun = {},
                     onShareReadable = {},
@@ -92,8 +99,8 @@ class Ew300ProductSurfaceTest {
         composeRule.onNodeWithText("Startup settings").assertDoesNotExist()
         composeRule.onNodeWithText("Current sample rate").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("96,000 Hz").assertIsDisplayed()
-        composeRule.onNodeWithText("USB Audio Class").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("UAC 1.0").assertIsDisplayed()
+        // The USB audio class is fixed for this device, so it lives in About.
+        composeRule.onNodeWithText("USB audio class").assertDoesNotExist()
 
         composeRule.onNodeWithText("Output gain").assertDoesNotExist()
         composeRule.onNodeWithText("Equalizer").assertDoesNotExist()
@@ -108,12 +115,28 @@ class Ew300ProductSurfaceTest {
     }
 
     @Test
+    fun startupSettingsOffersSaveWhileTheStateIsNotSaved() {
+        var saves = 0
+        renderDevice(
+            runtimePersistence = Ew300RuntimePersistenceState.RUNTIME_ONLY,
+            onSaveRuntime = { saves += 1 },
+        )
+
+        composeRule.onNodeWithText("Startup settings").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Not saved").assertIsDisplayed()
+        composeRule.onNodeWithText("Save").performScrollTo().performClick()
+        composeRule.runOnIdle { assertEquals(1, saves) }
+    }
+
+    @Test
     fun aboutListsIdentityAndTheOneLineLimitations() {
         renderDevice()
 
         composeRule.onNodeWithText("About this DAC").performScrollTo().performClick()
         composeRule.onNodeWithText("SIMGOT EW300 DSP").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("31B2:0111").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("USB audio class").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("UAC 1.0").assertIsDisplayed()
         composeRule.onNodeWithText("Device limitations").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(
             "Headset-remote disable and UAC mode switching are chip-limited; native shelf acoustics are unmeasured; the device accepts a microphone mute request, but no effect on captured audio has been measured.",

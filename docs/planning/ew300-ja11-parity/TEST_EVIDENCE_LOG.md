@@ -489,3 +489,15 @@ Add entries below in chronological order.
 - Restoration: "Reset to flat" with one Save returned Flat, five Peak 1 kHz/0 dB/Q1, gain 0.0 dB.
 - Save count: one target Save plus one restoration Save. No listening test. DAC left flat at 0.0 dB.
 
+
+### T-034 — DEVICE polish: startup Save, fixed USB class moved to About, tighter copy
+
+- Date: 2026-11-06
+- Candidate: com.weekssa.opraeqforuapp.v011beta 0.11.0-beta.1/23, APK 1995927d3adfe70928a44488c5ba876e97e60e67636fb321b8561e50bb199ea1, built 2026-11-06T04:52:07Z, local debug signer.
+- Startup settings now mirrors JA11: when the state is "Not saved" the row carries a Save action that calls the same Save transaction as the EQ tab; "Saved" shows without an action, and an unknown state still renders no row. A Compose test asserts the Save button is present, clickable, and invokes the callback.
+- USB Audio Class moved from USB & System to About as "USB audio class", because the class is fixed for this device and was presented like a settable row. USB & System now holds only "Current sample rate".
+- Copy tightened: the volume dialog reads "60 is the loudest, 0 is silent, one step per dB. Applies until you save."; the Settings Direct Flash help reads "Direct Flash writes only the EQ you request. The DAC must be the active target, have Direct Flash on, and be connected."; the EW300 output subtitle is "Five Peak bands · shelf bands fitted and reported as Optimized".
+- Consistency: rows use the shared JA11 components (DeviceOperationStatusHeader, DeviceSectionTitle, SimpleDeviceSettingRow, ReadOnlyValueRow, ExpandableAboutHeader), sentence-case labels, one action per row, 48 dp touch targets.
+- Validation: JVM 878 tests, 0 failures (04:52:33Z); lint 0 errors / 121 warnings / 2 hints (report 22:57:35 CST); connected v011beta instrumented suite 84/84 on emulator-5554 (BUILD SUCCESSFUL 04:55:17Z). Screenshots recaptured from this APK.
+- No Pixel interaction for this candidate; no Flash or Save was repeated.
+

@@ -769,7 +769,7 @@ internal fun Ew300DeviceStatus(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "60 is the loudest setting and 0 is silent; each step is one dB. Changes apply for this session until you save from the EQ tab.",
+                        "60 is the loudest, 0 is silent, one step per dB. Applies until you save.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
@@ -877,6 +877,14 @@ internal fun Ew300DeviceStatus(
                 Text("Startup settings", style = MaterialTheme.typography.labelLarge)
                 Text(startupLabel, style = MaterialTheme.typography.bodyMedium)
             }
+            if (runtimePersistence == Ew300RuntimePersistenceState.RUNTIME_ONLY) {
+                TextButton(
+                    onClick = onSaveRuntime,
+                    enabled = !runtimeSaveState.running && !operationBusy,
+                ) {
+                    Text(if (runtimeSaveState.running) "Saving…" else "Save")
+                }
+            }
         }
     }
 
@@ -886,10 +894,6 @@ internal fun Ew300DeviceStatus(
         value = uacState.status?.currentSampleRateHz?.let { rate ->
             String.format(Locale.US, "%,d Hz", rate)
         } ?: "Not read",
-    )
-    ReadOnlyValueRow(
-        label = "USB Audio Class",
-        value = uacState.status?.uacVersion ?: "Not read",
     )
 
     DeviceSectionTitle("About")
@@ -903,6 +907,9 @@ internal fun Ew300DeviceStatus(
             ReadOnlyValueRow(label = "Firmware", value = firmware)
         }
         ReadOnlyValueRow(label = "USB identity", value = "31B2:0111")
+        uacState.status?.uacVersion?.let { uacVersion ->
+            ReadOnlyValueRow(label = "USB audio class", value = uacVersion)
+        }
         ReadOnlyValueRow(label = "Filters", value = "Five-band Peak, verified")
         ReadOnlyValueRow(
             label = "Device limitations",
