@@ -23,6 +23,9 @@ PACKAGE = "com.weekssa.opraeqforuapp"
 ACTIVITY = f"{PACKAGE}/.MainActivity"
 FIXTURE_MANUFACTURER = "Release Test"
 FIXTURE_MODEL = "Upgrade Fixture"
+# Settings named this group "Output behavior" before v0.11 and "EQ target" from v0.11. The
+# promotion smoke runs against both the baseline and the candidate, so it accepts either label.
+SETTINGS_TARGET_SECTION = ("Output behavior", "EQ target")
 FIXTURE_EQ_NAME = "Stable Upgrade Fixture"
 FIXTURE_PEQ = "Filter 1: ON PK Fc 100 Hz Gain 1 dB Q 1.0"
 BOUNDS_RE = re.compile(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]")
@@ -247,7 +250,7 @@ def seed_persisted_state(device: Device) -> None:
     device.screenshot("seeded-my-eqs")
 
     device.tap_text(("Settings",))
-    device.wait_text(("Output behavior",), timeout=30)
+    device.wait_text(SETTINGS_TARGET_SECTION, timeout=30)
     device.tap_text(("Manual",))
     assert_checked(device, "Manual")
     device.screenshot("seeded-settings-manual")
@@ -333,7 +336,7 @@ def assert_seeded_state(device: Device, prefix: str) -> None:
     device.wait_text((FIXTURE_EQ_NAME,), timeout=45)
     device.screenshot(f"{prefix}-my-eqs-preserved")
     device.tap_text(("Settings",))
-    device.wait_text(("Output behavior",), timeout=30)
+    device.wait_text(SETTINGS_TARGET_SECTION, timeout=30)
     assert_checked(device, "Manual")
     device.screenshot(f"{prefix}-manual-preserved")
     device.tap_text(("EQ Library",))
@@ -389,7 +392,7 @@ def verify_clean_install(args: argparse.Namespace) -> None:
     device.wait_text(("Sound",), timeout=45)
     device.screenshot("clean-general-eqs")
     device.tap_text(("Settings",))
-    device.wait_text(("Output behavior",), timeout=45)
+    device.wait_text(SETTINGS_TARGET_SECTION, timeout=45)
     device.screenshot("clean-settings")
     device.assert_no_fatal_crash()
     (device.output / "result.txt").write_text(

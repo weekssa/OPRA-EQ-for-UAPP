@@ -112,7 +112,8 @@ OWNS: GATES.md,
   docs/PUBLIC_RELEASE_CHECKLIST.md,
   README.md,
   docs/releases/v0.11.0.md,
-  docs/release-engineering/v0.11.0-stable/
+  docs/release-engineering/v0.11.0-stable/,
+  tools/verify_stable_release_smoke.py
 amendment: 2026-11-06 owner-approved — shared context bar surface, AppContextSurfaces.kt, required by the My EQs / EQ Library stateful bar.
 amendment: 2026-11-06 owner-approved — library export/import slice: EqLibraryBundle.kt,
   EqLibraryBundleImporter.kt, their two JVM test files and LIBRARY_TRANSFER.md, so saved EQs, managed
@@ -129,3 +130,5 @@ amendment: 2026-11-06 owner-approved — the published beta candidate is recorde
   release checklist alongside Project State, the evidence log and the release notes.
 amendment: 2026-11-06 owner-approved — v0.11.0 stable release work: the public README, the curated
   release notes the promotion reads verbatim, and the v0.11.0 release-engineering record.
+amendment: 2026-11-06 owner-approved — the promotion smoke script must accept the Settings group
+  label this release renamed, or the stable gate cannot pass its own upgrade lane.
