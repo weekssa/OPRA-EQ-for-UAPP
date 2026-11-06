@@ -756,3 +756,23 @@ Add entries below in chronological order.
   not a recorded run: no capture of a Connection issue recovery was taken, and whether the owner
   exercised that path or only the ordinary flash-and-connect flow is not established, so the reopen
   itself remains proven at the UI and code level.
+
+### T-054 — v0.11.0 beta candidate signed and published from main
+
+- Source: PR #141 merged as 0a90afeda83af7711acfdba65e1dbd4b207f55cb; exact-head CI green on the
+  merge (build, emulator-ui-test, min-api-smoke, validate, validate-priority-community, CodeQL,
+  Analyze Kotlin).
+- Signed candidate: run 42300790583, artifact 13545155341, diagnostics artifact 13545195381.
+  APK EQ-Library-v0.11.0-beta-0a90afe.apk, SHA-256
+  48c3d7bf82ce0ad3cf656d863844b9620d5e813597b2b843e7e2093e3f50a27b, package
+  com.weekssa.opraeqforuapp, versionName 0.11.0, versionCode 23.
+- Verified after download: APK checksum matches the sidecar, the signer is the pinned release
+  certificate 65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747, and the R8
+  mapping SHA-256 is c720c3b2bce5a711e6cb166788a7d17d60015b000b6dbe916412b62a7d09ce1d.
+- Published by the workflow's own verified publisher to the mobile-test-apk distribution branch
+  (commit "Publish signed mobile test APK from 0a90afe"). That branch is the beta testing lane;
+  /releases/latest still points at v0.10.0 and no public release was created.
+- CI fixes required on the way in: the live versionName had to be strict SemVer (0.11.0) with the
+  beta suffix carried by the v011beta variant; Project State had to declare the candidate; two EW300
+  flow tests had to assert the debug variant's compiled-off surface instead of assuming parity.
+

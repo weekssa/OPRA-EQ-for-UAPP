@@ -32,6 +32,31 @@ EQ Library v0.10.0 is the immutable public stable release and is returned by `/r
 - [x] Goal A was delivered on the exact J035 evidence basis; Goal B remains deferred. The research handoff is preserved and J034/J035 were not modified.
 - [x] Detailed source, candidate, tag, release and public asset provenance: [`release-engineering/v0.9.0-stable/ARTIFACTS.md`](release-engineering/v0.9.0-stable/ARTIFACTS.md).
 
+## v0.11.0 beta candidate (2026-11-06)
+
+- [x] Source: PR #141 merged as `0a90afeda83af7711acfdba65e1dbd4b207f55cb`; exact-head CI (build,
+      emulator-ui-test, min-api-smoke, validate, validate-priority-community, CodeQL, Analyze Kotlin)
+      passed on that merge.
+- [x] Metadata: package `com.weekssa.opraeqforuapp`, versionName `0.11.0`, versionCode `23`,
+      advancing the published v0.10.0 code `22`. The prototype package
+      `com.weekssa.opraeqforuapp.v011beta` stays `0.11.0-beta.1` at the same code.
+- [x] Signed candidate run `42300790583`; signed bundle artifact `13545155341`, emulator
+      diagnostics artifact `13545195381`.
+- [x] Candidate APK `EQ-Library-v0.11.0-beta-0a90afe.apk`, SHA-256
+      `48c3d7bf82ce0ad3cf656d863844b9620d5e813597b2b843e7e2093e3f50a27b`; downloaded independently
+      and matched to its sidecar checksum and the pinned signer
+      `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- [x] R8 mapping SHA-256 `c720c3b2bce5a711e6cb166788a7d17d60015b000b6dbe916412b62a7d09ce1d`.
+- [x] Published to the `mobile-test-apk` beta testing branch by the workflow's verified publisher.
+      This lane does not create a public release and leaves `/releases/latest` at v0.10.0.
+- [ ] Not done, and deliberately: no public GitHub release and no stable promotion. The beta
+      publisher workflow is pinned to the v0.8.0/v0.9.0 tags, so a v0.11.0-beta.1 release page would
+      need its own lane. Recorded as an open item rather than worked around.
+- [ ] Not done: owner hands-on checklist for the EW300 beta line (docs/EW300_DSP_HANDS_ON_CHECKLIST.md
+      records the software evidence; the physical items remain the owner's).
+- Limits stated with the candidate: native shelf acoustics unmeasured and those controls compiled
+  off; no listening or acoustic claim; production-library export needs the release-signed app.
+
 ## Repository release readiness
 
 - [x] Apache-2.0 software license present.

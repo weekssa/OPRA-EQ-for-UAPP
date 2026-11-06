@@ -2,12 +2,19 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-
 Candidate build: **v0.11.0**, versionCode `23`, package `com.weekssa.opraeqforuapp`. It advances the
 published v0.10.0 (code 22) with the EW300 device surface, the My EQs / EQ Library context bar,
 library backup and restore, and the flash read-retry fix. The locally tested prototype package
 `com.weekssa.opraeqforuapp.v011beta` is `0.11.0-beta.1` at the same code. Signed-candidate and
-publication identity are recorded here when the release gate produces them.
+publication identity are recorded under the beta candidate below.
+
+## v0.11.0 beta candidate (2026-11-06)
+
+- Signed candidate: [run 42300790583](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/42300790583), artifacts `13545155341` (signed APK bundle) and `13545195381` (emulator diagnostics), from source `0a90afeda83af7711acfdba65e1dbd4b207f55cb` (PR #141 merge).
+- APK `EQ-Library-v0.11.0-beta-0a90afe.apk`, SHA-256 `48c3d7bf82ce0ad3cf656d863844b9620d5e813597b2b843e7e2093e3f50a27b`, package `com.weekssa.opraeqforuapp`, versionName `0.11.0`, versionCode `23`; the downloaded APK matched its sidecar checksum and the pinned signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- R8 mapping SHA-256 `c720c3b2bce5a711e6cb166788a7d17d60015b000b6dbe916412b62a7d09ce1d`; candidate manifest `candidateTarget=ew300`, capability profile "EW300 exact fingerprint; five-band direct-Hz Peak", test plan docs/EW300_DSP_HANDS_ON_CHECKLIST.md, evidence E001, E043-E048.
+- Published to the `mobile-test-apk` distribution branch by the workflow's verified publisher (`Publish signed mobile test APK from 0a90afe`). This is the beta testing lane, not a public release, and it does not change `/releases/latest`.
+- Limits recorded with the candidate: native shelf acoustics remain unmeasured so those controls stay experimental and compiled off; no acoustic or listening claim is made.
 
 ## v0.10.0 stable release (2026-11-04)
 
