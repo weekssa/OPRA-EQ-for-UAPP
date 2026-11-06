@@ -570,7 +570,8 @@ class UiModernizationFlowsTest {
                 fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
             )
         }
-        composeRule.onNodeWithText("Disconnected · No current device state").assertIsDisplayed()
+        // App target, no live session, no remembered readback: the device block is absent by design.
+        composeRule.onNodeWithText("No DAC attached").assertDoesNotExist()
         composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
         assertRootLabelExists("My EQs")
@@ -973,8 +974,7 @@ class UiModernizationFlowsTest {
             }
         }
 
-        composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("EQ target").assertIsDisplayed()
+        // The bar lives on My EQs / EQ Library; Settings keeps the target group only.
         composeRule.onNodeWithText("Connected · State current").assertIsDisplayed()
         composeRule.onNodeWithText("Open My DAC").performClick()
         composeRule.onNodeWithText("Current hardware EQ").assertIsDisplayed()
@@ -983,6 +983,8 @@ class UiModernizationFlowsTest {
         composeRule.waitForIdle()
         captureV080Screenshot("my-dac-current-fiio-production-shell-fixture-light-100")
         composeRule.onNodeWithContentDescription("Back").performClick()
+        composeRule.onNodeWithText("Connected · State current").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").performClick()
         composeRule.onNodeWithText("EQ target").assertIsDisplayed()
         composeRule.runOnIdle { assertEquals(0, connectRequests) }
     }
@@ -1009,8 +1011,8 @@ class UiModernizationFlowsTest {
             }
         }
 
-        composeRule.onNodeWithText("Permission needed · Allow USB access in My DAC").assertIsDisplayed()
-        composeRule.onNodeWithText("Open My DAC").performClick()
+        composeRule.onNodeWithText("Allow USB access").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("FiiO JA11. Allow USB access. Opens My DAC.").performClick()
         composeRule.onNodeWithText("USB permission required", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Retry connect").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Back").performClick()
@@ -1023,7 +1025,7 @@ class UiModernizationFlowsTest {
             fiioJa11HardwareEqState = fiioJa11CurrentHardwareState().markStale(),
         )
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Disconnected · Last read is historical").assertIsDisplayed()
+        composeRule.onNodeWithText("No DAC attached").assertIsDisplayed()
         composeRule.onNodeWithText("Open My DAC").performClick()
         composeRule.onNodeWithText("Last read hardware EQ").assertIsDisplayed()
         composeRule.onNodeWithText("Last read · User 1 · 5-band PEQ").assertIsDisplayed()
@@ -1062,7 +1064,7 @@ class UiModernizationFlowsTest {
         }
 
         waitForActivityWindowFocus("hardware D-pad recovery route")
-        val openMyDac = composeRule.onNodeWithText("Open My DAC")
+        val openMyDac = composeRule.onNodeWithContentDescription("FiiO JA11. No DAC attached. Opens My DAC.")
         openMyDac.assertIsDisplayed()
         val myEqsTab = composeRule.onNode(
             hasText("My EQs") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
@@ -2824,7 +2826,7 @@ class UiModernizationFlowsTest {
             node.fetchSemanticsNode().config[SemanticsProperties.Focused]
         }.getOrDefault(false)
 
-private fun noOpEqLibraryActions(
+internal fun noOpEqLibraryActions(
     onConnectDacForMyDac: (DacDeviceId) -> Unit = {},
     onApplyFiioJa11Editor: () -> Unit = {},
     onRefreshCatalog: () -> String = { "Fixture catalog is current." },
@@ -2936,7 +2938,7 @@ private fun noOpEqLibraryActions(
         onDirectJcallyJm12FlashEnabledChange = {},
 )
 
-private fun fiioJa11CurrentHardwareState(): HardwareEqSnapshotState {
+internal fun fiioJa11CurrentHardwareState(): HardwareEqSnapshotState {
     val bundle = requireNotNull(
         HardwareEqSnapshotFactory.fiioJa11(
             nativeBands = List(FiioJa11Protocol.BAND_COUNT) { index ->

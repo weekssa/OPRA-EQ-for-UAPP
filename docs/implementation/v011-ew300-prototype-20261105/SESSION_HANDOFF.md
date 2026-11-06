@@ -159,6 +159,82 @@ connected v011beta instrumented suite 84/84 on emulator-5554 (2026-11-06 06:24Z)
   is disconnecting wireless debugging.
 
 
+## Shipped: the stateful context bar (commit on top of bb928d1f)
+
+The bar replaces the old device card on My EQs and EQ Library only. It is the existing target
+selector followed by a device block driven by the active target:
+
+| State | Status line | Action | Action lands on |
+|---|---|---|---|
+| Connected | Connected · State current / Reading / Last read is stale / Waiting for first device read | Open My DAC | My DAC workspace |
+| Connecting | Connecting… | Open My DAC | My DAC workspace |
+| Ready to connect | Not connected | Connect | opens the session |
+| USB permission pending | Allow USB access | Connect | requests access |
+| Session error | Connection issue | Connect (retry) | reconnects |
+| Target DAC not attached | No DAC attached | Open My DAC | My DAC workspace |
+| Direct Flash off | Direct Flash off | Open Settings | Settings |
+
+The card body opens My DAC as its own focusable target with the content description
+"<device>. <status>. Opens My DAC."; the trailing action is a separate 48 dp button with its own
+description. The target picker stays the plain list of outputs enabled in Settings, unannotated.
+A live session, an error, or a remembered readback keeps the device block visible even when the EQ
+target is an app; a device that was never enabled or never seen produces no block at all.
+
+Tests: the four old-contract tests in UiModernizationFlowsTest were rewritten to the table above
+(recognizedDacStaysContextualAndRemainsSeparateFromTheExportTarget,
+productionMyDacContextShowsCurrentReadbackAndReturnsToTheSameRoot,
+productionMyDacContextExplainsUsbPermissionAndKeepsHistoricalStateStale,
+productionMyDacRecoveryStateWarnsAgainstRepeatingAnUnverifiedApply).
+
+Not produced in this pass: the six context-bar screenshots. A Compose capture test was written and
+removed because the shared fixtures it needed (noOpEqLibraryActions, fiioJa11CurrentHardwareState)
+are members of UiModernizationFlowsTest rather than shared top-level helpers; the exact compiler
+output was: "Unresolved reference 'noOpEqLibraryActions'" at ContextBarScreenshotTest.kt:28. The
+states themselves are covered by the instrumented assertions listed above.
+
+## Open work, in priority order
+
+1. **Reset persistence.** Reproduce: reset to flat, capture the app's result line, power-cycle, and
+   check whether the previous EQ returns. If it does, the reset transaction is not reaching the
+   DAC's stored state; compare against the explicit Save path (Ew300Flasher.resetToFlat vs the
+   runtime Save). Do not change the Flash transaction without re-running the JVM suite and one
+   Pixel Save/restore.
+2. **Card removal.** My DAC is now a nav destination, so the status card duplicates it. Migrating
+   the remaining tests that click "Open My DAC" (grep app/src/androidTest for that label) then
+   deleting the card is one change. The navigation rule test already reflects the new contract.
+3. **TalkBack pass.** Not done. Needs the phone: traverse Settings, My DAC and My EQs and confirm
+   each row announces label, value and state, and that the Direct Flash switch is not merged into
+   the DAC row.
+4. **Vocabulary pass** across My DAC and My EQs so "target", "output", "Direct Flash" and "Save"
+   match Settings.
+5. **M3 ten-category audit** of Settings and My DAC with scores recorded, not just claims.
+6. **Production data export path** for Personal and General EQs; only catalog-derived entries
+   migrate today (by re-selecting the same canonical identity).
+
+## How to build, test and capture
+
+- Build: `./tools/codex-android :app:assembleV011beta`
+- Unit tests: `./tools/codex-android :app:testDebugUnitTest`
+- Lint: `./tools/codex-android :app:lintDebug`
+- Instrumented: `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedV011betaAndroidTest`
+  (uninstall both packages first if the run aborts with DELETE_FAILED_INTERNAL_ERROR)
+- Screenshots: install app + androidTest APKs, then
+  `adb shell am instrument -w -e class com.weekssa.opraeqforuapp.ui.screens.Ew300DeviceScreenshotTest
+  com.weekssa.opraeqforuapp.v011beta.test/androidx.test.runner.AndroidJUnitRunner`,
+  then pull /sdcard/Android/data/com.weekssa.opraeqforuapp.v011beta/files/v011-screens/.
+- Gate: run `tools/scope-guard --root .` before every commit; new files must be added to CONTRACT.md
+  and GATES.md and resealed with `--reseal --seal`.
+
+## Process notes
+
+- One writer. Local commits only; no push, PR, merge, release, or signing change was made.
+- Every UI change was validated with JVM + lint + the emulator suite before committing.
+- Hardware claims are limited to what was observed: no listening test, no acoustic claim, no full
+  JA11 parity claim.
+- Device state at pause: the EW300 was left Flat at 0.0 dB with the prototype installed; the owner
+  is disconnecting wireless debugging.
+
+
 ## Attempted and reverted: the stateful context bar
 
 After the tab was removed, a target-driven bar was implemented (target row plus a device block

@@ -17,9 +17,9 @@ open findings and next steps for this branch.
 | Package | com.weekssa.opraeqforuapp.v011beta |
 | Build type | v011beta (release-derived, unminified, update checks off) |
 | APK path | app/build/outputs/apk/v011beta/app-v011beta.apk |
-| APK SHA-256 | 1e97db8e076b78a36eb55acacd905c879b8ba41252b09ca8ea0ad91bcff53a02 |
+| APK SHA-256 | a0a40f897b7a62fa643b7f77238f6e3bd1a679bef9b789d37bcb9b68d12bda3f |
 | Signer SHA-256 | 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer) |
-| Build time | 2026-11-06T05:40:20Z (2026-11-05 23:40:20 CST) |
+| Build time | 2026-11-06 11:52:57 CST |
 
 The on-device base.apk hash matched this SHA-256 after install.
 
@@ -146,3 +146,9 @@ bottom rather than repeating the top.
   after a reset. Reset plus an explicit Save did persist. Treat reset-alone persistence as
   unverified until it is reproduced with a power cycle.
 
+
+## Context bar (shipped)
+
+My EQs and EQ Library now carry the target selector plus a state-driven device block:
+Connect / Open Settings / Open My DAC with the status table in SESSION_HANDOFF.md. Settings keeps
+the full target group and shows no bar. The My DAC root tab stays removed.
