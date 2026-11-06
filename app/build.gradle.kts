@@ -30,8 +30,9 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 22
-        versionName = "0.10.0"
+        versionCode = 23
+        // Main must carry strict SemVer; a beta lane adds its suffix on the variant.
+        versionName = "0.11.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -39,6 +40,13 @@ android {
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
+        // Experimental EW300 parity is opt-in only. Release variants keep every flag false.
+        buildConfigField("boolean", "EW300_PARITY_EXPERIMENT_ENABLED", "false")
+        buildConfigField("boolean", "EW300_SHELF_QUALIFICATION_ENABLED", "false")
+        buildConfigField("boolean", "EW300_SHELF_EDITOR_ENABLED", "false")
+        // Engineering-only surfaces (shelf A/B controls, parity setup panel). Off everywhere by
+        // default; the local research build type opts in. Never part of the product flow.
+        buildConfigField("boolean", "EW300_ENGINEERING_CONTROLS", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "true")
         // v0.9.0 defers the JA11 digital-filter control: the vendor does not expose it for firmware
@@ -60,6 +68,46 @@ android {
         debug {
             buildConfigField("boolean", "JA11_TUNING_ENABLED", "true")
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        }
+        // v0.11 EW300 prototype: release-derived, minified, separately installable package with
+        // the local test signer and no update prompts. It carries the proven EW300 product
+        // surfaces (0-60 volume, microphone mute, current sample rate, runtime Apply vs Save,
+        // library Flash with the five-Peak fallback, read-only UAC status). Native shelf and
+        // engineering-only surfaces stay compiled off.
+        create("v011beta") {
+            initWith(getByName("release"))
+            // Local prototype: unminified so the instrumented suite runs against this exact
+            // variant (same BuildConfig flags as the APK) without R8 keep-rule drift.
+            isMinifyEnabled = false
+            applicationIdSuffix = ".v011beta"
+            versionNameSuffix = "-beta.1"
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
+            buildConfigField("boolean", "EW300_PARITY_EXPERIMENT_ENABLED", "true")
+            buildConfigField("boolean", "EW300_SHELF_QUALIFICATION_ENABLED", "false")
+            buildConfigField("boolean", "EW300_SHELF_EDITOR_ENABLED", "false")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+            matchingFallbacks += listOf("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            testProguardFiles("proguard-rules-beta-test.pro")
+        }
+        // Local engineering build: same package family, but it is the only variant that turns on
+        // the shelf A/B controls and the research setup panel. Never distributed.
+        create("ew300Engineering") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".ew300eng"
+            versionNameSuffix = "-engineering"
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
+            buildConfigField("boolean", "EW300_PARITY_EXPERIMENT_ENABLED", "true")
+            buildConfigField("boolean", "EW300_SHELF_QUALIFICATION_ENABLED", "true")
+            buildConfigField("boolean", "EW300_SHELF_EDITOR_ENABLED", "true")
+            buildConfigField("boolean", "EW300_ENGINEERING_CONTROLS", "true")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+            matchingFallbacks += listOf("debug")
         }
         create("beta") {
             initWith(getByName("release"))
@@ -154,6 +202,18 @@ kotlin {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().withBuildType("v011beta")) { builder ->
+        (builder as? com.android.build.api.variant.HasAndroidTestBuilder)?.enableAndroidTest = true
+    }
+    beforeVariants(selector().withBuildType("ew300Engineering")) { builder ->
+        (builder as? com.android.build.api.variant.HasAndroidTestBuilder)?.enableAndroidTest = true
+    }
+    beforeVariants(selector().withBuildType("release")) { builder ->
+        (builder as? com.android.build.api.variant.HasUnitTestBuilder)?.enableUnitTest = true
+    }
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
     val lifecycleVersion = "2.10.0"
@@ -180,6 +240,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     add("betaImplementation", "androidx.compose.ui:ui-test-manifest")
+    add("v011betaImplementation", "androidx.compose.ui:ui-test-manifest")
+    add("ew300EngineeringImplementation", "androidx.compose.ui:ui-test-manifest")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")

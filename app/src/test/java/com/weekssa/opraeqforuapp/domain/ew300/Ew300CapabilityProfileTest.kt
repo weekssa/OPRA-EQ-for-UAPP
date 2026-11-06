@@ -52,6 +52,34 @@ class Ew300CapabilityProfileTest {
         )
     }
 
+    @Test
+    fun productionFlagsKeepParityAndShelfExposureOff() {
+        val flags = Ew300CapabilityProfile.PRODUCTION_FLAGS
+
+        assertFalse(flags.parityEnabled)
+        assertFalse(flags.shelfQualificationEnabled)
+        assertFalse(flags.shelfEditorEnabled)
+        assertFalse(Ew300CapabilityProfile.exposesShelfEditor(flags, ownerListeningQualified = true))
+    }
+
+    @Test
+    fun shelfEditorRequiresParityQualificationAndListeningEvidence() {
+        val flags = Ew300CapabilityProfile.ExperimentFlags(
+            parityEnabled = true,
+            shelfQualificationEnabled = true,
+            shelfEditorEnabled = true,
+        )
+
+        assertFalse(Ew300CapabilityProfile.exposesShelfEditor(flags, ownerListeningQualified = false))
+        assertTrue(Ew300CapabilityProfile.exposesShelfEditor(flags, ownerListeningQualified = true))
+        assertFalse(
+            Ew300CapabilityProfile.exposesShelfEditor(
+                flags.copy(shelfQualificationEnabled = false, shelfEditorEnabled = false),
+                ownerListeningQualified = true,
+            ),
+        )
+    }
+
     private fun exactFingerprint(): String =
         Ew300CapabilityProfile.QUALIFIED_FINGERPRINT
 }

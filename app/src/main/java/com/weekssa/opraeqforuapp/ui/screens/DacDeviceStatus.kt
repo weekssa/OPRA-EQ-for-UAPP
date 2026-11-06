@@ -496,13 +496,13 @@ private fun fiioControlName(controlId: DacControlId): String = when (controlId) 
 }
 
 @Composable
-private fun DeviceSectionTitle(title: String) {
+internal fun DeviceSectionTitle(title: String) {
     HorizontalDivider(modifier = Modifier.padding(top = 14.dp, bottom = 10.dp))
     Text(title, fontWeight = FontWeight.SemiBold)
 }
 
 @Composable
-private fun SimpleDeviceSettingRow(
+internal fun SimpleDeviceSettingRow(
     label: String,
     value: String,
     enabled: Boolean,
@@ -540,7 +540,7 @@ private fun SimpleDeviceSettingRow(
 }
 
 @Composable
-private fun ReadOnlyValueRow(label: String, value: String) {
+internal fun ReadOnlyValueRow(label: String, value: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -552,7 +552,7 @@ private fun ReadOnlyValueRow(label: String, value: String) {
 }
 
 @Composable
-private fun ExpandableAboutHeader(
+internal fun ExpandableAboutHeader(
     expanded: Boolean,
     onToggle: () -> Unit,
 ) {
@@ -573,7 +573,7 @@ private fun ExpandableAboutHeader(
 }
 
 @Composable
-private fun DeviceInfoLine(
+internal fun DeviceInfoLine(
     label: String,
     value: String,
     origin: DacMetadataOrigin? = null,

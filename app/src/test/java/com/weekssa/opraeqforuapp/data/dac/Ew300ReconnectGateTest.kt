@@ -60,4 +60,26 @@ class Ew300ReconnectGateTest {
         queuedConnectAutomatically()
         assertThat(connectionCount).isEqualTo(1)
     }
+
+    @Test
+    fun verifiedRuntimeCompletionReleasesReconnectWithoutSave() {
+        val gate = Ew300ReconnectGate()
+
+        gate.beginMutation()
+        assertFalse(gate.canAutomaticReconnect())
+        gate.markRuntimeVerified()
+        assertTrue(gate.canAutomaticReconnect())
+        gate.endMutation()
+        assertTrue(gate.canAutomaticReconnect())
+    }
+
+    @Test
+    fun runtimeFailureBeforeVerificationStaysFenced() {
+        val gate = Ew300ReconnectGate()
+
+        gate.beginMutation()
+        gate.endMutation()
+
+        assertFalse(gate.canAutomaticReconnect())
+    }
 }

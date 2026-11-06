@@ -16,6 +16,7 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -26,7 +27,7 @@ class SavedGeneralEqRepository(
     private val selectionCodec: CanonicalEqSelectionCodec = CanonicalEqSelectionCodec(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
-) {
+) : BundleRowSource<GeneralEqTransfer> {
     private val dao = database.savedGeneralEqDao()
 
     /** General EQs in My EQs are global; outputId is retained for source compatibility only. */
@@ -188,6 +189,64 @@ class SavedGeneralEqRepository(
         bands = listOf(OpraBand(type = null, frequency = null, gainDb = null, q = null, slope = null)),
         isVerified = false,
     )
+
+    /** Stored rows for a portable backup. The JSON travels verbatim, never re-encoded. */
+    override suspend fun exportBundleRows(): List<GeneralEqTransfer> = withContext(ioDispatcher) {
+        dao.observeAll().first().map { entity ->
+            GeneralEqTransfer(
+                presetId = entity.presetId,
+                displayName = entity.displayName,
+                category = entity.category,
+                profileJson = entity.profileJson,
+                createdAtMillis = entity.createdAtMillis,
+                updatedAtMillis = entity.updatedAtMillis,
+                canonicalSelectionJson = entity.canonicalSelectionJson,
+            )
+        }
+    }
+
+    /** Restores exported General EQs; an existing preset is left alone, a broken row is reported. */
+    override suspend fun importBundleRows(rows: List<GeneralEqTransfer>): BundleImportOutcome =
+        withContext(ioDispatcher) {
+            var imported = 0
+            var alreadyPresent = 0
+            var skippedKinds = 0
+            val failures = mutableListOf<String>()
+            database.withTransaction {
+                rows.forEach { row ->
+                    if (dao.get(row.presetId) != null) {
+                        alreadyPresent++
+                        return@forEach
+                    }
+                    if (runCatching { GeneralEqCategory.valueOf(row.category) }.isFailure) {
+                        skippedKinds++
+                        return@forEach
+                    }
+                    if (runCatching { snapshotCodec.decode(row.profileJson) }.isFailure) {
+                        failures += "${row.displayName}: the saved EQ data could not be read"
+                        return@forEach
+                    }
+                    dao.upsert(
+                        SavedGeneralEqEntity(
+                            presetId = row.presetId,
+                            displayName = row.displayName,
+                            category = row.category,
+                            profileJson = row.profileJson,
+                            createdAtMillis = row.createdAtMillis,
+                            updatedAtMillis = row.updatedAtMillis,
+                            canonicalSelectionJson = row.canonicalSelectionJson,
+                        ),
+                    )
+                    imported++
+                }
+            }
+            BundleImportOutcome(
+                imported = imported,
+                alreadyPresent = alreadyPresent,
+                skippedKinds = skippedKinds,
+                failures = failures,
+            )
+        }
 
     companion object {
         private fun categoryLabel(category: GeneralEqCategory): String = when (category) {

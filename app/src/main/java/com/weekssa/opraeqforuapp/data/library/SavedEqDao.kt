@@ -10,6 +10,10 @@ interface SavedEqDao {
     @Query("SELECT * FROM saved_eqs ORDER BY updatedAtMillis DESC, entryId ASC")
     fun observeAll(): Flow<List<SavedEqEntity>>
 
+    /** One-shot read for a backup; the stored JSON is carried verbatim. */
+    @Query("SELECT * FROM saved_eqs ORDER BY updatedAtMillis DESC, entryId ASC")
+    suspend fun getAll(): List<SavedEqEntity>
+
     @Query("SELECT * FROM output_saved_eqs WHERE outputId = :outputId ORDER BY selectedAtMillis DESC, entryId ASC")
     fun observeOutputSelections(outputId: String): Flow<List<OutputSavedEqEntity>>
 

@@ -28,6 +28,11 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PlaybackGainResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeApplyResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimeSaveResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestTarget
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -70,6 +75,11 @@ class HardwareEqRepository(
         dacSessionRepository.ew300ConnectionState
     val ew300OperationTrace: StateFlow<Ew300OperationTrace?> = ew300Flasher.lastOperationTrace
     val ew300OperationStatus: StateFlow<Ew300OperationStatus> = ew300Flasher.operationStatus
+    val ew300RuntimePersistence: StateFlow<Ew300RuntimePersistenceState> = ew300Flasher.runtimePersistence
+
+    suspend fun readEw300UacStatus(): com.weekssa.opraeqforuapp.domain.ew300.Ew300UacStatus? =
+        dacSessionRepository.readEw300UacStatus()
+
     val fiioJa11OperationTrace: StateFlow<FiioJa11OperationTrace?> = fiioJa11Flasher.lastOperationTrace
     val fiioJa11OperationStatus: StateFlow<FiioJa11OperationStatus> = fiioJa11Flasher.operationStatus
 
@@ -136,10 +146,13 @@ class HardwareEqRepository(
      * opening/replacing the USB session.
      */
     fun connectEw300() {
-        if (ew300ConnectionState.value is Kt02h20ConnectionState.Connected) {
-            scheduleEw300SnapshotRefresh()
-        } else {
-            dacSessionRepository.connectEw300()
+        when {
+            ew300ConnectionState.value !is Kt02h20ConnectionState.Connected ->
+                dacSessionRepository.connectEw300()
+            // A connected session whose last read failed is a handle the device no longer serves.
+            // Another read would fail the same way, so Connect re-opens it instead.
+            mutableEw300SnapshotState.value.readFailed -> dacSessionRepository.reconnectEw300()
+            else -> scheduleEw300SnapshotRefresh()
         }
     }
 
@@ -312,6 +325,58 @@ class HardwareEqRepository(
                     allowCautions = allowCautions,
                     isSessionCurrent = dacSessionRepository::isEw300SessionCurrent,
                 )
+            }
+        } finally {
+            refreshEw300Snapshot()
+        }
+    }
+
+    /** Experimental runtime-only editor Apply: zero Save commands and a session-bound target. */
+    suspend fun applyEw300EditorRuntime(
+        workingCopy: HardwareEqEditWorkingCopy,
+        allowCautions: Boolean,
+    ): Ew300RuntimeApplyResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Mutation {
+                ew300Flasher.applyEditorRuntime(
+                    workingCopy = workingCopy,
+                    allowCautions = allowCautions,
+                    isSessionCurrent = dacSessionRepository::isEw300SessionCurrent,
+                )
+            }
+        } finally {
+            refreshEw300Snapshot()
+        }
+    }
+
+    /** Explicit one-Save persistence of the exact runtime target verified in this session. */
+    suspend fun saveEw300Runtime(): Ew300RuntimeSaveResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Mutation { ew300Flasher.saveRuntime() }
+        } finally {
+            scheduleEw300SnapshotRefresh()
+        }
+    }
+
+    /** Runtime-only output gain; zero Save and the tracked EQ delta is rebased. */
+    suspend fun setEw300PlaybackGainRuntime(gainDb: Double): Ew300PlaybackGainResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Mutation {
+                ew300Flasher.setPlaybackGainRuntime(gainDb)
+            }
+        } finally {
+            refreshEw300Snapshot()
+        }
+    }
+
+    suspend fun applyEw300ShelfTestTarget(target: Ew300ShelfTestTarget): Ew300ShelfTestResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Mutation {
+                ew300Flasher.applyShelfTestTarget(target)
             }
         } finally {
             refreshEw300Snapshot()

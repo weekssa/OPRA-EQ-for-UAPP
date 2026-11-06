@@ -22,6 +22,7 @@ import com.weekssa.opraeqforuapp.data.kt02h20.Ew300GainStatePreferences
 import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
+import com.weekssa.opraeqforuapp.data.library.EqLibraryBundleStore
 import com.weekssa.opraeqforuapp.data.library.SavedEqRepository
 import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqRepository
 import com.weekssa.opraeqforuapp.data.library.UnclaimedEqRepository
@@ -95,6 +96,14 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
     val documentStore = AndroidSafDocumentStore(appContext)
     val exportRepository = PresetExportRepository(database = database, documentStore = documentStore)
     val cleanupRepository = PresetCleanupRepository(database = database, documentStore = documentStore)
+    val libraryBundleStore = EqLibraryBundleStore(
+        documentStore = documentStore,
+        savedEqs = savedEqRepository,
+        generalEqs = savedGeneralEqRepository,
+        sourcePackage = BuildConfig.APPLICATION_ID,
+        sourceVersionName = BuildConfig.VERSION_NAME,
+        sourceVersionCode = BuildConfig.VERSION_CODE,
+    )
     val unclaimedEqRepository = UnclaimedEqRepository(database = database, documentStore = documentStore)
     val syncCoordinator = CatalogSyncCoordinator(
         catalogRepository = catalogRepository,
@@ -137,6 +146,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             sourceCommit = BuildConfig.CANDIDATE_SOURCE_SHA,
             appVersion = BuildConfig.VERSION_NAME,
             signerVerified = ReleaseSignatureGate.isPinnedReleaseSigner(appContext),
+            experimentalShelfEnabled = BuildConfig.EW300_SHELF_EDITOR_ENABLED,
         ),
         ew300CapabilityBatch = Ew300CapabilityBatch(ew300Transport),
         ew300PersistenceQualifier = Ew300PersistenceQualifier(
@@ -165,6 +175,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             dacControlRepository = dacControlRepository,
             fiioJa11ControlRepository = fiioJa11ControlRepository,
             hardwareRepository = hardwareRepository,
+            libraryBundleStore = libraryBundleStore,
         ),
         unclaimedEqRepository = unclaimedEqRepository,
     )

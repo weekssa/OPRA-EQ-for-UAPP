@@ -469,7 +469,7 @@ class UiModernizationFlowsTest {
         }
 
         composeRule.onNodeWithText("Build your EQ library").assertIsDisplayed()
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
         composeRule.onNodeWithText("My DAC").assertDoesNotExist()
         composeRule.waitForIdle()
@@ -485,10 +485,7 @@ class UiModernizationFlowsTest {
         captureV080Screenshot("app-shell-library-light-100")
 
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Output").assertIsDisplayed()
-        composeRule.onNodeWithText("This controls how EQs are prepared, exported, and flashed. It does not change Android's audio output.")
-            .performScrollTo()
-            .assertIsDisplayed()
+        composeRule.onNodeWithText("EQ target").assertIsDisplayed()
         composeRule.waitForIdle()
         captureV080Screenshot("app-shell-settings-light-100")
 
@@ -541,7 +538,7 @@ class UiModernizationFlowsTest {
             "recognized device context after initial composition",
         )
         composeRule.onNodeWithText("Connected · Waiting for first device read").assertIsDisplayed()
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
         assertRootLabelExists("My EQs")
         assertRootLabelExists("EQ Library")
@@ -573,8 +570,9 @@ class UiModernizationFlowsTest {
                 fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
             )
         }
-        composeRule.onNodeWithText("Disconnected · No current device state").assertIsDisplayed()
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        // App target, no live session, no remembered readback: the device block is absent by design.
+        composeRule.onNodeWithText("No DAC attached").assertDoesNotExist()
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
         assertRootLabelExists("My EQs")
         assertRootLabelExists("EQ Library")
@@ -582,6 +580,220 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("My DAC", substring = false).assertDoesNotExist()
     }
 
+    @Test
+    fun unpluggingKeepsTheBlockAndSaysNoDacAttached() {
+        val live = EqLibraryUiState(
+            catalogState = CatalogState.Loading,
+            appPreferences = AppPreferences(
+                exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                directFiioJa11FlashEnabled = true,
+            ),
+            dacRecognitionState = DacRecognitionState(
+                presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+            ),
+            fiioJa11ConnectionState = Kt02h20ConnectionState.Connected,
+            fiioJa11HardwareEqState = fiioJa11CurrentHardwareState(),
+        )
+        val state = mutableStateOf(live)
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(state = state.value, actions = noOpEqLibraryActions())
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Connected · State current").assertIsDisplayed()
+
+        composeRule.runOnIdle {
+            state.value = state.value.copy(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.UAPP),
+                    directFiioJa11FlashEnabled = true,
+                ),
+                dacRecognitionState = DacRecognitionState(recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11)),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+            )
+        }
+        composeRule.waitForIdle()
+        // The display anchor keeps the block after automatic resolution hands the target back.
+        composeRule.onNodeWithText("No DAC attached").assertIsDisplayed()
+        composeRule.onNodeWithText("Open My DAC").assertIsDisplayed()
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun pickingAnAppTargetRetiresTheAnchor() {
+        val state = mutableStateOf(
+            EqLibraryUiState(
+                catalogState = CatalogState.Loading,
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences()
+                        .withActiveTarget(ExportDevice.FIIO_JA11),
+                    directFiioJa11FlashEnabled = true,
+                ),
+                dacRecognitionState = DacRecognitionState(
+                    presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                    recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+                ),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+                fiioJa11HardwareEqState = fiioJa11CurrentHardwareState(),
+            ),
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(state = state.value, actions = noOpEqLibraryActions())
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Not connected").assertIsDisplayed()
+
+        composeRule.onNodeWithText("EQ target: FiiO JA11", substring = true).performClick()
+        composeRule.onNodeWithText("USB Audio Player PRO / ToneBoosters").performClick()
+        // The picker action is reported through actions; mirror the resulting preference here.
+        composeRule.runOnIdle {
+            state.value = state.value.copy(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.UAPP),
+                    directFiioJa11FlashEnabled = true,
+                ),
+            )
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Not connected").assertDoesNotExist()
+        composeRule.onNodeWithText("No DAC attached").assertDoesNotExist()
+    }
+
+    @Test
+    fun barOffersConnectWhenALiveSessionStopsAnswering() {
+        var connects = 0
+        val state = EqLibraryUiState(
+            catalogState = CatalogState.Loading,
+            appPreferences = AppPreferences(
+                exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.SIMGOT_EW300),
+                directEw300FlashEnabled = true,
+            ),
+            dacRecognitionState = DacRecognitionState(
+                presentDeviceIds = setOf(DacDeviceId.SIMGOT_EW300),
+                recognizedDeviceIds = setOf(DacDeviceId.SIMGOT_EW300),
+            ),
+            ew300ConnectionState = Kt02h20ConnectionState.Connected,
+            // It answered before and has stopped answering: the bar must stop saying Connected.
+            ew300HardwareEqState = HardwareEqSnapshotState().publishCurrent(
+                requireNotNull(
+                    com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory.ew300(
+                        nativeBands = List(com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol.BAND_COUNT) {
+                            com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band(
+                                type = "peak_dip",
+                                frequencyHz = 1000.0,
+                                gainDb = 0.0,
+                                q = 1.0,
+                            )
+                        },
+                        globalGainDb = 0.0,
+                        sessionGeneration = 1L,
+                        verifiedAtEpochMillis = 1L,
+                    ),
+                ),
+            ).markReadFailed(),
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(
+                    state = state,
+                    actions = noOpEqLibraryActions(onConnectEw300 = { connects++ }),
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Connection issue").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect").performClick()
+        composeRule.runOnIdle { assertEquals(1, connects) }
+    }
+
+    @Test
+    fun barConnectTargetsTheSelectedDacWhileAnotherSessionIsOpen() {
+        var fiioConnects = 0
+        var ew300Connects = 0
+        val state = EqLibraryUiState(
+            catalogState = CatalogState.Loading,
+            appPreferences = AppPreferences(
+                exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                directFiioJa11FlashEnabled = true,
+                directEw300FlashEnabled = true,
+            ),
+            dacRecognitionState = DacRecognitionState(
+                presentDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+                recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+            ),
+            fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+            ew300ConnectionState = Kt02h20ConnectionState.Connected,
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(
+                    state = state,
+                    actions = noOpEqLibraryActions(
+                        onConnectFiioJa11 = { fiioConnects++ },
+                        onConnectEw300 = { ew300Connects++ },
+                    ),
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        // The target is the FiiO, so its block offers Connect even though the EW300 is live.
+        composeRule.onNodeWithText("Not connected").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect").performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, fiioConnects)
+            assertEquals(0, ew300Connects)
+        }
+    }
+
+    @Test
+    fun pickerSwitchesTheBlockBetweenTwoRecognizedDacs() {
+        val state = mutableStateOf(
+            EqLibraryUiState(
+                catalogState = CatalogState.Loading,
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences()
+                        .withActiveTarget(ExportDevice.FIIO_JA11)
+                        .withTarget(ExportDevice.SIMGOT_EW300, true),
+                    directFiioJa11FlashEnabled = true,
+                    directEw300FlashEnabled = true,
+                ),
+                dacRecognitionState = DacRecognitionState(
+                    presentDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+                    recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11, DacDeviceId.SIMGOT_EW300),
+                ),
+                fiioJa11ConnectionState = Kt02h20ConnectionState.Connected,
+                ew300ConnectionState = Kt02h20ConnectionState.Disconnected,
+            ),
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(state = state.value, actions = noOpEqLibraryActions())
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("EQ target: FiiO JA11", substring = true).performClick()
+        composeRule.onNodeWithText("SIMGOT EW300 DSP").performClick()
+        // The picker reports through actions; mirror the resulting preference.
+        composeRule.runOnIdle {
+            state.value = state.value.copy(
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.SIMGOT_EW300),
+                    directEw300FlashEnabled = true,
+                ),
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("No DAC attached").assertDoesNotExist()
+        composeRule.onNodeWithText("Not connected").assertIsDisplayed()
+    }
     @Test
     fun keyboardAndDpadSearchOpensDirectModelResults() {
         val saveRequests = mutableListOf<Pair<String, Set<String>>>()
@@ -616,7 +828,7 @@ class UiModernizationFlowsTest {
         sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
         waitForText("Test creator")
         composeRule.onNodeWithText("Test creator").assertIsDisplayed()
-        val exportTarget = composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        val exportTarget = composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
         navigateWithAndroidKey(exportTarget, "Export target", KeyEvent.KEYCODE_DPAD_UP)
         val profileAuthor = composeRule.onNodeWithText("Test creator")
         navigateWithAndroidKey(profileAuthor, "Profile creator", KeyEvent.KEYCODE_DPAD_DOWN)
@@ -854,7 +1066,7 @@ class UiModernizationFlowsTest {
         }
 
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Refresh now").performScrollTo().performClick()
+        composeRule.onNodeWithText("Refresh").performScrollTo().performClick()
         composeRule.onNodeWithText("Couldn’t refresh EQ Library. Using your saved catalog.")
             .assertIsDisplayed()
         composeRule.onNode(hasText("EQ Library").and(isSelectable())).performClick()
@@ -937,7 +1149,7 @@ class UiModernizationFlowsTest {
 
         composeRule.onNodeWithText("Saved Headphone").assertIsDisplayed()
         composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Hidden EQs · 1").performScrollTo().performClick()
+        composeRule.onNodeWithText("View").performScrollTo().performClick()
         composeRule.onNodeWithText("Saved Headphone").performClick()
         composeRule.onNodeWithText("Unhide selected (1)").performClick()
         composeRule.waitForIdle()
@@ -976,8 +1188,7 @@ class UiModernizationFlowsTest {
             }
         }
 
-        composeRule.onNodeWithText("Settings").performClick()
-        composeRule.onNodeWithText("Output").assertIsDisplayed()
+        // The bar lives on My EQs / EQ Library; Settings keeps the target group only.
         composeRule.onNodeWithText("Connected · State current").assertIsDisplayed()
         composeRule.onNodeWithText("Open My DAC").performClick()
         composeRule.onNodeWithText("Current hardware EQ").assertIsDisplayed()
@@ -986,7 +1197,9 @@ class UiModernizationFlowsTest {
         composeRule.waitForIdle()
         captureV080Screenshot("my-dac-current-fiio-production-shell-fixture-light-100")
         composeRule.onNodeWithContentDescription("Back").performClick()
-        composeRule.onNodeWithText("Output").assertIsDisplayed()
+        composeRule.onNodeWithText("Connected · State current").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").performClick()
+        composeRule.onNodeWithText("EQ target").assertIsDisplayed()
         composeRule.runOnIdle { assertEquals(0, connectRequests) }
     }
 
@@ -995,6 +1208,10 @@ class UiModernizationFlowsTest {
         var state = mutableStateOf(
             EqLibraryUiState(
                 catalogState = CatalogState.Ready(testCatalog(), lastSuccessfulRefreshMillis = 1L),
+                appPreferences = AppPreferences(
+                    exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                    directFiioJa11FlashEnabled = true,
+                ),
                 dacRecognitionState = DacRecognitionState(
                     presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
                     recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
@@ -1012,8 +1229,8 @@ class UiModernizationFlowsTest {
             }
         }
 
-        composeRule.onNodeWithText("Permission needed · Allow USB access in My DAC").assertIsDisplayed()
-        composeRule.onNodeWithText("Open My DAC").performClick()
+        composeRule.onNodeWithText("Allow USB access").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("FiiO JA11. Allow USB access. Opens My DAC.").performClick()
         composeRule.onNodeWithText("USB permission required", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Retry connect").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Back").performClick()
@@ -1026,7 +1243,7 @@ class UiModernizationFlowsTest {
             fiioJa11HardwareEqState = fiioJa11CurrentHardwareState().markStale(),
         )
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Disconnected · Last read is historical").assertIsDisplayed()
+        composeRule.onNodeWithText("No DAC attached").assertIsDisplayed()
         composeRule.onNodeWithText("Open My DAC").performClick()
         composeRule.onNodeWithText("Last read hardware EQ").assertIsDisplayed()
         composeRule.onNodeWithText("Last read · User 1 · 5-band PEQ").assertIsDisplayed()
@@ -1051,6 +1268,10 @@ class UiModernizationFlowsTest {
                 EqLibraryApp(
                     state = EqLibraryUiState(
                         catalogState = CatalogState.Ready(testCatalog(), lastSuccessfulRefreshMillis = 1L),
+                        appPreferences = AppPreferences(
+                            exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.FIIO_JA11),
+                            directFiioJa11FlashEnabled = true,
+                        ),
                         dacRecognitionState = DacRecognitionState(
                             recognizedDeviceIds = setOf(DacDeviceId.FIIO_JA11),
                         ),
@@ -1065,7 +1286,7 @@ class UiModernizationFlowsTest {
         }
 
         waitForActivityWindowFocus("hardware D-pad recovery route")
-        val openMyDac = composeRule.onNodeWithText("Open My DAC")
+        val openMyDac = composeRule.onNodeWithContentDescription("FiiO JA11. No DAC attached. Opens My DAC.")
         openMyDac.assertIsDisplayed()
         val myEqsTab = composeRule.onNode(
             hasText("My EQs") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
@@ -2298,18 +2519,62 @@ class UiModernizationFlowsTest {
 
         composeRule.waitForIdle()
         captureV080Screenshot("settings-light-100")
-        listOf("Output", "Library", "Appearance", "Updates", "Support & information").forEach { title ->
+        listOf("EQ target", "Outputs", "Library", "Appearance", "About").forEach { title ->
             composeRule.onNodeWithText(title).performScrollTo().assertIsDisplayed()
         }
-        composeRule.onNodeWithText("This controls how EQs are prepared, exported, and flashed. It does not change Android's audio output.")
-            .performScrollTo()
-            .assertIsDisplayed()
         composeRule.onNodeWithText("Help").performScrollTo().performClick()
         composeRule.onNodeWithText("Saving does not export a file or change connected hardware.", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
         composeRule.waitForIdle()
         captureV080Screenshot("settings-help-light-100")
+    }
+
+    @Test
+    fun settingsOffersLibraryBackupAndRestoreFromTheLibraryGroup() {
+        var exports = 0
+        var imports = 0
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+            TestScreenShell(title = "Settings") {
+            SettingsScreen(
+                appPreferences = AppPreferences(),
+                catalogState = CatalogState.Loading,
+                onRefreshCatalog = {},
+                onChangeExportFolder = {},
+                onCheckForUpdates = {},
+                onWhatsNew = {},
+                onGetUpdate = {},
+                onOpenUrl = {},
+                onThemeModeChange = {},
+                onOutputBehaviorChange = {},
+                onExportTargetChange = { _, _ -> },
+                onActiveExportTargetChange = {},
+                onDirectBlackPearlFlashEnabledChange = {},
+                onDirectFiioJa11FlashEnabledChange = {},
+                onDirectEw300FlashEnabledChange = {},
+                hiddenCanonicalProfileIds = emptySet(),
+                onUnhideCanonicalProfiles = {},
+                onExportLibraryBackup = { exports++ },
+                onImportLibraryBackup = { imports++ },
+                onMessage = {},
+            )
+            }
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Backup").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Restore").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Existing entries are never replaced.", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Export").performScrollTo().performClick()
+        composeRule.onNodeWithText("Import").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, exports)
+            assertEquals(1, imports)
+        }
     }
 
     @Test
@@ -2830,8 +3095,10 @@ class UiModernizationFlowsTest {
             node.fetchSemanticsNode().config[SemanticsProperties.Focused]
         }.getOrDefault(false)
 
-private fun noOpEqLibraryActions(
+internal fun noOpEqLibraryActions(
     onConnectDacForMyDac: (DacDeviceId) -> Unit = {},
+    onConnectFiioJa11: () -> Unit = {},
+    onConnectEw300: () -> Unit = {},
     onApplyFiioJa11Editor: () -> Unit = {},
     onRefreshCatalog: () -> String = { "Fixture catalog is current." },
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
@@ -2895,9 +3162,9 @@ private fun noOpEqLibraryActions(
         onSetEw300PlaybackGain = {},
         onConnectBlackPearl = {},
         onResetBlackPearl = { error("Hardware writes are not part of the app-shell test") },
-        onConnectFiioJa11 = {},
+        onConnectFiioJa11 = onConnectFiioJa11,
         onResetFiioJa11 = { error("Hardware writes are not part of the app-shell test") },
-        onConnectEw300 = {},
+        onConnectEw300 = onConnectEw300,
         onResetEw300 = { error("Hardware writes are not part of the app-shell test") },
         onConnectJcallyJm12 = {},
         onResetJcallyJm12 = { error("Unsupported hardware is not part of the app-shell test") },
@@ -2942,7 +3209,7 @@ private fun noOpEqLibraryActions(
         onDirectJcallyJm12FlashEnabledChange = {},
 )
 
-private fun fiioJa11CurrentHardwareState(): HardwareEqSnapshotState {
+internal fun fiioJa11CurrentHardwareState(): HardwareEqSnapshotState {
     val bundle = requireNotNull(
         HardwareEqSnapshotFactory.fiioJa11(
             nativeBands = List(FiioJa11Protocol.BAND_COUNT) { index ->
@@ -3105,7 +3372,7 @@ private fun editorWorkingCopy(deviceId: DacDeviceId, bandCount: Int): HardwareEq
                 id = "wh-xm4-profile",
                 productId = "sony-wh-1000xm4",
                 author = "Test creator",
-                details = "Target: Harman",
+                details = "EQ target: Harman",
                 link = null,
                 profileType = "parametric_eq",
                 preampGainDb = -3.0,

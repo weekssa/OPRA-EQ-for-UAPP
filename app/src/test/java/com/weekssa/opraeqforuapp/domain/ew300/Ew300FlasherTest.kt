@@ -22,6 +22,32 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun oneEmptyRegisterReadIsRetriedBeforeTheFlashGivesUp() = runBlocking {
+        val transport = FakeTransport(
+            transientMissingRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER,
+            transientMissingRegisterReads = 1,
+        )
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun baselineReadFailureThatPersistsStillStopsEveryWriteAndSave() = runBlocking {
+        val transport = FakeTransport(missingRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.DeviceUnavailable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
     fun incompleteStrictBaselinePreventsEveryWrite() = runBlocking {
         val transport = FakeTransport(missingRegister = 0x24)
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
@@ -87,6 +113,159 @@ class Ew300FlasherTest {
         assertTrue(result is Ew300PlaybackGainResult.NotSuitable)
         assertTrue(transport.writes.isEmpty())
         assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun runtimeGainSendsZeroSaveAndExplicitSaveSendsExactlyOne() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0x96, 0, 0))
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val runtime = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertEquals(Ew300PlaybackGainResult.Success(-40.0), runtime)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-80, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.RUNTIME_ONLY, flasher.runtimePersistence.value)
+
+        val saved = flasher.saveRuntime()
+
+        assertEquals(Ew300RuntimeSaveResult.Verified, saved)
+        assertEquals(1, transport.commitCount)
+        assertEquals(Ew300RuntimePersistenceState.SAVED_THIS_SESSION, flasher.runtimePersistence.value)
+
+        val repeated = flasher.saveRuntime()
+        assertTrue(repeated is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun verifiedNoOpRuntimeGainStillRebasesStaleDeltaAndCreatesPendingTarget() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0xB0, 0xB0, 0, 0))
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertEquals(Ew300PlaybackGainResult.Success(-40.0), result)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-80, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.RUNTIME_ONLY, flasher.runtimePersistence.value)
+        assertEquals(Ew300RuntimeSaveResult.Verified, flasher.saveRuntime())
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun uncertainRuntimeGainWriteFencesStaleDeltaAndPendingTarget() = runBlocking {
+        val transport = FakeTransport(
+            initialGain = bytes(0x96, 0x96, 0, 0),
+            failWriteRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER,
+        )
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertTrue(result is Ew300PlaybackGainResult.TransferFailed)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-106, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.UNKNOWN, flasher.runtimePersistence.value)
+        assertTrue(flasher.saveRuntime() is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun runtimeGainReadbackMismatchFencesStaleDeltaAndPendingTarget() = runBlocking {
+        val transport = FakeTransport(
+            initialGain = bytes(0x96, 0x96, 0, 0),
+            corruptWriteRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER,
+        )
+        val store = QualifiedGainStore()
+        store.delta = -20
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.setPlaybackGainRuntime(-40.0)
+
+        assertTrue(result is Ew300PlaybackGainResult.VerificationFailed)
+        assertEquals(0, transport.commitCount)
+        assertEquals(0, store.delta)
+        assertEquals(-106, store.userBaseline)
+        assertEquals(Ew300RuntimePersistenceState.UNKNOWN, flasher.runtimePersistence.value)
+        assertTrue(flasher.saveRuntime() is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun runtimeSaveRejectsAnExternallyChangedLiveStateWithoutSave() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0x96, 0, 0))
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        assertTrue(flasher.setPlaybackGainRuntime(-40.0) is Ew300PlaybackGainResult.Success)
+        transport.state[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0xA0, 0xA0, 0, 0)
+
+        val result = flasher.saveRuntime()
+
+        assertTrue(result is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun uncertainRuntimeSaveIsNotReplayed() = runBlocking {
+        val transport = FakeTransport(
+            initialGain = bytes(0x96, 0x96, 0, 0),
+            commitSucceeds = false,
+        )
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+        assertTrue(flasher.setPlaybackGainRuntime(-40.0) is Ew300PlaybackGainResult.Success)
+
+        val result = flasher.saveRuntime()
+
+        assertTrue(result is Ew300RuntimeSaveResult.TransferFailed)
+        assertEquals(1, transport.commitCount)
+        assertEquals(Ew300RuntimePersistenceState.SAVE_NOT_VERIFIED, flasher.runtimePersistence.value)
+        assertTrue(flasher.saveRuntime() is Ew300RuntimeSaveResult.NotSuitable)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun nativeShelfProfileFlashesTypeThreeAndFourWithOneSave() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0, 0, 0, 0))
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+        val profile = OpraEqProfile(
+            id = "native-shelf-test",
+            productId = "test",
+            author = "test",
+            details = null,
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = null,
+            bands = listOf(
+                OpraBand("low_shelf", 250.0, -6.0, 0.707, null),
+                OpraBand("peak_dip", 1_000.0, 0.0, 1.0, null),
+                OpraBand("peak_dip", 2_000.0, 0.0, 1.0, null),
+                OpraBand("peak_dip", 4_000.0, 0.0, 1.0, null),
+                OpraBand("high_shelf", 4_000.0, -6.0, 0.707, null),
+            ),
+        )
+
+        val result = flasher.flash(profile)
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+        assertTrue(transport.writes.contains(Ew300Protocol.bandRegister(0) + 1))
+        assertEquals(0x03, transport.state.getValue(Ew300Protocol.bandRegister(0) + 1)[2].toInt() and 0xFF)
+        assertEquals(0x04, transport.state.getValue(Ew300Protocol.bandRegister(4) + 1)[2].toInt() and 0xFF)
     }
 
     @Test
@@ -171,7 +350,7 @@ class Ew300FlasherTest {
         val transport = FakeTransport()
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true }).resetToFlat()
 
-        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
         assertEquals(10, transport.writes.size)
         assertEquals(1, transport.commitCount)
         assertTrue(transport.state.values.any { it.contentEquals(bytes(0, 0, 0xE8, 0x03)) })
@@ -238,7 +417,7 @@ class Ew300FlasherTest {
 
         val result = flasher.resetToFlat()
 
-        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
         assertTrue(flasher.reconcilePendingVerification())
         assertEquals(1, transport.commitCount)
         val trace = requireNotNull(flasher.lastOperationTrace.value)
@@ -415,6 +594,249 @@ class Ew300FlasherTest {
         assertTrue(trace.failureReason?.contains("after Save") == true)
     }
 
+    @Test
+    fun shelfTestTargetsUseTheFixedPrequalificationEnvelope() {
+        val flat = Ew300ShelfTestTarget.FLAT.bands()
+        assertEquals(5, flat.size)
+        assertTrue(flat.all { it.type == "peak_dip" && it.frequencyHz == 1_000.0 && it.gainDb == 0.0 && it.q == 1.0 })
+
+        val low = Ew300ShelfTestTarget.LOW_SHELF.bands()
+        assertEquals("low_shelf", low[0].type)
+        assertEquals(250.0, low[0].frequencyHz, 0.0)
+        assertEquals(-6.0, low[0].gainDb, 0.0)
+        assertEquals(0.707, low[0].q, 0.0)
+        assertTrue(low.drop(1).all { it.type == "peak_dip" })
+
+        val high = Ew300ShelfTestTarget.HIGH_SHELF.bands()
+        assertEquals("high_shelf", high[0].type)
+        assertEquals(4_000.0, high[0].frequencyHz, 0.0)
+        assertEquals(-6.0, high[0].gainDb, 0.0)
+        assertEquals(0.707, high[0].q, 0.0)
+        assertTrue(high.drop(1).all { it.type == "peak_dip" })
+    }
+
+    @Test
+    fun shelfOutsideTheEnvelopeFallsBackToTheFivePeakFitWithOneSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+        val profile = OpraEqProfile(
+            id = "out-of-envelope-shelf",
+            productId = "test",
+            author = "test",
+            details = null,
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = null,
+            bands = listOf(
+                OpraBand("low_shelf", 100.0, -9.0, 1.0, null),
+                OpraBand("peak_dip", 1_000.0, 0.0, 1.0, null),
+            ),
+        )
+
+        val result = flasher.flash(profile)
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+        val writtenTypes = (0 until Ew300Protocol.BAND_COUNT).map { index ->
+            transport.state.getValue(Ew300Protocol.bandRegister(index) + 1)[2].toInt() and 0xFF
+        }
+        assertTrue(writtenTypes.all { it == Ew300Protocol.TYPE_PEAK })
+        val bands = (result as com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+            .representation.bands
+        assertTrue(bands.none { it.type == "low_shelf" || it.type == "high_shelf" })
+    }
+
+    @Test
+    fun shelfTestLowShelfWritesTheMeasuredBytesWithZeroSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.LOW_SHELF)
+
+        assertEquals(Ew300ShelfTestResult.Verified(Ew300ShelfTestTarget.LOW_SHELF), result)
+        assertEquals(0, transport.commitCount)
+        assertEquals("C4FFFA00", hex(transport.state.getValue(Ew300Protocol.bandRegister(0))))
+        assertEquals("C3020300", hex(transport.state.getValue(Ew300Protocol.bandRegister(0) + 1)))
+        assertEquals(Ew300OperationOutcome.SUCCESS, requireNotNull(flasher.lastOperationTrace.value).outcome)
+    }
+
+    @Test
+    fun shelfTestHighShelfWritesTheMeasuredBytesWithZeroSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.HIGH_SHELF)
+
+        assertEquals(Ew300ShelfTestResult.Verified(Ew300ShelfTestTarget.HIGH_SHELF), result)
+        assertEquals(0, transport.commitCount)
+        assertEquals("C4FFA00F", hex(transport.state.getValue(Ew300Protocol.bandRegister(0))))
+        assertEquals("C3020400", hex(transport.state.getValue(Ew300Protocol.bandRegister(0) + 1)))
+    }
+
+    @Test
+    fun shelfTestFlatTargetWritesFivePeaksAndNoSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.FLAT)
+
+        assertEquals(Ew300ShelfTestResult.Verified(Ew300ShelfTestTarget.FLAT), result)
+        assertEquals(0, transport.commitCount)
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            assertEquals("0000E803", hex(transport.state.getValue(Ew300Protocol.bandRegister(index))))
+            assertEquals("E8030000", hex(transport.state.getValue(Ew300Protocol.bandRegister(index) + 1)))
+        }
+    }
+
+    @Test
+    fun shelfTestIsUnavailableWhenTheParityPackageFlagIsOff() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.LOW_SHELF)
+
+        assertTrue(result is Ew300ShelfTestResult.NotSuitable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun shelfTestReadbackMismatchRestoresTheVolatileBaselineWithoutSave() = runBlocking {
+        val transport = FakeTransport(
+            corruptWriteRegister = Ew300Protocol.bandRegister(0),
+            corruptWriteRegisterTimes = 1,
+        )
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+
+        val result = flasher.applyShelfTestTarget(Ew300ShelfTestTarget.HIGH_SHELF)
+
+        assertTrue(result is Ew300ShelfTestResult.VerificationFailed)
+        assertEquals(0, transport.commitCount)
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            assertEquals("00000000", hex(transport.state.getValue(Ew300Protocol.bandRegister(index))))
+            assertEquals("00000000", hex(transport.state.getValue(Ew300Protocol.bandRegister(index) + 1)))
+        }
+    }
+
+
+    /** Models flash persistence: writes land in volatile state, commit copies to persisted. */
+    private inner class PersistingTransport(
+        private val initialPersisted: Map<Int, ByteArray>,
+        private val commitSucceeds: Boolean = true,
+    ) : Ew300Transport {
+        override var deviceFingerprintKey: String = "test-ew300"
+        override var sessionGeneration: Long = 1L
+        override var detachGeneration: Long = 0L
+        override val registerWriteCount: Long get() = writes.size.toLong()
+        override val saveCommandCount: Long get() = commitCount.toLong()
+        var persisted: MutableMap<Int, ByteArray> = initialPersisted.toMutableMap()
+        var state: MutableMap<Int, ByteArray> = initialPersisted.toMutableMap()
+        val writes = mutableListOf<Int>()
+        var commitCount = 0
+        fun powerCycle() {
+            state = persisted.toMutableMap()
+            sessionGeneration += 1
+            detachGeneration += 1
+        }
+        override suspend fun readRegister(register: Int): ByteArray? = state[register]?.copyOf()
+        override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
+            writes += register
+            state[register] = data.copyOf()
+            return true
+        }
+        override suspend fun commit(): Boolean {
+            commitCount++
+            if (commitSucceeds) persisted = state.mapValues { it.value.copyOf() }.toMutableMap()
+            return commitSucceeds
+        }
+    }
+
+    private fun persistedSeed(gain: ByteArray): MutableMap<Int, ByteArray> =
+        (0 until Ew300Protocol.BAND_COUNT)
+            .flatMap { index ->
+                val register = Ew300Protocol.bandRegister(index)
+                listOf(register to bandBytes(4_000.0, -3.0), register + 1 to qBytes(1.0, 0))
+            }
+            .toMap().toMutableMap().also {
+                it[Ew300Protocol.PROTOCOL_FLAGS_REGISTER] = bytes(0, 0, 0, 0)
+                it[0x24] = bytes(0, 0, 0, 0)
+                it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = gain.copyOf()
+            }
+
+    private fun bandBytes(frequencyHz: Double, gainDb: Double): ByteArray {
+        val gain = (gainDb * 10.0).toInt()
+        val freq = frequencyHz.toInt()
+        return bytes(gain and 0xFF, (gain shr 8) and 0xFF, freq and 0xFF, (freq shr 8) and 0xFF)
+    }
+
+    private fun qBytes(q: Double, type: Int): ByteArray {
+        val raw = (q * 1000.0).toInt()
+        return bytes(raw and 0xFF, (raw shr 8) and 0xFF, type, 0)
+    }
+
+    @Test
+    fun resetPersistsFlatAcrossAPowerCycle() = runBlocking {
+        val transport = PersistingTransport(persistedSeed(bytes(0xD8, 0xD8, 0, 0)))
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
+        assertEquals(1, transport.commitCount)
+        transport.powerCycle()
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            assertEquals(
+                "0000E803",
+                transport.state.getValue(Ew300Protocol.bandRegister(index)).joinToString("") { "%02X".format(it) },
+            )
+        }
+        assertEquals(
+            "D8D80000",
+            transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER).joinToString("") { "%02X".format(it) },
+        )
+    }
+
+    @Test
+    fun resetDoesNotClaimPersistenceWhenTheSaveIsRejected() = runBlocking {
+        val transport = PersistingTransport(persistedSeed(bytes(0xD8, 0xD8, 0, 0)), commitSucceeds = false)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        transport.powerCycle()
+        assertEquals(
+            "D8D80000",
+            transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER).joinToString("") { "%02X".format(it) },
+        )
+    }
+    private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02X".format(it) }
+
     private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(
         id = "ew300-test",
         productId = "product",
@@ -441,7 +863,12 @@ class Ew300FlasherTest {
         private val throwOnCommitNumber: Int? = null,
         private var transientReadFailuresAfterCommit: Int = 0,
         private val initialGain: ByteArray = bytes(0, 0, 0, 0),
+        private val corruptWriteRegister: Int? = null,
+        private val transientMissingRegister: Int? = null,
+        private var transientMissingRegisterReads: Int = 0,
+        corruptWriteRegisterTimes: Int = Int.MAX_VALUE,
     ) : Ew300Transport {
+        private var corruptWritesRemaining = corruptWriteRegisterTimes
         override var deviceFingerprintKey: String = "test-ew300"
         override var sessionGeneration: Long = 1L
         override var detachGeneration: Long = 0L
@@ -468,6 +895,10 @@ class Ew300FlasherTest {
         override suspend fun readRegister(register: Int): ByteArray? {
             if (writes.isNotEmpty()) readsAfterWrites++
             if (commitCount > 0) readsAfterCommit++
+            if (register == transientMissingRegister && transientMissingRegisterReads > 0) {
+                transientMissingRegisterReads--
+                return null
+            }
             if (commitCount > 0 && transientReadFailuresAfterCommit > 0) {
                 transientReadFailuresAfterCommit--
                 return null
@@ -482,7 +913,13 @@ class Ew300FlasherTest {
         override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
             writes += register
             if (register == failWriteRegister) return false
-            state[register] = data.copyOf()
+            val corrupt = register == corruptWriteRegister && corruptWritesRemaining > 0
+            if (corrupt) corruptWritesRemaining--
+            state[register] = if (corrupt) {
+                data.copyOf().also { it[0] = (it[0].toInt() + 1).toByte() }
+            } else {
+                data.copyOf()
+            }
             return true
         }
 

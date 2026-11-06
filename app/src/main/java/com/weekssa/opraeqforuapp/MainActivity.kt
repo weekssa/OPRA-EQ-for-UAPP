@@ -184,6 +184,10 @@ class MainActivity : ComponentActivity() {
         onRunEw300CapabilityBatch = viewModel::runEw300CapabilityBatch,
         onAdvanceEw300PersistenceQualification = viewModel::advanceEw300PersistenceQualification,
         onSetEw300PlaybackGain = viewModel::setEw300PlaybackGain,
+        onSaveEw300Runtime = viewModel::saveEw300Runtime,
+        onSetEw300VolumeLevel = viewModel::setEw300VolumeLevel,
+        onRefreshEw300Uac = viewModel::refreshEw300Uac,
+        onApplyEw300ShelfTestTarget = viewModel::applyEw300ShelfTestTarget,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
@@ -251,6 +255,12 @@ class MainActivity : ComponentActivity() {
         },
         onExportGeneralEqs = { treeUri, presetIds, device ->
             exportMessage(viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device), device)
+        },
+        onExportLibraryBundle = { documentUri ->
+            viewModel.exportLibraryBundle(documentUri.toString())
+        },
+        onImportLibraryBundle = { documentUri ->
+            viewModel.importLibraryBundle(documentUri.toString())
         },
         onCheckForUpdates = {
             updateCheckMessage(viewModel.checkForUpdates())

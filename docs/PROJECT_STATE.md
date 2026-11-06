@@ -2,6 +2,13 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
+
+Candidate build: **v0.11.0**, versionCode `23`, package `com.weekssa.opraeqforuapp`. It advances the
+published v0.10.0 (code 22) with the EW300 device surface, the My EQs / EQ Library context bar,
+library backup and restore, and the flash read-retry fix. The locally tested prototype package
+`com.weekssa.opraeqforuapp.v011beta` is `0.11.0-beta.1` at the same code. Signed-candidate and
+publication identity are recorded here when the release gate produces them.
+
 ## v0.10.0 stable release (2026-11-04)
 
 Published stable release: [EQ Library v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0), release ID `434267766`, published `2026-11-04T18:04:05Z`, immutable, non-draft, non-prerelease and `/releases/latest`. versionName `0.10.0`, versionCode `22`, package `com.weekssa.opraeqforuapp`. It promotes the JA11 tuning and DEVICE work the owner confirmed working on the device in v0.9.0-beta.4; release notes are in docs/releases/v0.10.0.md and v0.9.0 is the previous stable release.
@@ -50,6 +57,13 @@ Native User1 defaults is implemented for computer qualification with unchanged f
 
 The exact APK/source tuple proves public release identity. It does **not** prove which artifact is currently installed on an owner's phone.
 
+The Pixel also carries a local prototype that is not a release:
+`com.weekssa.opraeqforuapp.v011beta` 0.11.0-beta.1 / 23, installed 2026-11-06 from
+`codex/v0.11-ew300-prototype`, current on-device `base.apk` SHA-256
+`1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3` with the local test signer. It is a
+separate package, never published, never a public hardware claim. See
+[`releases/v0.11.0-beta.1.md`](releases/v0.11.0-beta.1.md).
+
 ## Installed device state
 
 Current v0.10.0 install state: **UNKNOWN / NOT VERIFIED.** The owner confirmed the v0.9.0-beta.4 build working on the device on 2026-11-04, but the published v0.10.0 APK has not been re-read from the phone, so the installed-bytes claim below still describes the earlier v0.9.0 install.
@@ -75,6 +89,8 @@ This is **HIGH confidence** that the installed bytes are the exact public stable
 The original foundation phases P0-P10 and P11 are evidenced complete. PR #108, PR #116, and PR #111 are merged. PR #111 records the verified dependency remediation: all 56 original Dependabot alerts are fixed, with 0 open and 0 dismissed after default-branch dependency submission. The installed Pixel 9 v0.8.3 APK SHA-256 remains the exact public release APK digest documented above; release source provenance remains distinct from what was directly read on-device. The merge milestones and evidence limits are recorded in the dated [foundation evidence index](maintenance/2026-10-20-repository-foundation/EVIDENCE_INDEX.md).
 
 ## Active work and known limits
+
+- **EW300 parity five-goal experiment (2026-11-05):** separate local `com.weekssa.opraeqforuapp.ew300parity` package on `codex/ew300-ja11-parity` from base `5832bc5e`. Implements 0-60 EW300 volume mapping, real UAC1 microphone mute, read-only UAC1 sample-rate status, and native Low/High Shelf editor/capture/Flash. Exact descriptor evidence blocks UAC mode switching and headset-disable; both have recorded next experiments. Mac reversible volume/shelf tests restored exactly and sent no Save. 123 EW300 debug and 127 release EW300 JVM tests plus 3/3 full-parity emulator tests pass. Physical/owner listening, Pixel install, active-stream rate, and persistence are pending. Production flags and existing persistent Peak behavior are unchanged. No public release or support claim.
 
 - **JA11 custom firmware (planning, 2026-11-03):** separate, unreleased project. Prerequisites and boundaries are recorded in docs/FIIO_JA11_PROTOCOL_NOTES.md: recovery first, then image format, ISA/toolchain, and a static pass for the 0x19 handler and startup store. Not started; needs the vendor boot tool for recovery validation. EQ Library gains no flashing path.
 

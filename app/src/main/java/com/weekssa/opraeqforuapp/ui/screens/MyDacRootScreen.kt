@@ -40,6 +40,10 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.ui.Ew300PlaybackGainUiState
+import com.weekssa.opraeqforuapp.ui.Ew300RuntimeSaveUiState
+import com.weekssa.opraeqforuapp.ui.Ew300UacUiState
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RuntimePersistenceState
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300ShelfTestTarget
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 
@@ -71,6 +75,9 @@ fun MyDacRootScreen(
     blackPearlQualificationState: BlackPearlQualificationUiState,
     fiioJa11DeviceState: FiioJa11DeviceUiState,
     ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
+    ew300RuntimePersistence: Ew300RuntimePersistenceState = Ew300RuntimePersistenceState.UNKNOWN,
+    ew300RuntimeSaveState: Ew300RuntimeSaveUiState = Ew300RuntimeSaveUiState(),
+    ew300UacState: Ew300UacUiState = Ew300UacUiState(),
     onConnectDac: (DacDeviceId) -> Unit,
     onOpenBlackPearlEditor: () -> Unit,
     onCloseBlackPearlEditor: () -> Unit,
@@ -123,6 +130,10 @@ fun MyDacRootScreen(
     onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     onSetEw300PlaybackGain: (Double) -> Unit = {},
+    onSaveEw300Runtime: () -> Unit = {},
+    onSetEw300VolumeLevel: (Int) -> Unit = {},
+    onRefreshEw300Uac: () -> Unit = {},
+    onApplyEw300ShelfTestTarget: suspend (Ew300ShelfTestTarget) -> String = { "Shelf A/B is unavailable." },
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -131,14 +142,16 @@ fun MyDacRootScreen(
         .filterTo(linkedSetOf()) { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 || it == DacDeviceId.SIMGOT_EW300 }
     var selectedName by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(recognized, selectedName) {
-        val selected = selectedName?.let { runCatching { DacDeviceId.valueOf(it) }.getOrNull() }
-        if (selected !in recognized) {
-            selectedName = when (recognized.size) {
-                1 -> recognized.single().name
-                else -> null
-            }
-        }
+    val presentRecognized = recognitionState.presentDeviceIds
+        .filterTo(linkedSetOf()) { it in recognized }
+
+    // Follow the DAC that is actually attached. A remembered selection used to stay pinned to a DAC
+    // that had been unplugged, which left My DAC on a "Disconnected" page with no Connect action
+    // while the newly attached DAC was unreachable.
+    LaunchedEffect(recognized, presentRecognized, selectedName) {
+        val current = selectedName?.let { runCatching { DacDeviceId.valueOf(it) }.getOrNull() }
+        val next = nextMyDacSelection(current, presentRecognized, recognized)
+        if (next?.name != selectedName) selectedName = next?.name
     }
 
     val selected = selectedName?.let { runCatching { DacDeviceId.valueOf(it) }.getOrNull() }
@@ -253,11 +266,15 @@ fun MyDacRootScreen(
 
         DacDeviceId.SIMGOT_EW300 -> Ew300MyDacContent(
             connectionState = ew300ConnectionState,
+            deviceAttached = DacDeviceId.SIMGOT_EW300 in recognitionState.presentDeviceIds,
             hardwareEqState = ew300HardwareEqState,
             editorState = ew300EditorState,
             operationTrace = ew300OperationTrace,
             operationStatus = ew300OperationStatus,
             playbackGainState = ew300PlaybackGainState,
+            runtimePersistence = ew300RuntimePersistence,
+            runtimeSaveState = ew300RuntimeSaveState,
+            uacState = ew300UacState,
             catalogState = catalogState,
             managedHeadphones = blackPearlManagedHeadphones,
             savedEqs = blackPearlSavedEqs,
@@ -268,6 +285,10 @@ fun MyDacRootScreen(
             onRunCapabilityBatch = onRunEw300CapabilityBatch,
             onAdvancePersistenceQualification = onAdvanceEw300PersistenceQualification,
             onSetPlaybackGain = onSetEw300PlaybackGain,
+            onSaveRuntime = onSaveEw300Runtime,
+            onSetVolumeLevel = onSetEw300VolumeLevel,
+            onRefreshUac = onRefreshEw300Uac,
+            onApplyShelfTestTarget = onApplyEw300ShelfTestTarget,
             onCaptureDacEq = onCaptureEw300DacEq,
             onOpenEditor = onOpenEw300Editor,
             onCloseEditor = onCloseEw300Editor,
@@ -284,4 +305,21 @@ fun MyDacRootScreen(
 
         DacDeviceId.JCALLY_JM12_STOCK -> Unit
     }
+}
+
+/**
+ * Chooses which DAC the My DAC screen manages.
+ *
+ * The attached DAC always wins over a remembered selection; when nothing is attached a single
+ * recognized DAC keeps its page, and anything else falls back to the device chooser.
+ */
+internal fun nextMyDacSelection(
+    current: DacDeviceId?,
+    present: Set<DacDeviceId>,
+    recognized: Set<DacDeviceId>,
+): DacDeviceId? = when {
+    current != null && current in present -> current
+    present.size == 1 -> present.single()
+    present.isEmpty() && recognized.size == 1 -> recognized.single()
+    else -> null
 }

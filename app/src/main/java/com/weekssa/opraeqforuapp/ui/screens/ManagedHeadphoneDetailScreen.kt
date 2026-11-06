@@ -95,6 +95,56 @@ internal fun isManagedHardwareFlashEnabled(
     else -> false
 }
 
+/**
+ * Exact reason a Flash action is unavailable for the active output, or null when it is ready.
+ * Shared by My EQs and the managed-profile screen so both surfaces state the same cause.
+ */
+internal fun hardwareFlashUnavailableReason(
+    activeOutput: ExportDevice,
+    directBlackPearlFlashEnabled: Boolean,
+    blackPearlConnected: Boolean,
+    directFiioJa11FlashEnabled: Boolean,
+    fiioJa11Connected: Boolean,
+    directJcallyJm12FlashEnabled: Boolean,
+    jcallyJm12Connected: Boolean,
+    directEw300FlashEnabled: Boolean,
+    ew300Connected: Boolean,
+): String? {
+    if (isManagedHardwareFlashEnabled(
+            activeOutput = activeOutput,
+            directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+            blackPearlConnected = blackPearlConnected,
+            directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+            fiioJa11Connected = fiioJa11Connected,
+            directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+            jcallyJm12Connected = jcallyJm12Connected,
+            directEw300FlashEnabled = directEw300FlashEnabled,
+            ew300Connected = ew300Connected,
+        )
+    ) {
+        return null
+    }
+    return when (activeOutput) {
+        ExportDevice.SIMGOT_EW300 -> if (!directEw300FlashEnabled) {
+            "Direct Flash is off. Enable it in Settings → SIMGOT EW300 DSP."
+        } else {
+            "SIMGOT EW300 DSP is not connected. Connect it in My DAC."
+        }
+        ExportDevice.FIIO_JA11 -> if (!directFiioJa11FlashEnabled) {
+            "Direct Flash is off. Enable it in Settings → FIIO JA11."
+        } else {
+            "FiiO JA11 is not connected. Connect it in My DAC."
+        }
+        ExportDevice.BLACK_PEARL -> if (!directBlackPearlFlashEnabled) {
+            "Direct Flash is off. Enable it in Settings → TRN Black Pearl."
+        } else {
+            "TRN Black Pearl is not connected. Connect it in My DAC."
+        }
+        ExportDevice.JCALLY_JM12 -> "JCALLY JM12 is a legacy output and cannot be flashed."
+        else -> "No hardware DAC is the active EQ target. Choose one in Settings → Output."
+    }
+}
+
 @Composable
 fun ManagedHeadphoneDetailScreen(
     headphone: ManagedHeadphoneRecord,

@@ -22,7 +22,7 @@ class MainActivityLifecycleTest {
         val settingsTab = hasText("Settings") and
             SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
         composeRule.onNode(settingsTab).performClick()
-        composeRule.onNodeWithText("Output").assertIsDisplayed()
+        composeRule.onNodeWithText("EQ target").assertIsDisplayed()
 
         repeat(2) {
             val previousActivity = composeRule.activity
@@ -31,7 +31,7 @@ class MainActivityLifecycleTest {
 
             assertNotSame(previousActivity, composeRule.activity)
             composeRule.onNode(settingsTab).assertIsDisplayed().assertIsSelected()
-            composeRule.onNodeWithText("Output").assertIsDisplayed()
+            composeRule.onNodeWithText("EQ target").assertIsDisplayed()
         }
     }
 }

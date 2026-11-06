@@ -107,6 +107,177 @@ internal class AndroidKt02h20HidSession(
     val permissionRequestCount: Long
         get() = permissionRequests
 
+    /** Read-only copy of the active connection's raw configuration descriptor. */
+    suspend fun configurationDescriptor(): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            session?.connection?.rawDescriptors?.copyOf()
+        }
+    }
+
+    /** Read-only class/vendor control transfer on the active exact-device connection. */
+    suspend fun controlTransferIn(
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        length: Int,
+    ): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock null
+            if (length !in 1..4096) return@withLock null
+            val buffer = ByteArray(length)
+            val read = runCatching {
+                current.connection.controlTransfer(
+                    requestType,
+                    request,
+                    value,
+                    index,
+                    buffer,
+                    length,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
+            if (read <= 0) null else buffer.copyOf(read)
+        }
+    }
+
+    /**
+     * Android's audio driver normally owns the UAC streaming/control interfaces. A class request
+     * therefore needs a forced claim of the exact interface, the active alternate setting for an
+     * AS endpoint, and a restore to alt 0 before release. This is read-only for GET_CUR paths.
+     */
+    suspend fun controlTransferInOnInterface(
+        interfaceId: Int,
+        altSetting: Int?,
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        length: Int,
+    ): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock null
+            if (length !in 1..4096) return@withLock null
+            val interfaces = (0 until current.device.interfaceCount)
+                .map(current.device::getInterface)
+            val alt0 = interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == 0 }
+                ?: return@withLock null
+            val target = if (altSetting == null) {
+                alt0
+            } else {
+                interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == altSetting }
+                    ?: return@withLock null
+            }
+            if (!current.connection.claimInterface(alt0, true)) return@withLock null
+            var result: ByteArray? = null
+            var healthy = true
+            try {
+                if (target !== alt0 && !current.connection.setInterface(target)) {
+                    healthy = false
+                }
+                if (healthy) {
+                    val buffer = ByteArray(length)
+                    val read = runCatching {
+                        current.connection.controlTransfer(
+                            requestType,
+                            request,
+                            value,
+                            index,
+                            buffer,
+                            length,
+                            TRANSFER_TIMEOUT_MILLIS,
+                        )
+                    }.getOrDefault(-1)
+                    result = if (read <= 0) null else buffer.copyOf(read)
+                }
+            } finally {
+                val restored = target === alt0 ||
+                    runCatching { current.connection.setInterface(alt0) }.getOrDefault(false)
+                val released = runCatching { current.connection.releaseInterface(alt0) }
+                    .getOrDefault(false)
+                if (!restored || !released) healthy = false
+            }
+            if (healthy) result else null
+        }
+    }
+
+    suspend fun controlTransferOutOnInterface(
+        interfaceId: Int,
+        altSetting: Int?,
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        data: ByteArray,
+    ): Boolean = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock false
+            val interfaces = (0 until current.device.interfaceCount)
+                .map(current.device::getInterface)
+            val alt0 = interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == 0 }
+                ?: return@withLock false
+            val target = if (altSetting == null) {
+                alt0
+            } else {
+                interfaces.firstOrNull { it.id == interfaceId && it.alternateSetting == altSetting }
+                    ?: return@withLock false
+            }
+            if (!current.connection.claimInterface(alt0, true)) return@withLock false
+            var healthy = true
+            var writtenOk = false
+            try {
+                if (target !== alt0 && !current.connection.setInterface(target)) {
+                    healthy = false
+                } else {
+                    val written = runCatching {
+                        current.connection.controlTransfer(
+                            requestType,
+                            request,
+                            value,
+                            index,
+                            data,
+                            data.size,
+                            TRANSFER_TIMEOUT_MILLIS,
+                        )
+                    }.getOrDefault(-1)
+                    writtenOk = written == data.size
+                }
+            } finally {
+                val restored = target === alt0 ||
+                    runCatching { current.connection.setInterface(alt0) }.getOrDefault(false)
+                val released = runCatching { current.connection.releaseInterface(alt0) }
+                    .getOrDefault(false)
+                if (!restored || !released) healthy = false
+            }
+            healthy && writtenOk
+        }
+    }
+
+    /** Explicit control-transfer write used only by an evidence-backed microphone mute path. */
+    suspend fun controlTransferOut(
+        requestType: Int,
+        request: Int,
+        value: Int,
+        index: Int,
+        data: ByteArray,
+    ): Boolean = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock false
+            val written = runCatching {
+                current.connection.controlTransfer(
+                    requestType,
+                    request,
+                    value,
+                    index,
+                    data,
+                    data.size,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
+            written == data.size
+        }
+    }
+
     /**
      * A read or ordinary mutation may report success only if the physical session stayed the
      * same for the whole exchange. Save is the deliberate exception because it is itself allowed
@@ -498,6 +669,7 @@ internal class AndroidKt02h20HidSession(
                 val serial = sessionSerial(currentDevice, connection)
                 session = UsbSession(
                     connection = connection,
+                    device = currentDevice,
                     usbInterface = descriptor.usbInterface,
                     endpointIn = descriptor.endpointIn,
                     endpointOut = descriptor.endpointOut,
@@ -601,6 +773,18 @@ internal class AndroidKt02h20HidSession(
         scope.launch { mutex.withLock { closeSessionLocked() } }
     }
 
+    /**
+     * Drops the current session and opens a new one. This is the terminal recovery for a session
+     * whose reads stopped answering: [connect] is deliberately idempotent, so it would otherwise
+     * report Connected for a handle the device no longer serves.
+     */
+    fun reconnect() {
+        scope.launch {
+            mutex.withLock { closeSessionLocked() }
+            connect()
+        }
+    }
+
     private fun closeSessionLocked() {
         val current = session ?: return
         session = null
@@ -657,6 +841,7 @@ internal class AndroidKt02h20HidSession(
 
     private data class UsbSession(
         val connection: UsbDeviceConnection,
+        val device: UsbDevice,
         val usbInterface: UsbInterface,
         val endpointIn: UsbEndpoint,
         val endpointOut: UsbEndpoint,

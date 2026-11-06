@@ -21,6 +21,7 @@ fun buildEw300CapturedEqDraft(
     captureId: String,
     snapshotBundle: HardwareEqSnapshotBundle,
     association: SavedEqHeadphoneAssociation?,
+    allowExperimentalShelf: Boolean = false,
 ): Ew300CapturedEqDraft {
     require(captureId.isNotBlank()) { "Capture ID is required." }
     val snapshot = snapshotBundle.snapshot
@@ -36,7 +37,12 @@ fun buildEw300CapturedEqDraft(
     require(snapshot.filters.all { it.enabled }) {
         "This EW300 EQ contains disabled bands that cannot yet be represented faithfully."
     }
-    require(snapshot.filters.all { it.type in SUPPORTED_CAPTURE_TYPES }) {
+    val supportedCaptureTypes = if (allowExperimentalShelf) {
+        SUPPORTED_CAPTURE_TYPES + EqFilterType.LOW_SHELF + EqFilterType.HIGH_SHELF
+    } else {
+        SUPPORTED_CAPTURE_TYPES
+    }
+    require(snapshot.filters.all { it.type in supportedCaptureTypes }) {
         "This EW300 EQ contains an unsupported filter type."
     }
     require(snapshotBundle.fingerprint.deviceId == snapshot.deviceId) {

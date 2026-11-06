@@ -103,5 +103,43 @@ microphone gain/control path. Lack of evidence is never converted to `HARDWARE_D
 | Readable/JSON operation evidence | SUPPORTED_AND_IMPLEMENTED | DEVICE surface shares privacy-safe `Ew300OperationTrace`; replay and competing-job counters are explicitly `unmeasured`/`null` when the build does not instrument them, not reported as measured zero. |
 | Read-only EW300 Device tab state surface | SUPPORTED_AND_IMPLEMENTED | Shows verified playback/global-gain state, active Peak-band count, connection freshness, and readable/JSON operation status. It does not claim or copy Black Pearl DEVICE controls. |
 
+## 2026-11-05 local parity experiment addendum
+
+These rows describe the separate `com.weekssa.opraeqforuapp.ew300parity` package only. Production
+flags remain false and the existing persistent Apply/Flash/Reset policy is unchanged.
+
+| Capability | Decision | Evidence / product behavior |
+| --- | --- | --- |
+| Runtime editor Apply (`APPLY_RUNTIME`) | SUPPORTED_AND_IMPLEMENTED (experimental; physical pending) | Product-allowlisted volatile writes plus same-session readback; zero Save asserted by JVM tests. No physical session has run this candidate. |
+| Runtime output gain (`SET_GAIN_RUNTIME`) | SUPPORTED_AND_IMPLEMENTED (experimental; physical pending) | Stereo `0x66` write within -64.0..0.0 dB / 0.5 dB, readback verified, zero Save; the tracked EQ delta is rebased. Independent physical gain validation remains pending. |
+| Explicit Save (`SAVE_RUNTIME`) | SUPPORTED_AND_IMPLEMENTED (experimental; physical pending) | Fresh live comparison, exactly one `0x53`, replacement-session handling, final readback; uncertain Save is not replayed. |
+| Truthful saved-session state | SUPPORTED_AND_IMPLEMENTED | Runtime only / Saving / Saved in this session / Save not verified / Unknown are session-scoped and never inferred from an old artifact. |
+| Read-only About metadata | SUPPORTED_AND_IMPLEMENTED | Model, firmware `1.0.0` from bounded reads, USB identity, validation class and explicit unknown-control note. Serial is omitted from shareable records. |
+| Native Low/High Shelf editor and persistence | INSUFFICIENT_EVIDENCE | Type-byte transport is historical evidence; acoustic meaning is unmeasured. Ordinary editor exposure and shelf capture/Flash remain dormant. The fixed research targets are for a future approved listening session only. |
+| Healthy reconnect after verified runtime work | SUPPORTED_AND_IMPLEMENTED | A verified no-Save completion releases a later automatic reconnect; a failed pre-verification operation stays fenced. |
+
+### 2026-11-05 five-goal parity closure
+
+| Capability | Decision | Evidence / product behavior |
+| --- | --- | --- |
+| 0-60 EW300 volume mapping | SUPPORTED_AND_IMPLEMENTED (parity package) | 60 = 0 dB, 0 = -60 dB, 1 dB/step on 0x66; Mac reversible bytes 88880000 / C4C40000 / 00000000 and exact restore. Not JA11 0x02. |
+| Microphone mute | SUPPORTED_AND_IMPLEMENTED (parity package; Pixel acoustic check pending) | UAC1 feature unit 2, source 0x0201, master mute; Mac GET 0 -> SET 1 -> verify 1 -> restore 0. |
+| Headset-remote disable switch | INSUFFICIENT_EVIDENCE / BLOCKED | Exact descriptor has no headset feature unit; HID report 0x01 is passive. Next: vendor APK/HID 0x54 static analysis. |
+| UAC mode switching | INSUFFICIENT_EVIDENCE / BLOCKED | One UAC1 configuration; no UAC2 alternate or mode selector. JA11 0x20 not transferable. Next: vendor-only command research. |
+| Current sample-rate readout | SUPPORTED_AND_IMPLEMENTED (read-only; active-stream validation pending) | UAC1 GET_CUR endpoint 0x01 (wIndex 0x0001); Mac returned 48000 Hz (80BB00). |
+| Native Low/High Shelf editor/capture/Flash | SUPPORTED_AND_IMPLEMENTED (experimental; acoustic unmeasured) | Type 3/4 bytes exact; Mac reversible LS/HS/restore; cut-only -6..0 dB, Q 0.707, 250 Hz/4 kHz. |
+
+Chip-first coverage is recorded in docs/planning/ew300-ja11-parity/CHIP_MAP.md: 256/256 registers
+read, all UAC entities/alternates enumerated, HID 0x01/0x4B/0x54 inspected, and the official
+SIMGOT Control APK/firmware assets analyzed. Coverage is 96%; the 4% residual is the two vendor-only
+control gaps (headset-disable and UAC mode) plus unresolved unit-4/0x54 semantics. Headset-disable
+and UAC mode remain BLOCKED; no firmware write or identity write occurred.
+
+**Exact die:** CHP `0211LC02` = **KT0211L**, not KT02H20. KT0211L is UAC1.0 / 24-bit / 96 kHz with
+a mono ADC mic input, mic preamp/bias, six GPIOs, up to four keys, and an auxiliary ADC. Therefore
+G3 UAC2 switching is **CHIP-LIMITED**, not a missing vendor command. G2-headset remains open for
+KT0211L GPIO/key/ADC/bias research; the real UAC1 microphone mute remains implemented. The
+KT02H20-family language elsewhere in this historical document is family-level context only.
+
 Decision vocabulary is intentionally explicit: `SUPPORTED_AND_IMPLEMENTED`,
 `HARDWARE_DOES_NOT_PROVIDE`, `INSUFFICIENT_EVIDENCE`, and `UNSAFE_OR_OUT_OF_SCOPE`.

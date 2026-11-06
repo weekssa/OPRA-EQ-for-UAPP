@@ -69,7 +69,6 @@ import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppresse
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.ConnectedDeviceSurface
-import com.weekssa.opraeqforuapp.ui.components.ContextualDeviceChoiceSurface
 import com.weekssa.opraeqforuapp.ui.components.ExportReviewDialog
 import com.weekssa.opraeqforuapp.ui.components.ExportReviewItem
 import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
@@ -116,34 +115,70 @@ private fun ew300OperationSignature(trace: Ew300OperationTrace): String =
     listOf(trace.operationId, trace.outcome, trace.stateKnown, trace.finalReadbackMatched)
         .joinToString("|")
 
+
+private fun ExportDevice.toDacDeviceOrNull(): DacDeviceId? = when (this) {
+    ExportDevice.BLACK_PEARL -> DacDeviceId.TRN_BLACK_PEARL
+    ExportDevice.FIIO_JA11 -> DacDeviceId.FIIO_JA11
+    ExportDevice.SIMGOT_EW300 -> DacDeviceId.SIMGOT_EW300
+    else -> null
+}
+
+private enum class DeviceContextAction { CONNECT, OPEN_MY_DAC, OPEN_SETTINGS }
+
 private data class DeviceContextSummary(
+    val deviceId: DacDeviceId,
     val title: String,
     val status: String,
     val isCurrent: Boolean,
-    val requiresChoice: Boolean = false,
+    val action: DeviceContextAction,
+    val actionLabel: String,
 )
 
-private fun EqLibraryUiState.deviceContextSummary(): DeviceContextSummary? {
-    val supported = dacRecognitionState.recognizedDeviceIds
-        .filter { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 || it == DacDeviceId.SIMGOT_EW300 }
-        .sortedBy(DacDeviceId::ordinal)
-    if (supported.isEmpty()) return null
-    if (supported.size > 1) {
-        return DeviceContextSummary(
-            title = "Supported DACs",
-            status = "${supported.size} devices recognized this app session · Choose in My DAC",
-            isCurrent = false,
-            requiresChoice = true,
-        )
+
+
+/** A live session or a failure is never hidden just because the EQ target is an app. */
+private fun EqLibraryUiState.hasLiveDeviceContext(): Boolean =
+    listOf(blackPearlConnectionState, fiioJa11ConnectionState, ew300ConnectionState).any {
+        it is BlackPearlConnectionState.Connected ||
+            it is Kt02h20ConnectionState.Connected ||
+            it is BlackPearlConnectionState.Error ||
+            it is Kt02h20ConnectionState.Error ||
+            it is Kt02h20ConnectionState.PermissionRequired
     }
 
-    val device = supported.single()
+/**
+ * Device block for the active EQ target. It speaks only for the target the owner picked, so a
+ * second attached DAC never changes what the bar says; picking another target changes the block.
+ */
+private fun EqLibraryUiState.deviceContextSummary(rememberedHardwareTarget: DacDeviceId?): DeviceContextSummary? {
+    val target = appPreferences.exportTargets.activeTarget
+    val targetDevice = when (target) {
+        ExportDevice.BLACK_PEARL -> DacDeviceId.TRN_BLACK_PEARL
+        ExportDevice.FIIO_JA11 -> DacDeviceId.FIIO_JA11
+        ExportDevice.SIMGOT_EW300 -> DacDeviceId.SIMGOT_EW300
+        else -> null
+    }
+    // Display anchor: the bar keeps speaking for the last hardware target after Automatic output
+    // resolution hands the target back to an app, so an unplugged DAC still reports its state.
+    // It is cleared only when the owner explicitly picks a non-hardware output.
+    val anchorDevice = if (targetDevice == null) rememberedHardwareTarget else null
+    val liveFallback = if (targetDevice == null && anchorDevice == null && hasLiveDeviceContext()) {
+        dacRecognitionState.recognizedDeviceIds.singleOrNull { candidate ->
+            candidate == DacDeviceId.TRN_BLACK_PEARL ||
+                candidate == DacDeviceId.FIIO_JA11 ||
+                candidate == DacDeviceId.SIMGOT_EW300
+        }
+    } else {
+        null
+    }
+    val device = targetDevice ?: anchorDevice ?: liveFallback ?: return null
     val title = when (device) {
         DacDeviceId.TRN_BLACK_PEARL -> "TRN Black Pearl"
         DacDeviceId.FIIO_JA11 -> "FiiO JA11"
         DacDeviceId.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
         DacDeviceId.JCALLY_JM12_STOCK -> return null
     }
+    val attached = device in dacRecognitionState.presentDeviceIds
     val connection = when (device) {
         DacDeviceId.TRN_BLACK_PEARL -> blackPearlConnectionState
         DacDeviceId.FIIO_JA11 -> fiioJa11ConnectionState
@@ -160,31 +195,47 @@ private fun EqLibraryUiState.deviceContextSummary(): DeviceContextSummary? {
         BlackPearlConnectionState.Connected, Kt02h20ConnectionState.Connected -> true
         else -> false
     }
-    val status = when (connection) {
-        BlackPearlConnectionState.Connected, Kt02h20ConnectionState.Connected -> when {
-            hardwareEq.freshness == DacStateFreshness.CURRENT -> "Connected · State current"
-            hardwareEq.isReading -> "Connected · Reading device state"
-            hardwareEq.bundle != null -> "Connected · Last read is stale"
-            else -> "Connected · Waiting for first device read"
-        }
-        BlackPearlConnectionState.Connecting, Kt02h20ConnectionState.Connecting ->
-            "Connecting · No settings have changed"
-        is Kt02h20ConnectionState.PermissionRequired -> "Permission needed · Allow USB access in My DAC"
-        is BlackPearlConnectionState.Error, is Kt02h20ConnectionState.Error ->
-            "Connection issue · Open My DAC to review"
-        else -> if (device in dacRecognitionState.presentDeviceIds) {
-            "Device detected · Open My DAC to connect"
-        } else if (hardwareEq.bundle != null) {
-            "Disconnected · Last read is historical"
-        } else {
-            "Disconnected · No current device state"
-        }
+    val connecting = when (connection) {
+        BlackPearlConnectionState.Connecting, Kt02h20ConnectionState.Connecting -> true
+        else -> false
     }
-    return DeviceContextSummary(
-        title = title,
-        status = status,
-        isCurrent = connected && hardwareEq.freshness == DacStateFreshness.CURRENT,
-    )
+    val permissionRequired = connection is Kt02h20ConnectionState.PermissionRequired
+    val failed = connection is BlackPearlConnectionState.Error || connection is Kt02h20ConnectionState.Error
+    val directFlashEnabled = when (device) {
+        DacDeviceId.TRN_BLACK_PEARL -> appPreferences.directBlackPearlFlashEnabled
+        DacDeviceId.FIIO_JA11 -> appPreferences.directFiioJa11FlashEnabled
+        DacDeviceId.SIMGOT_EW300 -> appPreferences.directEw300FlashEnabled
+        DacDeviceId.JCALLY_JM12_STOCK -> false
+    }
+    val isCurrent = connected && hardwareEq.freshness == DacStateFreshness.CURRENT
+    fun summary(status: String, action: DeviceContextAction, label: String) =
+        DeviceContextSummary(device, title, status, isCurrent, action, label)
+    return when {
+        // A session that answered before and has now stopped answering is not usable. Say so and
+        // offer Connect, which re-opens the device. A failed first read after Save keeps Open My
+        // DAC: that is a replacement session settling, and My DAC explains it.
+        connected && hardwareEq.readFailed && hardwareEq.bundle != null -> summary(
+            "Connection issue",
+            DeviceContextAction.CONNECT,
+            "Connect",
+        )
+        connected -> summary(
+            when {
+                isCurrent -> "Connected · State current"
+                hardwareEq.isReading -> "Connected · Reading device state"
+                hardwareEq.bundle != null -> "Connected · Last read is stale"
+                else -> "Connected · Waiting for first device read"
+            },
+            DeviceContextAction.OPEN_MY_DAC,
+            "Open My DAC",
+        )
+        connecting -> summary("Connecting…", DeviceContextAction.OPEN_MY_DAC, "Open My DAC")
+        permissionRequired -> summary("Allow USB access", DeviceContextAction.CONNECT, "Connect")
+        failed -> summary("Connection issue", DeviceContextAction.CONNECT, "Connect")
+        !attached -> summary("No DAC attached", DeviceContextAction.OPEN_MY_DAC, "Open My DAC")
+        !directFlashEnabled -> summary("Direct Flash off", DeviceContextAction.OPEN_SETTINGS, "Open Settings")
+        else -> summary("Not connected", DeviceContextAction.CONNECT, "Connect")
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -206,6 +257,8 @@ fun EqLibraryApp(
     val jcallyJm12ConnectionState = state.jcallyJm12ConnectionState
 
     val onConnectDacForMyDac = actions.onConnectDacForMyDac
+    val onExportLibraryBundle = actions.onExportLibraryBundle
+    val onImportLibraryBundle = actions.onImportLibraryBundle
     val onOpenBlackPearlEditor = actions.onOpenBlackPearlEditor
     val onBackMyDacEditor = actions.onBackMyDacEditor
     val onCloseMyDacEditor = actions.onCloseMyDacEditor
@@ -258,6 +311,10 @@ fun EqLibraryApp(
     val onRunEw300CapabilityBatch = actions.onRunEw300CapabilityBatch
     val onAdvanceEw300PersistenceQualification = actions.onAdvanceEw300PersistenceQualification
     val onSetEw300PlaybackGain = actions.onSetEw300PlaybackGain
+    val onSaveEw300Runtime = actions.onSaveEw300Runtime
+    val onSetEw300VolumeLevel = actions.onSetEw300VolumeLevel
+    val onRefreshEw300Uac = actions.onRefreshEw300Uac
+    val onApplyEw300ShelfTestTarget = actions.onApplyEw300ShelfTestTarget
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -381,7 +438,14 @@ fun EqLibraryApp(
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
         managedHeadphonesForUi.firstOrNull { it.productId == productId }
     }
-    val deviceContextSummary = state.deviceContextSummary()
+    var rememberedHardwareTargetName by rememberSaveable { mutableStateOf<String?>(null) }
+    val rememberedHardwareTarget = rememberedHardwareTargetName?.let { name ->
+        runCatching { DacDeviceId.valueOf(name) }.getOrNull()
+    }
+    LaunchedEffect(activeOutput) {
+        activeOutput.toDacDeviceOrNull()?.let { device -> rememberedHardwareTargetName = device.name }
+    }
+    val deviceContextSummary = state.deviceContextSummary(rememberedHardwareTarget)
 
     LaunchedEffect(
         pendingInitialMyDacOpenDeviceName,
@@ -808,6 +872,32 @@ fun EqLibraryApp(
         }
     }
 
+    // Library backup: one JSON file the owner names, and one they pick to restore.
+    val libraryExportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri == null) {
+            scope.launch { snackbarHostState.showSnackbar("No file chosen. Nothing was exported.") }
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch { snackbarHostState.showSnackbar(onExportLibraryBundle(uri)) }
+    }
+    val libraryImportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) {
+            scope.launch { snackbarHostState.showSnackbar("No file chosen. Nothing was imported.") }
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch { snackbarHostState.showSnackbar(onImportLibraryBundle(uri)) }
+    }
+    val requestLibraryExport: () -> Unit = {
+        libraryExportPicker.launch("eq-library-backup.json")
+    }
+    val requestLibraryImport: () -> Unit = {
+        libraryImportPicker.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
+    }
+
     val chooseExportFolder: (ActiveOutputExportRequest?) -> Unit = { request ->
         pendingExportRequestState = request?.toSaveableState()
         folderPicker.launch(appPreferences.exportTreeUri?.let(Uri::parse))
@@ -957,26 +1047,6 @@ fun EqLibraryApp(
                         .fillMaxWidth()
                         .fillMaxHeight(),
                 ) {
-                if (selectedDestination != EqLibraryDestination.MyDac) {
-                    deviceContextSummary?.let { context ->
-                        if (context.requiresChoice) {
-                            ContextualDeviceChoiceSurface(
-                                title = context.title,
-                                status = context.status,
-                                onOpen = { myDacWorkspaceOpen = true },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            )
-                        } else {
-                            ConnectedDeviceSurface(
-                                deviceName = context.title,
-                                status = context.status,
-                                isCurrent = context.isCurrent,
-                                onOpen = { myDacWorkspaceOpen = true },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            )
-                        }
-                    }
-                }
                 if (
                     selectedDestination == EqLibraryDestination.MyEqs ||
                     selectedDestination == EqLibraryDestination.EqLibrary
@@ -984,8 +1054,37 @@ fun EqLibraryApp(
                     TargetContextSelector(
                         activeTarget = activeOutput,
                         enabledTargets = enabledOutputs,
-                        onTargetChange = onSessionActiveExportTargetChange,
+                        onTargetChange = { device ->
+                            // Picking a non-hardware output retires the anchor; a hardware pick
+                            // replaces it with that device.
+                            rememberedHardwareTargetName = device.toDacDeviceOrNull()?.name
+                            onSessionActiveExportTargetChange(device)
+                        },
                     )
+                    deviceContextSummary?.let { context ->
+                        ConnectedDeviceSurface(
+                            deviceName = context.title,
+                            status = context.status,
+                            isCurrent = context.isCurrent,
+                            actionLabel = context.actionLabel,
+                            onOpen = { myDacWorkspaceOpen = true },
+                            onAction = {
+                                when (context.action) {
+                                    DeviceContextAction.CONNECT -> when (context.deviceId) {
+                                        DacDeviceId.TRN_BLACK_PEARL -> onConnectBlackPearl()
+                                        DacDeviceId.FIIO_JA11 -> onConnectFiioJa11()
+                                        DacDeviceId.SIMGOT_EW300 -> onConnectEw300()
+                                        DacDeviceId.JCALLY_JM12_STOCK -> Unit
+                                    }
+                                    DeviceContextAction.OPEN_MY_DAC -> myDacWorkspaceOpen = true
+                                    DeviceContextAction.OPEN_SETTINGS -> {
+                                        myDacWorkspaceOpen = false
+                                        selectRootDestination(EqLibraryDestination.Settings)
+                                    }
+                                }
+                            },
+                        )
+                    }
                     when {
                         updateBannerVersion != null -> UpdateAvailableBanner(
                             version = updateBannerVersion,
@@ -1129,6 +1228,9 @@ fun EqLibraryApp(
                             fiioJa11DeviceState = state.fiioJa11DeviceState,
                             ja11DcrTuningState = state.ja11DcrTuningState,
                             ew300PlaybackGainState = state.ew300PlaybackGainState,
+                            ew300RuntimePersistence = state.ew300RuntimePersistence,
+                            ew300RuntimeSaveState = state.ew300RuntimeSaveState,
+                            ew300UacState = state.ew300UacState,
                             onConnectDac = onConnectDacForMyDac,
                             onOpenBlackPearlEditor = onOpenBlackPearlEditor,
                             onCloseBlackPearlEditor = onCloseMyDacEditor,
@@ -1183,6 +1285,10 @@ fun EqLibraryApp(
                             onRunEw300CapabilityBatch = onRunEw300CapabilityBatch,
                             onAdvanceEw300PersistenceQualification = onAdvanceEw300PersistenceQualification,
                             onSetEw300PlaybackGain = onSetEw300PlaybackGain,
+                            onSaveEw300Runtime = onSaveEw300Runtime,
+                            onSetEw300VolumeLevel = onSetEw300VolumeLevel,
+                            onRefreshEw300Uac = onRefreshEw300Uac,
+                            onApplyEw300ShelfTestTarget = onApplyEw300ShelfTestTarget,
                             onMessage = ::showMessage,
                             onOperationStatus = ::showOperationStatus,
                                 modifier = Modifier.fillMaxSize(),
@@ -1209,7 +1315,11 @@ fun EqLibraryApp(
                                     onFlashFiioJa11FromMyDac(profile)
                                 }
                             },
-                            ew300ConnectionState = ew300ConnectionState,
+                            ew300ConnectionState = if (appPreferences.directEw300FlashEnabled) {
+                                ew300ConnectionState
+                            } else {
+                                com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState.Disconnected
+                            },
                             onFlashEw300Profile = { profile ->
                                 flashImmediateWithFeedback(ExportDevice.SIMGOT_EW300) {
                                     onFlashEw300FromMyDac(profile)
@@ -1246,8 +1356,12 @@ fun EqLibraryApp(
                             onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
                             onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
                             onDirectEw300FlashEnabledChange = onDirectEw300FlashEnabledChange,
+                            ew300ConnectionState = ew300ConnectionState,
+                            onConnectEw300 = onConnectEw300,
                             hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                             onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
+                            onExportLibraryBackup = requestLibraryExport,
+                            onImportLibraryBackup = requestLibraryImport,
                             onMessage = ::showMessage,
                             modifier = Modifier.fillMaxSize(),
                         )

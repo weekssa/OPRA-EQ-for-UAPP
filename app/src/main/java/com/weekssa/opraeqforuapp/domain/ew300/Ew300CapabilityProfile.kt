@@ -8,6 +8,7 @@ package com.weekssa.opraeqforuapp.domain.ew300
  */
 object Ew300CapabilityProfile {
     const val VERSION = "ew300-production-v1"
+    const val EXPERIMENTAL_VERSION = "ew300-parity-experiment-v1"
     const val MANUFACTURER = "LE XIAN"
     const val PRODUCT = "SIMGOT EW300 DSP"
     const val VENDOR_ID_HEX = "31b2"
@@ -34,4 +35,29 @@ object Ew300CapabilityProfile {
             fields["interface"] == HID_INTERFACE &&
             !fields["serial"].isNullOrBlank()
     }
+
+    /**
+     * Experimental product policy. Production defaults remain Peak-only and persistent Apply;
+     * the parity build opts into runtime Apply, runtime output gain, and an explicit Save.
+     */
+    data class ExperimentFlags(
+        val parityEnabled: Boolean = false,
+        val shelfQualificationEnabled: Boolean = false,
+        val shelfEditorEnabled: Boolean = false,
+    ) {
+        init {
+            require(!shelfEditorEnabled || shelfQualificationEnabled) {
+                "Shelf editor exposure requires the qualification path."
+            }
+        }
+    }
+
+    val PRODUCTION_FLAGS = ExperimentFlags()
+
+    /** Shelf controls stay dormant until both the policy flag and owner listening evidence exist. */
+    fun exposesShelfEditor(
+        flags: ExperimentFlags,
+        ownerListeningQualified: Boolean,
+    ): Boolean = flags.parityEnabled && flags.shelfEditorEnabled &&
+        flags.shelfQualificationEnabled && ownerListeningQualified
 }

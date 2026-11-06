@@ -62,9 +62,13 @@ class Ew300DeviceStatusTest {
             }
         }
 
-        composeRule.onNodeWithText("Output gain").assertIsDisplayed()
-        composeRule.onNodeWithText("Equalizer").assertIsDisplayed()
-        composeRule.onNodeWithText("Connection").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect SIMGOT EW300 DSP to view its settings.").assertIsDisplayed()
+        composeRule.onNodeWithText("Output gain").assertDoesNotExist()
+        composeRule.onNodeWithText("Equalizer").assertDoesNotExist()
+        composeRule.onNodeWithText("Connection").assertDoesNotExist()
+        composeRule.onNodeWithText("Experimental features").assertDoesNotExist()
+        composeRule.onNodeWithText("Headset remote").assertDoesNotExist()
+        composeRule.onNodeWithText("Read USB audio").assertDoesNotExist()
         composeRule.onNodeWithText("Validation capability report").assertDoesNotExist()
         composeRule.onNodeWithText("Run read-only report").assertDoesNotExist()
         composeRule.onNodeWithText("Share readable report").assertDoesNotExist()
@@ -89,6 +93,19 @@ class Ew300DeviceStatusTest {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Ew300DeviceStatus(
                     report = report,
+                    hardwareEqState = HardwareEqSnapshotState(
+                        bundle = requireNotNull(
+                            HardwareEqSnapshotFactory.ew300(
+                                nativeBands = List(Ew300Protocol.BAND_COUNT) {
+                                    Kt02h20Band("peak_dip", 1_000.0, 0.0, 1.0)
+                                },
+                                globalGainDb = 0.0,
+                                sessionGeneration = 1,
+                                verifiedAtEpochMillis = 1,
+                            ),
+                        ),
+                        freshness = DacStateFreshness.CURRENT,
+                    ),
                     running = false,
                     onRefresh = { refreshCount += 1 },
                     onRun = {},
@@ -124,9 +141,13 @@ class Ew300DeviceStatusTest {
             }
         }
 
-        composeRule.onNodeWithText("Output gain").assertIsDisplayed()
-        composeRule.onNodeWithText("Equalizer").assertIsDisplayed()
-        composeRule.onNodeWithText("Connection").assertIsDisplayed()
+        composeRule.onNodeWithText("Device volume").assertIsDisplayed()
+        composeRule.onNodeWithText("Startup settings").assertDoesNotExist()
+        composeRule.onNodeWithText("Microphone input").assertDoesNotExist()
+        composeRule.onNodeWithText("Microphone").assertDoesNotExist()
+        composeRule.onNodeWithText("Output gain").assertDoesNotExist()
+        composeRule.onNodeWithText("Equalizer").assertDoesNotExist()
+        composeRule.onNodeWithText("Connection").assertDoesNotExist()
         composeRule.onNodeWithText("Refresh").assertIsEnabled().performClick()
         composeRule.onNodeWithText("Validation capability report").assertDoesNotExist()
         composeRule.onNodeWithText("Run read-only report").assertDoesNotExist()
@@ -188,7 +209,7 @@ class Ew300DeviceStatusTest {
         composeRule.onNodeWithText("Flat").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("EQ response").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithContentDescription(
-            "EW300 EQ response graph from 20 hertz to 20 kilohertz with 0 active Peak bands. Response ranges from 0.0 to 0.0 decibels, with a zero-decibel reference line.",
+            "EW300 EQ response graph from 20 hertz to 20 kilohertz with 0 active bands. Response ranges from 0.0 to 0.0 decibels, with a zero-decibel reference line.",
         ).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Refresh").performScrollTo().assertIsEnabled().performClick()
         composeRule.runOnIdle { assertEquals(1, refreshCount) }
@@ -225,9 +246,10 @@ class Ew300DeviceStatusTest {
             }
         }
 
-        composeRule.onNodeWithText("Last read device state").assertIsDisplayed()
-        composeRule.onNodeWithText("cached values are not current", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Current device state").assertDoesNotExist()
+        composeRule.onNodeWithText(
+            "Showing the last read settings. Refresh before relying on them.",
+        ).assertIsDisplayed()
+        composeRule.onNodeWithText("cached values are not current", substring = true).assertDoesNotExist()
     }
 
     @Test

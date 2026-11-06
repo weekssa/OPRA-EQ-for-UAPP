@@ -116,6 +116,59 @@ class Ew300ProtocolTest {
         assertFalse(Ew300Protocol.globalGainMatches(mismatched, -53, stereoFlags))
     }
 
+    @Test
+    fun historicalPositiveReadbackDecodesExactStockBytes() {
+        val response = bytes(0x4B, 0x26, 0, 0, 0, 0x52, 0, 0xF5, 0xFF, 0x64, 0)
+
+        assertArrayEquals(bytes(0xF5, 0xFF, 0x64, 0), Ew300Protocol.decodeRead(0x26, response))
+        assertNull(Ew300Protocol.decodeRead(0x27, response))
+        assertNull(Ew300Protocol.decodeRead(0x26, bytes(0x54, 0x26, 0, 0, 0, 0x52, 0, 0xF5, 0xFF, 0x64, 0)))
+        assertNull(Ew300Protocol.decodeRead(0x26, bytes(0x4B, 0x26, 0, 0, 0, 0x57, 0, 0xF5, 0xFF, 0x64, 0)))
+        assertNull(Ew300Protocol.decodeRead(0x26, bytes(0x4B, 0x26, 0, 0, 0, 0x52, 0)))
+    }
+
+    @Test
+    fun signedPeakGainBoundariesEncodeTheirTwosComplementWords() {
+        val minimum = Ew300Protocol.encodeBand(Kt02h20Band("peak_dip", 20.0, -12.0, 0.1))
+        val maximum = Ew300Protocol.encodeBand(Kt02h20Band("peak_dip", 20_000.0, 12.0, 10.0))
+
+        assertArrayEquals(bytes(0x88, 0xFF, 0x14, 0x00), minimum.first)
+        assertArrayEquals(bytes(0x78, 0x00, 0x20, 0x4E), maximum.first)
+        assertArrayEquals(bytes(0x64, 0x00, 0x00, 0x00), minimum.second)
+        assertArrayEquals(bytes(0x10, 0x27, 0x00, 0x00), maximum.second)
+    }
+
+    @Test
+    fun shelfTypesEncodeOnlyThroughTheExperimentalGate() {
+        val low = Ew300Protocol.encodeBand(
+            Kt02h20Band("low_shelf", 250.0, -6.0, 0.707),
+            allowExperimentalShelf = true,
+        )
+        val high = Ew300Protocol.encodeBand(
+            Kt02h20Band("high_shelf", 4_000.0, -6.0, 0.707),
+            allowExperimentalShelf = true,
+        )
+
+        assertEquals(0x03, low.second[2].toInt() and 0xFF)
+        assertEquals(0x04, high.second[2].toInt() and 0xFF)
+        assertArrayEquals(bytes(0xC3, 0x02, 0x03, 0x00), low.second)
+        assertArrayEquals(bytes(0xC3, 0x02, 0x04, 0x00), high.second)
+        assertThrows(IllegalArgumentException::class.java) {
+            Ew300Protocol.encodeBand(Kt02h20Band("low_shelf", 250.0, 1.0, 0.707), allowExperimentalShelf = true)
+        }
+    }
+
+    @Test
+    fun stereoLayoutWritesBothBytesWhileSingleDacLayoutPreservesTheSecond() {
+        val flagsStereo = bytes(0, 0, 0, 0)
+        val flagsSingle = bytes(0, 0x02, 0, 0)
+        val source = bytes(0x96, 0x96, 0, 0)
+
+        val steps = Ew300Protocol.gainDbToSteps(-40.0)
+        assertArrayEquals(bytes(0xB0, 0xB0, 0, 0), Ew300Protocol.withGlobalGainSteps(source, steps, flagsStereo))
+        assertArrayEquals(bytes(0xB0, 0x96, 0, 0), Ew300Protocol.withGlobalGainSteps(source, steps, flagsSingle))
+    }
+
     private fun bytes(vararg values: Int): ByteArray = ByteArray(values.size) { index ->
         (values[index] and 0xFF).toByte()
     }
