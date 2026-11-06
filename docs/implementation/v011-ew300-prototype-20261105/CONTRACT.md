@@ -117,7 +117,8 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "docs/PUBLIC_RELEASE_CHECKLIST.md",
     "README.md",
     "docs/releases/v0.11.0.md",
-    "docs/release-engineering/v0.11.0-stable/"
+    "docs/release-engineering/v0.11.0-stable/",
+    "tools/verify_stable_release_smoke.py"
   ]
 }
 ```
