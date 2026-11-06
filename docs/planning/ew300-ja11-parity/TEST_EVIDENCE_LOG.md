@@ -752,3 +752,7 @@ Add entries below in chronological order.
   the Pixel and hash-verified; the normal path still reads Connected · State current.
 - Not exercised on hardware: the reopen itself. Forcing a live session to stop answering cannot be
   done on demand without damaging state, so the branch is proven at the UI and code level only.
+- Field note, same day: the owner reports this build working on the Pixel. That is an owner report,
+  not a recorded run: no capture of a Connection issue recovery was taken, and whether the owner
+  exercised that path or only the ordinary flash-and-connect flow is not established, so the reopen
+  itself remains proven at the UI and code level.
