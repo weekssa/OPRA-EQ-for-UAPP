@@ -585,3 +585,11 @@ Add entries below in chronological order.
   later session held the previous EQ) is not reproducible from our sequencing; it needs a hardware
   reproduction with one replug before any behaviour change is justified. No production code changed.
 - JVM 885 tests / 0 failures at 19:40Z; lint 0 errors / 121 warnings / 2 hints.
+
+### T-044 — Reset persistence on the Pixel: passed on this run
+
+- Date: 2026-11-06, APK 7516516b, Pixel 9, wireless ADB.
+- Sequence: Connect -> Flash AFUL Explorer - LoboNautics (one Save) -> Reset to flat (one Save) -> app read back Flat at 0.0 dB -> owner unplugged five seconds and replugged.
+- After the power cycle the EW300 read Flat, 0 active Peak bands, playback/global gain 0.0 dB. The reset persisted; the earlier field failure did not reproduce.
+- Save count: two (one Flash, one Reset). No other writes.
+- The earlier observation (reset appeared flat, later session held the previous EQ) is therefore not reproducible on this build; it remains unexplained rather than fixed.

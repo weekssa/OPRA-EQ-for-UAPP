@@ -39,7 +39,7 @@ itself is approved and the gate is resealed with it in scope.
 
 - [ ] Plan approved and committed, gate resealed with this file in scope
 - [x] A1 reset-persistence tests written (persistence-modelling fake)
-- [x] A2 app-side transaction shown sound in the model; field repro needs hardware (T-043)
+- [x] A2 app-side transaction sound in the model; hardware run passed (T-043, T-044)
 - [x] A3 no code fix warranted: model shows correct single Save and fail-closed rejection
 - [ ] B1 vocabulary sheet written
 - [ ] B2 copy applied across the four surfaces
