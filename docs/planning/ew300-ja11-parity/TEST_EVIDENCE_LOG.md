@@ -547,3 +547,11 @@ Add entries below in chronological order.
 - DAC status card: ten instrumented tests reach My DAC through its "Open My DAC" label, so removing the card requires migrating those navigation paths; the card was left in place this pass.
 - Re-validated after the decision: JVM 883 tests, 0 failures; lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 (05:57:22Z). APK unchanged at 1e97db8e.
 
+
+### T-040 — My DAC reachable from the navigation bar
+
+- Cause of the outage: an experimental build with the device status card removed was installed on the phone and reached My DAC only through that card, so the workspace became unreachable. My DAC had been documented as "never a persistent root tab", so nothing else offered a path.
+- Fix: My DAC is now a navigation destination whenever a supported production DAC is recognized (JCALLY identities still create no entry), selected while the workspace is open. The status card stays as a shortcut.
+- Contract test updated: recognizedDacStaysContextualAndRemainsSeparateFromTheExportTarget now asserts the My DAC destination exists and that the export target stays independent; unsupportedRecognizedDeviceDoesNotCreateAProductionMyDacEntry still passes.
+- Candidate: APK 45a00243b060f10958c2108ec0261f85f7aca961bc29cb8bbb17b169e4cd0c03; validated JVM 883 tests, 0 failures; lint 0 errors; connected v011beta suite 84/84 (06:24:10Z). Installed on the Pixel; the bar shows My EQs, EQ Library, Settings and My DAC.
+

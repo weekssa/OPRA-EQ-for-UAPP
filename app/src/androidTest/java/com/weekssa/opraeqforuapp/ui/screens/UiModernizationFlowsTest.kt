@@ -543,11 +543,13 @@ class UiModernizationFlowsTest {
         assertRootLabelExists("My EQs")
         assertRootLabelExists("EQ Library")
         assertRootLabelExists("Settings")
-        composeRule.onNodeWithText("My DAC", substring = false).assertDoesNotExist()
+        // A recognized supported DAC exposes My DAC as a destination, so the workspace stays
+        // reachable without depending on the context card.
+        assertRootLabelExists("My DAC")
         captureV080Screenshot("app-shell-recognized-device-context")
 
         composeRule.onNodeWithText("Open My DAC").performClick()
-        composeRule.onNodeWithText("My DAC").assertIsDisplayed()
+        assertRootLabelExists("My DAC")
         assertRootLabelExists("EQ Library")
         assertRootLabelExists("Settings")
         waitForActivityWindowFocus("Android Back key dispatch")
@@ -576,7 +578,7 @@ class UiModernizationFlowsTest {
         assertRootLabelExists("My EQs")
         assertRootLabelExists("EQ Library")
         assertRootLabelExists("Settings")
-        composeRule.onNodeWithText("My DAC", substring = false).assertDoesNotExist()
+        assertRootLabelExists("My DAC")
     }
 
     @Test
@@ -979,7 +981,7 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Open My DAC").performClick()
         composeRule.onNodeWithText("Current hardware EQ").assertIsDisplayed()
         composeRule.onNodeWithText("Edit EQ").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("My DAC").assertIsDisplayed()
+        composeRule.onAllNodesWithText("My DAC")[0].assertIsDisplayed()
         composeRule.waitForIdle()
         captureV080Screenshot("my-dac-current-fiio-production-shell-fixture-light-100")
         composeRule.onNodeWithContentDescription("Back").performClick()
