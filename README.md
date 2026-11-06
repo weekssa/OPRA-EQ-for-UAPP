@@ -23,6 +23,10 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.11.0/EQ-Library-v0.11.0.apk.sha256) is published with the release, together with the exact APK digest on the [Project State](docs/PROJECT_STATE.md) record.
 
+The public APK SHA-256 is:
+
+`b3de641b92e801dcee6dee44f8d1721ec08d55c63dd5de6f7fe1a9f64e74c307`
+
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
 ## v0.11.0 highlights

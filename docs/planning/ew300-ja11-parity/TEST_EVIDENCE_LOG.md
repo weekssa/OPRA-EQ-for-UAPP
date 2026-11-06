@@ -776,3 +776,20 @@ Add entries below in chronological order.
   beta suffix carried by the v011beta variant; Project State had to declare the candidate; two EW300
   flow tests had to assert the debug variant's compiled-off surface instead of assuming parity.
 
+### T-055 — v0.11.0 published as the stable public release
+
+- Public release v0.11.0, published 2026-11-06T23:23:03Z, immutable, non-draft, non-prerelease and
+  `/releases/latest`. Source a3dbeac26f82dd844055a65ec8be97dd2729e890 (PR #144 merge); annotated tag
+  v0.11.0 object f51b2baa0ec671bcff7f478f478093c82d91ab81 peels to it.
+- APK EQ-Library-v0.11.0.apk, SHA-256
+  b3de641b92e801dcee6dee44f8d1721ec08d55c63dd5de6f7fe1a9f64e74c307; downloaded from the release
+  independently and matched the sidecar, the candidate manifest, the pinned signer
+  65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747, and the 0.11.0 / 23 badging.
+- Pipeline: signed candidate run 42310173763 (artifact 13547539947), promotion run 42310935419,
+  which re-verified the artifact and ran the API 35 clean-install and v0.10.0 in-place upgrade smoke
+  before tagging and publishing without rebuilding or re-signing.
+- Two gate failures were fixed rather than bypassed on the way: the release contract rejected a beta
+  versionName on main (fixed earlier by the variant suffix), and the promotion smoke waited for
+  Settings copy v0.11 renamed, so the script now accepts both labels (PR #144).
+- Limits: native shelf acoustics unmeasured and those controls compiled off; headset-remote and UAC
+  mode switching chip-limited; no listening or acoustic claim.
