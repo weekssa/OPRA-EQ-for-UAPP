@@ -40,6 +40,7 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/EqLibraryApp.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/EqLibraryViewModel.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/MyDacEditorUiState.kt",
+    "app/src/main/java/com/weekssa/opraeqforuapp/ui/components/AppContextSurfaces.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/DacDeviceStatus.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/Ew300MyDacContent.kt",
     "app/src/main/java/com/weekssa/opraeqforuapp/ui/screens/ManagedHeadphoneDetailScreen.kt",
