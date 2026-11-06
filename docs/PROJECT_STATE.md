@@ -2,21 +2,20 @@
 
 Workstream last verified: 2026-11-03. Public/installed tuples below retain their dated evidence. This is a concise state summary. The dated release and validation records linked below remain the detailed evidence.
 
-Candidate build: **v0.11.0**, versionCode `23`, package `com.weekssa.opraeqforuapp`. It advances the
-published v0.10.0 (code 22) with the EW300 device surface, the My EQs / EQ Library context bar,
-library backup and restore, and the flash read-retry fix. The locally tested prototype package
-`com.weekssa.opraeqforuapp.v011beta` is `0.11.0-beta.1` at the same code. Signed-candidate and
-publication identity are recorded under the beta candidate below.
+## v0.11.0 stable release (2026-11-06)
 
-## v0.11.0 beta candidate (2026-11-06)
+Current public stable release: **v0.11.0**, versionCode `23`.
 
-- Signed candidate: [run 42300790583](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/42300790583), artifacts `13545155341` (signed APK bundle) and `13545195381` (emulator diagnostics), from source `0a90afeda83af7711acfdba65e1dbd4b207f55cb` (PR #141 merge).
-- APK `EQ-Library-v0.11.0-beta-0a90afe.apk`, SHA-256 `48c3d7bf82ce0ad3cf656d863844b9620d5e813597b2b843e7e2093e3f50a27b`, package `com.weekssa.opraeqforuapp`, versionName `0.11.0`, versionCode `23`; the downloaded APK matched its sidecar checksum and the pinned signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
-- R8 mapping SHA-256 `c720c3b2bce5a711e6cb166788a7d17d60015b000b6dbe916412b62a7d09ce1d`; candidate manifest `candidateTarget=ew300`, capability profile "EW300 exact fingerprint; five-band direct-Hz Peak", test plan docs/EW300_DSP_HANDS_ON_CHECKLIST.md, evidence E001, E043-E048.
-- Published to the `mobile-test-apk` distribution branch by the workflow's verified publisher (`Publish signed mobile test APK from 0a90afe`). This is the beta testing lane, not a public release, and it does not change `/releases/latest`.
-- Limits recorded with the candidate: native shelf acoustics remain unmeasured so those controls stay experimental and compiled off; no acoustic or listening claim is made.
+Published release: [EQ Library v0.11.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.11.0), published `2026-11-06T23:23:03Z`, immutable, non-draft, non-prerelease and `/releases/latest`. Package `com.weekssa.opraeqforuapp`.
 
-## v0.10.0 stable release (2026-11-04)
+- Release source: `a3dbeac26f82dd844055a65ec8be97dd2729e890` (PR #144 merge). Annotated tag `v0.11.0` object `f51b2baa0ec671bcff7f478f478093c82d91ab81` peels to that source.
+- Exact stable APK SHA-256: `b3de641b92e801dcee6dee44f8d1721ec08d55c63dd5de6f7fe1a9f64e74c307` (`EQ-Library-v0.11.0.apk`, 2,937,616 bytes). The public APK was downloaded independently and matched its sidecar checksum and the pinned signer.
+- Pinned signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; candidate manifest `releaseChannel=stable`, `prerelease=false`, versionName `0.11.0`, versionCode `23`.
+- Signed candidate run `42310173763`, artifact `13547539947`; promotion run `42310935419` passed exact-candidate verification and the API 35 clean-install and v0.10.0 in-place upgrade lanes before publication.
+- Predecessor beta candidate: run `42300790583`, APK `48c3d7bf82ce0ad3cf656d863844b9620d5e813597b2b843e7e2093e3f50a27b`, published to the `mobile-test-apk` testing branch, not a public release.
+- Open limits: native shelf acoustics are unmeasured and those controls stay compiled off; headset-remote and UAC mode switching are chip-limited; no listening claim is made.
+
+## Previous stable release: v0.10.0 (published 2026-11-04)
 
 Published stable release: [EQ Library v0.10.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.10.0), release ID `434267766`, published `2026-11-04T18:04:05Z`, immutable, non-draft, non-prerelease and `/releases/latest`. versionName `0.10.0`, versionCode `22`, package `com.weekssa.opraeqforuapp`. It promotes the JA11 tuning and DEVICE work the owner confirmed working on the device in v0.9.0-beta.4; release notes are in docs/releases/v0.10.0.md and v0.9.0 is the previous stable release.
 
