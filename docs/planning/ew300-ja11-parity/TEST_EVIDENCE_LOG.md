@@ -689,3 +689,24 @@ Add entries below in chronological order.
   the controls, the bar stays on the audio surfaces — holds on the device, not just in the emulator.
 - Read-only: three tab switches and three UI dumps. No setting was changed apart from the Direct Flash
   toggle in T-049, which was restored and re-verified.
+
+
+### T-051 — Library backup and restore: built, tested, and exercised on the Pixel
+
+- New path: Settings → Library → Backup (Export) and Restore (Import), with the system file picker.
+  Format eq-library-bundle v1 carries saved EQs and General EQs as their stored JSON, verbatim.
+- Local gates: JVM 895 tests / 0 failures (ten new bundle tests); lint 0 errors / 118 warnings /
+  2 hints; instrumented v011beta suite 100/100 on emulator-5580, including five Room round-trip tests.
+- Artifact: APK 0252dbce655af2fe0d588b5415164e55e16318e8282970694161b2c592e5281e, built
+  2026-11-06T20:31:53Z, installed on the Pixel 9 and hash-verified on device.
+- On the phone: one General EQ (Bass Boost) saved, Settings → Backup → Export created
+  Download/eq-library-backup.json (4,616 bytes) through the system save sheet. The file contains the
+  format id, the source package and version, and the preset with its full canonical selection JSON
+  (10 bands, safety headroom −7.8 dB, provenance source recorded).
+- Restore then picked the same file and reported "1 already here." — the never-overwrite rule
+  working on real data rather than in a double. Screenshot:
+  docs/screenshots/v011/library-backup-import-already-here.png.
+- Not proven here: moving a profile between the two packages. Production v0.10.0 does not contain
+  this exporter, so the owner's transfer needs a build of production carrying it. The prototype side
+  is now measured end to end; the production side is the same code once it ships.
+

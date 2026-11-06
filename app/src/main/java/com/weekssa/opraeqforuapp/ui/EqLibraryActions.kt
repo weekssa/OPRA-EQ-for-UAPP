@@ -116,6 +116,14 @@ class EqLibraryActions(
     val onExportSavedEq: suspend (Uri, String, ExportDevice) -> String,
     val onExportGeneralEq: suspend (Uri, String, ExportDevice) -> String,
     val onExportGeneralEqs: suspend (Uri, Set<String>, ExportDevice) -> String,
+    /** Writes the whole saved library to the document URI the owner picked. */
+    val onExportLibraryBundle: suspend (Uri) -> String = {
+        error("Library backup is not part of this test")
+    },
+    /** Restores a backup from the document URI the owner picked. */
+    val onImportLibraryBundle: suspend (Uri) -> String = {
+        error("Library backup is not part of this test")
+    },
     val onCheckForUpdates: suspend () -> String,
     val onDismissUpdate: suspend (String) -> Unit,
     val onDismissPostUpdate: suspend () -> Unit,

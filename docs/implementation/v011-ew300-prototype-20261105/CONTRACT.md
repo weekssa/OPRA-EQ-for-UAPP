@@ -111,7 +111,8 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "app/src/test/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleImporterTest.kt",
     "docs/implementation/v011-ew300-prototype-20261105/LIBRARY_TRANSFER.md",
     "app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedEqDao.kt",
-    "app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedGeneralEqRepository.kt"
+    "app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedGeneralEqRepository.kt",
+    "app/src/androidTest/java/com/weekssa/opraeqforuapp/data/library/LibraryBundleDatabaseTest.kt"
   ]
 }
 ```

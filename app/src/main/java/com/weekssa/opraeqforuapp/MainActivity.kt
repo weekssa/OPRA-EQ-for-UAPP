@@ -256,6 +256,12 @@ class MainActivity : ComponentActivity() {
         onExportGeneralEqs = { treeUri, presetIds, device ->
             exportMessage(viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device), device)
         },
+        onExportLibraryBundle = { documentUri ->
+            viewModel.exportLibraryBundle(documentUri.toString())
+        },
+        onImportLibraryBundle = { documentUri ->
+            viewModel.importLibraryBundle(documentUri.toString())
+        },
         onCheckForUpdates = {
             updateCheckMessage(viewModel.checkForUpdates())
         },

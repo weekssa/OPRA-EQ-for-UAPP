@@ -200,3 +200,22 @@ verified byte for byte on the device. On My EQs it reads "EQ target: SIMGOT EW30
 "Connected · State current · Open My DAC" and the Direct Flash ready banner (T-048). My DAC then read
 Flat, 0 bands, 0.0 dB, and no Flash, Save or write was issued. Screenshots:
 context-bar-pixel-not-connected.png, context-bar-pixel-connected.png, pixel-mydac-flat-1f1ea2c1.png.
+
+## Library transfer (2026-11-06, owner-requested)
+
+Production and the prototype keep separate databases and production is a release build, so the only
+honest way across is a file the owner picks. Settings → Library now has Backup (Export) and Restore
+(Import). The bundle carries saved EQs and General EQs as their stored JSON, so a restore recreates
+the row instead of an approximation; existing entries are never replaced.
+
+- Code: `data/library/EqLibraryBundle.kt` (format, codec, row-source interface),
+  `data/library/EqLibraryBundleImporter.kt` (`EqLibraryBundleStore`), `exportBundleRows` /
+  `importBundleRows` on both saved-EQ repositories, and the two Settings rows.
+- Tests: `EqLibraryBundleTest`, `EqLibraryBundleImporterTest`, emulator `LibraryBundleDatabaseTest`
+  (seed, export, wipe, import, compare), and a Settings row test.
+- Gates: JVM 895 / 0 failures; lint 0 errors / 118 warnings / 2 hints; instrumented 100/100 on
+  emulator-5580.
+- Pixel: APK 0252dbce, exported `Download/eq-library-backup.json` (4,616 bytes) and restored it as
+  "1 already here." (T-051).
+- Design and limits: LIBRARY_TRANSFER.md. Production needs a build carrying this code before the
+  owner's own library can be exported from it.

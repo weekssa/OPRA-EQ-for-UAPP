@@ -12,17 +12,23 @@
   About states the limitation instead of offering a toggle.
 - Compiled off: shelf editor chips, shelf A/B controls, research setup panel (engineering variant
   only), headset-remote and UAC-mode switches (chip-limited).
-- Validation at head 50a5c0ea: JVM 885 tests / 0 failures; `:app:lintV011beta` 0 errors / 118
-  warnings / 2 hints; instrumented v011beta suite 94/94 on emulator-5580.
+- Validation at head 50a5c0ea, plus the library-transfer slice: JVM 895 tests / 0 failures;
+  `:app:lintV011beta` 0 errors / 118 warnings / 2 hints; instrumented v011beta suite 100/100
+  on emulator-5580.
 - Artifact installed and hash-verified on the Pixel 9: APK
-  1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3, built 2026-11-06T19:51:34Z,
+  0252dbce655af2fe0d588b5415164e55e16318e8282970694161b2c592e5281e, built 2026-11-06T20:31:53Z,
   local test signer 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5.
 - Pixel evidence: the context bar shows "EQ target: SIMGOT EW300 DSP ▾" with
   Not connected / Connect and Connected / Open My DAC as the session opens, the Direct Flash banner
   follows the switch, and the action never offers Connect while a session is live (T-048 to T-050).
   Reset plus an explicit Save persisted across a real unplug (T-044).
-- Status: **v0.11 prototype qualified on the emulator and the Pixel; the remaining gaps are the
-  unmeasured native-shelf acoustics and the absent production-library export path.**
+- Library transfer ships here: Settings → Library → Backup (Export) and Restore (Import) move
+  saved EQs and General EQs through one JSON file, described in
+  docs/implementation/v011-ew300-prototype-20261105/LIBRARY_TRANSFER.md. Verified on the Pixel end
+  to end (T-051). Production v0.10.0 predates the exporter, so carrying the owner library out of it
+  needs a production build that contains this code.
+- Status: **v0.11 prototype qualified on the emulator and the Pixel; the remaining gap is the
+  unmeasured native-shelf acoustics.**
 
 
 Status: **five-goal test candidate built and locally tested; exact die KT0211L confirmed; microphone mute implemented; UAC mode CHIP-LIMITED; headset-disable open pending KT0211L GPIO/key/ADC research; native shelf protocol demonstrated byte for byte with shelf acoustics UNMEASURED; EQ Library → EW300 Flash verified on the exact final artifact with an owner library EQ, one Save and one restoration Save.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.

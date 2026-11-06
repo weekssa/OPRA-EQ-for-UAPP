@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
  */
 @Serializable
 data class EqLibraryBundle(
-    val format: String = FORMAT_ID,
+    val format: String,
     val version: Int = FORMAT_VERSION,
     val exportedAtMillis: Long = 0L,
     val sourcePackage: String = "",
@@ -69,6 +69,22 @@ data class SkippedTransfer(
     val displayName: String,
     val reason: String,
 )
+
+/** What a repository accepted, skipped, or refused while restoring rows. */
+data class BundleImportOutcome(
+    val imported: Int = 0,
+    val alreadyPresent: Int = 0,
+    val restoredAsPersonal: Int = 0,
+    val skippedKinds: Int = 0,
+    val failures: List<String> = emptyList(),
+)
+
+/** A repository that can hand out its stored rows and take them back. */
+interface BundleRowSource<T> {
+    suspend fun exportBundleRows(): List<T>
+
+    suspend fun importBundleRows(rows: List<T>): BundleImportOutcome
+}
 
 /**
  * JSON codec for [EqLibraryBundle]. Unknown keys are ignored so a newer writer cannot break an

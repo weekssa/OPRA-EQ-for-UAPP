@@ -2483,6 +2483,53 @@ class UiModernizationFlowsTest {
     }
 
     @Test
+    fun settingsOffersLibraryBackupAndRestoreFromTheLibraryGroup() {
+        var exports = 0
+        var imports = 0
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+            TestScreenShell(title = "Settings") {
+            SettingsScreen(
+                appPreferences = AppPreferences(),
+                catalogState = CatalogState.Loading,
+                onRefreshCatalog = {},
+                onChangeExportFolder = {},
+                onCheckForUpdates = {},
+                onWhatsNew = {},
+                onGetUpdate = {},
+                onOpenUrl = {},
+                onThemeModeChange = {},
+                onOutputBehaviorChange = {},
+                onExportTargetChange = { _, _ -> },
+                onActiveExportTargetChange = {},
+                onDirectBlackPearlFlashEnabledChange = {},
+                onDirectFiioJa11FlashEnabledChange = {},
+                onDirectEw300FlashEnabledChange = {},
+                hiddenCanonicalProfileIds = emptySet(),
+                onUnhideCanonicalProfiles = {},
+                onExportLibraryBackup = { exports++ },
+                onImportLibraryBackup = { imports++ },
+                onMessage = {},
+            )
+            }
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Backup").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Restore").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Existing entries are never replaced.", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Export").performScrollTo().performClick()
+        composeRule.onNodeWithText("Import").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, exports)
+            assertEquals(1, imports)
+        }
+    }
+
+    @Test
     fun whatsNewFormatsStableReleaseNotesWithoutExposingMarkup() {
         composeRule.setContent {
             OpraEqTheme(ThemeMode.Light) {

@@ -249,6 +249,8 @@ fun EqLibraryApp(
     val jcallyJm12ConnectionState = state.jcallyJm12ConnectionState
 
     val onConnectDacForMyDac = actions.onConnectDacForMyDac
+    val onExportLibraryBundle = actions.onExportLibraryBundle
+    val onImportLibraryBundle = actions.onImportLibraryBundle
     val onOpenBlackPearlEditor = actions.onOpenBlackPearlEditor
     val onBackMyDacEditor = actions.onBackMyDacEditor
     val onCloseMyDacEditor = actions.onCloseMyDacEditor
@@ -862,6 +864,32 @@ fun EqLibraryApp(
         }
     }
 
+    // Library backup: one JSON file the owner names, and one they pick to restore.
+    val libraryExportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri == null) {
+            scope.launch { snackbarHostState.showSnackbar("No file chosen. Nothing was exported.") }
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch { snackbarHostState.showSnackbar(onExportLibraryBundle(uri)) }
+    }
+    val libraryImportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) {
+            scope.launch { snackbarHostState.showSnackbar("No file chosen. Nothing was imported.") }
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch { snackbarHostState.showSnackbar(onImportLibraryBundle(uri)) }
+    }
+    val requestLibraryExport: () -> Unit = {
+        libraryExportPicker.launch("eq-library-backup.json")
+    }
+    val requestLibraryImport: () -> Unit = {
+        libraryImportPicker.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
+    }
+
     val chooseExportFolder: (ActiveOutputExportRequest?) -> Unit = { request ->
         pendingExportRequestState = request?.toSaveableState()
         folderPicker.launch(appPreferences.exportTreeUri?.let(Uri::parse))
@@ -1324,6 +1352,8 @@ fun EqLibraryApp(
                             onConnectEw300 = onConnectEw300,
                             hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                             onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
+                            onExportLibraryBackup = requestLibraryExport,
+                            onImportLibraryBackup = requestLibraryImport,
                             onMessage = ::showMessage,
                             modifier = Modifier.fillMaxSize(),
                         )

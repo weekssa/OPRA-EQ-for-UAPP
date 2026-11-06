@@ -92,6 +92,8 @@ fun SettingsScreen(
     onConnectEw300: () -> Unit = {},
     hiddenCanonicalProfileIds: Set<String>,
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
+    onExportLibraryBackup: () -> Unit = {},
+    onImportLibraryBackup: () -> Unit = {},
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -264,6 +266,24 @@ fun SettingsScreen(
             value = hiddenCanonicalProfileIds.size.toString(),
             actionLabel = "View",
             onAction = { pageName = SettingsPage.HIDDEN_EQS.name },
+        )
+        SettingsValueRow(
+            label = "Backup",
+            value = "Saved and General EQs",
+            actionLabel = "Export",
+            onAction = onExportLibraryBackup,
+        )
+        SettingsValueRow(
+            label = "Restore",
+            value = "From a backup file",
+            actionLabel = "Import",
+            onAction = onImportLibraryBackup,
+        )
+        Text(
+            text = "Backup carries saved EQs only. Existing entries are never replaced.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp, bottom = 6.dp),
         )
         when (catalogState) {
             CatalogState.Loading -> SettingsValueRow(label = "Catalog", value = "Loading…")
@@ -445,6 +465,12 @@ private fun HelpSettingsScreen(
         SectionTitle("Output target and export")
         Text(
             "Your output target controls how EQ Library prepares an EQ for export or a supported hardware action. It does not route Android audio. Export writes a file to the folder you choose; to use it in USB Audio Player PRO, import that file in UAPP yourself.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SectionDivider()
+        SectionTitle("Backup")
+        Text(
+            "Library → Backup writes one file with your saved EQs and General EQs. Restore reads it back, including into another copy of the app. Entries you already have are left alone.",
             style = MaterialTheme.typography.bodyMedium,
         )
         SectionDivider()

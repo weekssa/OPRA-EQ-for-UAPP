@@ -23,6 +23,7 @@ import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.hardware.HardwareEqRepository
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.data.library.EqLibraryBundleStore
 import com.weekssa.opraeqforuapp.data.library.SavedEqRepository
 import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
@@ -223,6 +224,7 @@ class EqLibraryViewModel(
     private val dacControlRepository: DacControlRepository,
     private val fiioJa11ControlRepository: FiioJa11ControlRepository,
     private val hardwareRepository: HardwareEqRepository,
+    private val libraryBundleStore: EqLibraryBundleStore,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
@@ -1924,6 +1926,14 @@ class EqLibraryViewModel(
     suspend fun removeGeneralEq(presetId: String) = savedGeneralEqRepository.removeFromOutput(activeOutputId(), presetId)
     suspend fun setExportTree(uri: String, label: String) = preferencesRepository.setExportTree(uri, label)
 
+    /** Writes the owner's saved library to the document they picked in the system file picker. */
+    suspend fun exportLibraryBundle(documentUri: String): String =
+        libraryBundleStore.exportTo(documentUri).summary
+
+    /** Restores a bundle the owner picked. Existing entries are never overwritten. */
+    suspend fun importLibraryBundle(documentUri: String): String =
+        libraryBundleStore.importFrom(documentUri).summary
+
     suspend fun exportSelected(treeUri: String, device: ExportDevice): PresetExportSummary {
         val library = loadLibraryData(device.name)
         val records = withContext(computationDispatcher) { library.toExportRecords() }
@@ -2321,6 +2331,7 @@ class EqLibraryViewModel(
                 dacControlRepository = dependencies.dacControlRepository,
                 fiioJa11ControlRepository = dependencies.fiioJa11ControlRepository,
                 hardwareRepository = dependencies.hardwareRepository,
+                libraryBundleStore = dependencies.libraryBundleStore,
             ) as T
         }
     }
@@ -2338,6 +2349,7 @@ class EqLibraryViewModel(
         val dacControlRepository: DacControlRepository,
         val fiioJa11ControlRepository: FiioJa11ControlRepository,
         val hardwareRepository: HardwareEqRepository,
+        val libraryBundleStore: EqLibraryBundleStore,
     )
 
     companion object {

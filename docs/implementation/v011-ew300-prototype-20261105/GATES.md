@@ -106,7 +106,8 @@ OWNS: GATES.md,
   app/src/test/java/com/weekssa/opraeqforuapp/data/library/EqLibraryBundleImporterTest.kt,
   docs/implementation/v011-ew300-prototype-20261105/LIBRARY_TRANSFER.md,
   app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedEqDao.kt,
-  app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedGeneralEqRepository.kt
+  app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedGeneralEqRepository.kt,
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/data/library/LibraryBundleDatabaseTest.kt
 amendment: 2026-11-06 owner-approved — shared context bar surface, AppContextSurfaces.kt, required by the My EQs / EQ Library stateful bar.
 amendment: 2026-11-06 owner-approved — library export/import slice: EqLibraryBundle.kt,
   EqLibraryBundleImporter.kt, their two JVM test files and LIBRARY_TRANSFER.md, so saved EQs, managed
@@ -115,3 +116,5 @@ amendment: 2026-11-06 owner-approved — library export/import slice: EqLibraryB
 amendment: 2026-11-06 owner-approved — same slice needs a one-shot read on SavedEqDao and the
   matching export/import rows on SavedGeneralEqRepository, otherwise the bundle would re-encode
   records instead of carrying the stored bytes.
+amendment: 2026-11-06 owner-approved — LibraryBundleDatabaseTest.kt proves the Room round trip
+  (export rows, wipe, import rows, compare) on the emulator, which a JVM test cannot reach.

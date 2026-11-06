@@ -44,7 +44,7 @@ class SavedEqRepository(
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val canonicalSnapshotCodec: SavedEqCanonicalSnapshotCodec = SavedEqCanonicalSnapshotCodec(),
     private val canonicalSelectionCodec: CanonicalEqSelectionCodec = CanonicalEqSelectionCodec(),
-) {
+) : BundleRowSource<SavedEqTransfer> {
     private val dao = database.savedEqDao()
 
     /** My EQs ownership is global; outputId remains only for source compatibility with older callers. */
@@ -394,6 +394,94 @@ class SavedEqRepository(
         verificationStatus = verificationStatus,
         observedAtEpochSeconds = observedAtEpochSeconds,
     ) ?: error("Validated Personal EQ could not be represented in the canonical local model")
+
+    /** Stored rows for a portable backup. The JSON travels verbatim, never re-encoded. */
+    override suspend fun exportBundleRows(): List<SavedEqTransfer> = withContext(ioDispatcher) {
+        dao.getAll().map { entity ->
+            SavedEqTransfer(
+                entryId = entity.entryId,
+                kind = entity.kind,
+                sourceProfileId = entity.sourceProfileId,
+                productId = entity.productId,
+                manufacturer = entity.manufacturer,
+                model = entity.model,
+                displayName = entity.displayName,
+                profileJson = entity.profileJson,
+                createdAtMillis = entity.createdAtMillis,
+                updatedAtMillis = entity.updatedAtMillis,
+                captureMetadataJson = entity.captureMetadataJson,
+                canonicalSnapshotJson = entity.canonicalSnapshotJson,
+                canonicalSelectionJson = entity.canonicalSelectionJson,
+            )
+        }
+    }
+
+    /**
+     * Restores exported rows without touching what this database already owns: an entry that is
+     * present is left alone, and a row whose stored EQ no longer decodes is reported, not written.
+     * A Favorite whose canonical selection cannot be read here is restored as a Personal EQ, which
+     * keeps the curve and drops the catalog binding.
+     */
+    override suspend fun importBundleRows(rows: List<SavedEqTransfer>): BundleImportOutcome =
+        withContext(ioDispatcher) {
+            var imported = 0
+            var alreadyPresent = 0
+            var restoredAsPersonal = 0
+            var skippedKinds = 0
+            val failures = mutableListOf<String>()
+            database.withTransaction {
+                rows.forEach { row ->
+                    if (dao.get(row.entryId) != null) {
+                        alreadyPresent++
+                        return@forEach
+                    }
+                    if (row.kind != KIND_FAVORITE && row.kind != KIND_PERSONAL) {
+                        skippedKinds++
+                        return@forEach
+                    }
+                    if (runCatching { snapshotCodec.decode(row.profileJson) }.isFailure) {
+                        failures += "${row.displayName}: the saved EQ data could not be read"
+                        return@forEach
+                    }
+                    // A null selection is a legacy Favorite that already worked this way; only an
+                    // unreadable selection forces the Personal fallback.
+                    val selectionReadable = row.canonicalSelectionJson
+                        ?.let { encoded -> runCatching { canonicalSelectionCodec.decode(encoded) }.isSuccess }
+                        ?: true
+                    val kind = if (row.kind == KIND_FAVORITE && !selectionReadable) {
+                        restoredAsPersonal++
+                        KIND_PERSONAL
+                    } else {
+                        row.kind
+                    }
+                    dao.upsert(
+                        SavedEqEntity(
+                            entryId = row.entryId,
+                            kind = kind,
+                            sourceProfileId = row.sourceProfileId,
+                            productId = row.productId,
+                            manufacturer = row.manufacturer,
+                            model = row.model,
+                            displayName = row.displayName,
+                            profileJson = row.profileJson,
+                            createdAtMillis = row.createdAtMillis,
+                            updatedAtMillis = row.updatedAtMillis,
+                            captureMetadataJson = row.captureMetadataJson,
+                            canonicalSnapshotJson = row.canonicalSnapshotJson,
+                            canonicalSelectionJson = row.canonicalSelectionJson.takeIf { selectionReadable },
+                        ),
+                    )
+                    imported++
+                }
+            }
+            BundleImportOutcome(
+                imported = imported,
+                alreadyPresent = alreadyPresent,
+                restoredAsPersonal = restoredAsPersonal,
+                skippedKinds = skippedKinds,
+                failures = failures,
+            )
+        }
 
     companion object {
         internal const val KIND_FAVORITE = "favorite"
