@@ -31,7 +31,8 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 23
-        versionName = "0.11.0-beta.1"
+        // Main must carry strict SemVer; a beta lane adds its suffix on the variant.
+        versionName = "0.11.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -79,7 +80,7 @@ android {
             // variant (same BuildConfig flags as the APK) without R8 keep-rule drift.
             isMinifyEnabled = false
             applicationIdSuffix = ".v011beta"
-            versionNameSuffix = ""
+            versionNameSuffix = "-beta.1"
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UPDATE_CHECKS_ENABLED", "false")
             buildConfigField("boolean", "EW300_PARITY_EXPERIMENT_ENABLED", "true")
