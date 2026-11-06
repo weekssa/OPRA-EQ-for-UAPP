@@ -72,6 +72,7 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "docs/implementation/ew300-ja11-parity-20261105/PROGRESS.md",
     "docs/implementation/ew300-ja11-parity-20261105/READINESS.md",
     "docs/implementation/v011-ew300-prototype-20261105/CHECKPOINT.md",
+    "docs/implementation/v011-ew300-prototype-20261105/CONTEXT_BAR_DESIGN.md",
     "docs/implementation/v011-ew300-prototype-20261105/CONTRACT.md",
     "docs/implementation/v011-ew300-prototype-20261105/GATES.md",
     "docs/implementation/v011-ew300-prototype-20261105/GATES.md.sha",
