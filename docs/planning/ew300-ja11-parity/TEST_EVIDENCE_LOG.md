@@ -501,3 +501,14 @@ Add entries below in chronological order.
 - Validation: JVM 878 tests, 0 failures (04:52:33Z); lint 0 errors / 121 warnings / 2 hints (report 22:57:35 CST); connected v011beta instrumented suite 84/84 on emulator-5554 (BUILD SUCCESSFUL 04:55:17Z). Screenshots recaptured from this APK.
 - No Pixel interaction for this candidate; no Flash or Save was repeated.
 
+
+### T-035 — Pixel verification of the polished DEVICE page, Startup Save, and a reset-persistence finding
+
+- Date: 2026-11-06
+- APK: 1995927d3adfe70928a44488c5ba876e97e60e67636fb321b8561e50bb199ea1 (0.11.0-beta.1/23); on-device hash matched; Pixel 9, wireless ADB.
+- Startup settings on device: after applying device volume 60, the row showed "Not saved" with a Save action. Tapping Save produced "Saved". A full unplug/replug then showed "Saved" and the EQ readback stayed Flat at 0.0 dB, so the Startup Save persisted.
+- USB & System now contains only "Current sample rate · 96,000 Hz". "USB audio class · UAC 1.0" appears in About, alongside Model, USB identity, Filters, and Device limitations.
+- Volume dialog copy observed on device: "60 is the loudest, 0 is silent, one step per dB. Applies until you save."
+- **Finding:** at the start of this session the DAC still held the previously flashed AFUL Explorer EQ at -3.5 dB even though the earlier "Reset to flat" had read back Flat/0 dB and the app had been left in that state. A reset alone therefore did not survive the disconnect, and the app reported the saved state as unknown after a reset. In this session, reset followed by an explicit Startup Save did persist across a power cycle. The reset path is not claimed as persisted evidence until it is reproduced with a power cycle.
+- Saves on this session: one reset Save plus one Startup Save. DAC left Flat at 0.0 dB, "Saved", connected.
+

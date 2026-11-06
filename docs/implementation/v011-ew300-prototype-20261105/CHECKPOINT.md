@@ -132,3 +132,14 @@ bottom rather than repeating the top.
 - Restoration: Reset to flat, one Save, back to Flat at 0.0 dB.
 - Save count: one target Save plus one restoration Save. The DAC was left flat at 0.0 dB.
 
+
+### Pixel verification of the polish (candidate 1995927d)
+
+- Startup settings shows "Not saved" with a Save action after a runtime change; Save flips it to
+  "Saved" and the state survived a full unplug/replug with the EQ still Flat at 0.0 dB.
+- USB & System holds only the current sample rate; USB audio class moved into About.
+- Open finding: a "Reset to flat" on its own did not survive a disconnect in the previous session
+  (the DAC came back holding the earlier flash), and the app reports the saved state as unknown
+  after a reset. Reset plus an explicit Save did persist. Treat reset-alone persistence as
+  unverified until it is reproduced with a power cycle.
+
