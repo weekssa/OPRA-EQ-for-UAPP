@@ -156,3 +156,10 @@ the full target group and shows no bar. The My DAC root tab stays removed.
 ### Pixel verification of the anchor (7516516b)
 - Unplugged with SIMGOT EW300 DSP targeted: the target row fell back to "USB Audio Player PRO / ToneBoosters" while the block persisted as "SIMGOT EW300 DSP · No DAC attached · Open My DAC". The fallback and the anchor are therefore both visible at once, which is the rule.
 - Replugged: the target returned to SIMGOT EW300 DSP and the block returned to "Not connected" with Connect. No Save, no Flash.
+
+### Context bar screenshots and final gates
+
+- Six captures in docs/screenshots/v011/: context-bar-connected, -not-connected, -direct-flash-off,
+  -no-dac, -eq-library, -360dp-font200.
+- Final gates on this code: JVM 883 tests / 0 failures (19:19:41Z); lint 0 errors / 121 warnings /
+  2 hints; instrumented 92/92 on emulator-5580 (19:22:23Z). APK 7516516b.

@@ -1,8 +1,7 @@
 # v0.11 context bar — locked design, findings, and next steps
 
-Status: the bar is implemented and verified on the device. One deliverable (screenshot capture) is
-blocked by a test-fixture extraction that has not been done. This document is the scope of record for
-finishing it. Written 2026-11-06 at head 43ea196e.
+Status: complete. The bar is implemented, verified on the device, and captured. Test fixtures live in
+ContextBarTestFixtures.kt; the six screenshots are in docs/screenshots/v011/. Written 2026-11-06,
 
 ## Locked design (do not redesign)
 
