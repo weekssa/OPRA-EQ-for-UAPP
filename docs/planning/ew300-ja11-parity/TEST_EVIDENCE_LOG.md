@@ -555,3 +555,18 @@ Add entries below in chronological order.
 - Contract test updated: recognizedDacStaysContextualAndRemainsSeparateFromTheExportTarget now asserts the My DAC destination exists and that the export target stays independent; unsupportedRecognizedDeviceDoesNotCreateAProductionMyDacEntry still passes.
 - Candidate: APK 45a00243b060f10958c2108ec0261f85f7aca961bc29cb8bbb17b169e4cd0c03; validated JVM 883 tests, 0 failures; lint 0 errors; connected v011beta suite 84/84 (06:24:10Z). Installed on the Pixel; the bar shows My EQs, EQ Library, Settings and My DAC.
 
+
+### T-041 — Session pause: handoff recorded, no work left only in chat
+
+- Date: 2026-11-06. Branch codex/v0.11-ew300-prototype, code head 51375505, docs head 2d891200, working tree clean.
+- SESSION_HANDOFF.md records the resume prompt, repository and artifact identity, the commit list,
+  every decision and its reason, the Pixel evidence, the open reset-persistence finding, the open
+  work list, and the exact build/test/screenshot commands.
+- Artifact at pause: APK 45a00243b060f10958c2108ec0261f85f7aca961bc29cb8bbb17b169e4cd0c03,
+  package com.weekssa.opraeqforuapp.v011beta 0.11.0-beta.1/23, built 2026-11-06 00:13:15 CST.
+- Validated before pause: JVM 883 tests / 0 failures; lint 0 errors / 121 warnings / 2 hints;
+  connected v011beta suite 84/84 on emulator-5554 (06:24:10Z).
+- Device at pause: EW300 left Flat at 0.0 dB with the prototype installed; owner is disconnecting
+  wireless debugging. No further device work is possible until it is re-enabled.
+- Nothing was pushed, merged, released, or re-signed.
+
