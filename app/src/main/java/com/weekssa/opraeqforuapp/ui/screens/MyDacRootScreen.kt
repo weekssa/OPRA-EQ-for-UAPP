@@ -142,14 +142,16 @@ fun MyDacRootScreen(
         .filterTo(linkedSetOf()) { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 || it == DacDeviceId.SIMGOT_EW300 }
     var selectedName by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(recognized, selectedName) {
-        val selected = selectedName?.let { runCatching { DacDeviceId.valueOf(it) }.getOrNull() }
-        if (selected !in recognized) {
-            selectedName = when (recognized.size) {
-                1 -> recognized.single().name
-                else -> null
-            }
-        }
+    val presentRecognized = recognitionState.presentDeviceIds
+        .filterTo(linkedSetOf()) { it in recognized }
+
+    // Follow the DAC that is actually attached. A remembered selection used to stay pinned to a DAC
+    // that had been unplugged, which left My DAC on a "Disconnected" page with no Connect action
+    // while the newly attached DAC was unreachable.
+    LaunchedEffect(recognized, presentRecognized, selectedName) {
+        val current = selectedName?.let { runCatching { DacDeviceId.valueOf(it) }.getOrNull() }
+        val next = nextMyDacSelection(current, presentRecognized, recognized)
+        if (next?.name != selectedName) selectedName = next?.name
     }
 
     val selected = selectedName?.let { runCatching { DacDeviceId.valueOf(it) }.getOrNull() }
@@ -302,4 +304,21 @@ fun MyDacRootScreen(
 
         DacDeviceId.JCALLY_JM12_STOCK -> Unit
     }
+}
+
+/**
+ * Chooses which DAC the My DAC screen manages.
+ *
+ * The attached DAC always wins over a remembered selection; when nothing is attached a single
+ * recognized DAC keeps its page, and anything else falls back to the device chooser.
+ */
+internal fun nextMyDacSelection(
+    current: DacDeviceId?,
+    present: Set<DacDeviceId>,
+    recognized: Set<DacDeviceId>,
+): DacDeviceId? = when {
+    current != null && current in present -> current
+    present.size == 1 -> present.single()
+    present.isEmpty() && recognized.size == 1 -> recognized.single()
+    else -> null
 }

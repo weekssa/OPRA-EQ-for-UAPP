@@ -512,3 +512,12 @@ Add entries below in chronological order.
 - **Finding:** at the start of this session the DAC still held the previously flashed AFUL Explorer EQ at -3.5 dB even though the earlier "Reset to flat" had read back Flat/0 dB and the app had been left in that state. A reset alone therefore did not survive the disconnect, and the app reported the saved state as unknown after a reset. In this session, reset followed by an explicit Startup Save did persist across a power cycle. The reset path is not claimed as persisted evidence until it is reproduced with a power cycle.
 - Saves on this session: one reset Save plus one Startup Save. DAC left Flat at 0.0 dB, "Saved", connected.
 
+
+### T-036 — My DAC stuck on an unplugged DAC and lost its Connect action
+
+- Reported: on the phone, after switching DACs, My DAC showed a previously selected DAC that was no longer attached ("Disconnected") with no Connect button, while the attached EW300 was unreachable. The My EQs banner read "Supported DACs · 2 devices recognized · Choose in My DAC" but tapping it opened the stale device.
+- Cause: MyDacRootScreen kept the remembered selection whenever that device had ever been recognized in the session. The "Choose connected DAC" list only appears when nothing is selected, so a stale selection pinned the screen to an absent DAC, and shouldOfferMyDacConnect() is false for an absent device, which removed the Connect action.
+- Fix: selection now follows the attached DAC. nextMyDacSelection(current, present, recognized) keeps the current device only while it is attached, otherwise takes the single attached device, otherwise keeps the single recognized device, otherwise falls back to the chooser. Covered by MyDacSelectionTest (5 cases).
+- Device check on APK 43534eb3a70efde2bb9ef9dc35f205a984e1ce770d03ffd27383ad75859d87aa: after reinstall the My DAC entry opened on SIMGOT EW300 DSP with the Connect action, and Connect established the session (readback Flat, 0.0 dB).
+- Validation: JVM 883 tests, 0 failures (05:17Z); lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 on emulator-5554 (05:20:05Z).
+

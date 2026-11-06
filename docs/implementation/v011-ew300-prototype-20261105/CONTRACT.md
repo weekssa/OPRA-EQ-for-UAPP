@@ -55,6 +55,7 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "app/src/test/java/com/weekssa/opraeqforuapp/domain/ew300/Ew300VolumeControlTest.kt",
     "app/src/test/java/com/weekssa/opraeqforuapp/ui/Ew300LibraryFlashRoutingTest.kt",
     "app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/Ew300OperationStatusTest.kt",
+    "app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/MyDacSelectionTest.kt",
     "docs/CHATGPT_PROJECT_RUNBOOK.md",
     "docs/EW300_CAPABILITY_MATRIX.md",
     "docs/EW300_DSP_PROTOCOL_NOTES.md",
