@@ -8,9 +8,9 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 - Branch: codex/ew300-ja11-parity
 - Worktree: /Users/stephenweeks/.codex/worktrees/ew300-ja11-parity/OPRA-EQ-development
 - Goal ledger: docs/planning/ew300-ja11-parity/GOALS.md
-- Code candidate head: 66f9b50ff92d8b48d19f5b340176c52f5e739e3a
-- Frozen evidence head: 66f9b50ff92d8b48d19f5b340176c52f5e739e3a
-- Gate seal: 5ef34b797a53e153 (contrast: current gate was resealed for the five-goal OWNS)
+- Code candidate head: 7d963acc0eb02a8bf799bed888dec30fc9642bb5
+- Frozen evidence head: 7d963acc0eb02a8bf799bed888dec30fc9642bb5
+- Gate seal: 8bca8bf498a439e1 (scope-guard IN SCOPE at commit)
 
 ## APK
 
