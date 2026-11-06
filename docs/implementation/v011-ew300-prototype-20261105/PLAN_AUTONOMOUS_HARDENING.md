@@ -41,8 +41,8 @@ itself is approved and the gate is resealed with it in scope.
 - [x] A1 reset-persistence tests written (persistence-modelling fake)
 - [x] A2 app-side transaction sound in the model; hardware run passed (T-043, T-044)
 - [x] A3 no code fix warranted: model shows correct single Save and fail-closed rejection
-- [ ] B1 vocabulary sheet written
-- [ ] B2 copy applied across the four surfaces
+- [x] B1 vocabulary sheet written (T-045)
+- [x] B2 copy applied: bar selector now says EQ target; duplicate disclaimer removed
 - [ ] C1 M3 audit scored for Settings
 - [ ] C2 M3 audit scored for My DAC
 - [ ] D1 dead code and unused parameters removed

@@ -593,3 +593,8 @@ Add entries below in chronological order.
 - After the power cycle the EW300 read Flat, 0 active Peak bands, playback/global gain 0.0 dB. The reset persisted; the earlier field failure did not reproduce.
 - Save count: two (one Flash, one Reset). No other writes.
 - The earlier observation (reset appeared flat, later session held the previous EQ) is therefore not reproducible on this build; it remains unexplained rather than fixed.
+
+### T-045 — One vocabulary for target, output, Direct Flash, Save
+- The bar's selector now reads "EQ target: <name> ▾", matching the Settings "EQ target" group; the duplicate disclaimer line under it ("Prepares EQ files or actions…") is removed.
+- Fixed vocabulary in use: **EQ target** is the single active destination; **Outputs** is the list you enable in Settings; **Direct Flash** is the per-DAC write switch; **Save** is the persistence action; **Flash** is the verb on the button that writes a preset.
+- JVM 885 / 0 failures, lint 0 errors, instrumented 92/92 on emulator-5580 (19:53:57Z).

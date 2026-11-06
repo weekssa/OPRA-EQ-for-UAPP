@@ -77,12 +77,6 @@ internal fun TargetContextSelector(
                         )
                         Text("Change", style = MaterialTheme.typography.labelLarge, color = palette.primary, maxLines = 1, softWrap = false)
                     }
-                    Text(
-                        text = "Prepares EQ files or actions; it does not route Android audio.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                 }
             }
             DropdownMenu(

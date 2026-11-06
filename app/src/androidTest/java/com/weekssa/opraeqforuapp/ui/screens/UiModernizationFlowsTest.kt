@@ -469,7 +469,7 @@ class UiModernizationFlowsTest {
         }
 
         composeRule.onNodeWithText("Build your EQ library").assertIsDisplayed()
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
         composeRule.onNodeWithText("My DAC").assertDoesNotExist()
         composeRule.waitForIdle()
@@ -538,7 +538,7 @@ class UiModernizationFlowsTest {
             "recognized device context after initial composition",
         )
         composeRule.onNodeWithText("Connected · Waiting for first device read").assertIsDisplayed()
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
         assertRootLabelExists("My EQs")
         assertRootLabelExists("EQ Library")
@@ -572,7 +572,7 @@ class UiModernizationFlowsTest {
         }
         // App target, no live session, no remembered readback: the device block is absent by design.
         composeRule.onNodeWithText("No DAC attached").assertDoesNotExist()
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
         assertRootLabelExists("My EQs")
         assertRootLabelExists("EQ Library")
@@ -618,7 +618,7 @@ class UiModernizationFlowsTest {
         // The display anchor keeps the block after automatic resolution hands the target back.
         composeRule.onNodeWithText("No DAC attached").assertIsDisplayed()
         composeRule.onNodeWithText("Open My DAC").assertIsDisplayed()
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
     }
 
@@ -648,7 +648,7 @@ class UiModernizationFlowsTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Not connected").assertIsDisplayed()
 
-        composeRule.onNodeWithText("Target: FiiO JA11", substring = true).performClick()
+        composeRule.onNodeWithText("EQ target: FiiO JA11", substring = true).performClick()
         composeRule.onNodeWithText("USB Audio Player PRO / ToneBoosters").performClick()
         // The picker action is reported through actions; mirror the resulting preference here.
         composeRule.runOnIdle {
@@ -699,7 +699,7 @@ class UiModernizationFlowsTest {
         sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
         waitForText("Test creator")
         composeRule.onNodeWithText("Test creator").assertIsDisplayed()
-        val exportTarget = composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        val exportTarget = composeRule.onNodeWithText("EQ target: USB Audio Player PRO / ToneBoosters", substring = true)
         navigateWithAndroidKey(exportTarget, "Export target", KeyEvent.KEYCODE_DPAD_UP)
         val profileAuthor = composeRule.onNodeWithText("Test creator")
         navigateWithAndroidKey(profileAuthor, "Profile creator", KeyEvent.KEYCODE_DPAD_DOWN)
@@ -3194,7 +3194,7 @@ private fun editorWorkingCopy(deviceId: DacDeviceId, bandCount: Int): HardwareEq
                 id = "wh-xm4-profile",
                 productId = "sony-wh-1000xm4",
                 author = "Test creator",
-                details = "Target: Harman",
+                details = "EQ target: Harman",
                 link = null,
                 profileType = "parametric_eq",
                 preampGainDb = -3.0,
