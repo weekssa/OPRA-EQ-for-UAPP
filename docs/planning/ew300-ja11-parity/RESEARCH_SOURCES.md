@@ -85,7 +85,10 @@ Execution performed no new research fan-out, as the accepted plan requires one w
 - Source: exact EW300 configuration descriptor read through macOS IOUSBDeviceInterface GetConfigurationDescriptorPtr (VID:PID 31B2:0111, LE XIAN, SIMGOT EW300 DSP). Descriptor SHA-256 e955ae8c6c23766224c94e442e671b0ea8230052a70c82df1cf4bff499b36907.
 - Exact facts: one configuration; AudioControl interface 0, subclass 1 (UAC1); microphone input terminal type 0x0201 with feature unit 2, master mute supported; playback AS interface 2, endpoint 0x01, rates 44.1/48/96 kHz; capture AS interface 1, endpoint 0x81, rates 44.1/48 kHz; HID interface 3; no UAC2 alternate; no headset feature unit.
 - Live controls: UAC1 sample-rate GET_CUR to endpoint 0x01 (wIndex 0x0001) returned 48000 (80BB00); microphone mute GET 0 -> SET 1 -> verify 1 -> restore 0.
-- Decision: microphone mute is a real UAC1 control and is exposed in the parity DEVICE surface. Headset-disable and UAC-mode switching remain BLOCKED with this exact descriptor evidence; no JA11 command 0x20 reuse and no blind register sweep.
+- Decision: microphone mute is a real UAC1 control and is exposed in the parity DEVICE surface. The
+  v0.11 product prototype does not expose it: no captured audio changed on the Pixel, so the row was
+  removed there and About states the limitation. Headset-disable and UAC-mode switching remain
+  BLOCKED with this exact descriptor evidence; no JA11 command 0x20 reuse and no blind register sweep.
 - Next experiments: static analysis of vendor APK/HID report 0x54 for a headset/UAC vendor control; active-stream sample-rate validation on the Pixel; owner microphone/listening checks.
 
 ## 2026-11-05 chip-first vendor/static pass
