@@ -324,7 +324,7 @@ class Ew300FlasherTest {
         val transport = FakeTransport()
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true }).resetToFlat()
 
-        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
         assertEquals(10, transport.writes.size)
         assertEquals(1, transport.commitCount)
         assertTrue(transport.state.values.any { it.contentEquals(bytes(0, 0, 0xE8, 0x03)) })
@@ -391,7 +391,7 @@ class Ew300FlasherTest {
 
         val result = flasher.resetToFlat()
 
-        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
         assertTrue(flasher.reconcilePendingVerification())
         assertEquals(1, transport.commitCount)
         val trace = requireNotNull(flasher.lastOperationTrace.value)
@@ -717,6 +717,98 @@ class Ew300FlasherTest {
         }
     }
 
+
+    /** Models flash persistence: writes land in volatile state, commit copies to persisted. */
+    private inner class PersistingTransport(
+        private val initialPersisted: Map<Int, ByteArray>,
+        private val commitSucceeds: Boolean = true,
+    ) : Ew300Transport {
+        override var deviceFingerprintKey: String = "test-ew300"
+        override var sessionGeneration: Long = 1L
+        override var detachGeneration: Long = 0L
+        override val registerWriteCount: Long get() = writes.size.toLong()
+        override val saveCommandCount: Long get() = commitCount.toLong()
+        var persisted: MutableMap<Int, ByteArray> = initialPersisted.toMutableMap()
+        var state: MutableMap<Int, ByteArray> = initialPersisted.toMutableMap()
+        val writes = mutableListOf<Int>()
+        var commitCount = 0
+        fun powerCycle() {
+            state = persisted.toMutableMap()
+            sessionGeneration += 1
+            detachGeneration += 1
+        }
+        override suspend fun readRegister(register: Int): ByteArray? = state[register]?.copyOf()
+        override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
+            writes += register
+            state[register] = data.copyOf()
+            return true
+        }
+        override suspend fun commit(): Boolean {
+            commitCount++
+            if (commitSucceeds) persisted = state.mapValues { it.value.copyOf() }.toMutableMap()
+            return commitSucceeds
+        }
+    }
+
+    private fun persistedSeed(gain: ByteArray): MutableMap<Int, ByteArray> =
+        (0 until Ew300Protocol.BAND_COUNT)
+            .flatMap { index ->
+                val register = Ew300Protocol.bandRegister(index)
+                listOf(register to bandBytes(4_000.0, -3.0), register + 1 to qBytes(1.0, 0))
+            }
+            .toMap().toMutableMap().also {
+                it[Ew300Protocol.PROTOCOL_FLAGS_REGISTER] = bytes(0, 0, 0, 0)
+                it[0x24] = bytes(0, 0, 0, 0)
+                it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = gain.copyOf()
+            }
+
+    private fun bandBytes(frequencyHz: Double, gainDb: Double): ByteArray {
+        val gain = (gainDb * 10.0).toInt()
+        val freq = frequencyHz.toInt()
+        return bytes(gain and 0xFF, (gain shr 8) and 0xFF, freq and 0xFF, (freq shr 8) and 0xFF)
+    }
+
+    private fun qBytes(q: Double, type: Int): ByteArray {
+        val raw = (q * 1000.0).toInt()
+        return bytes(raw and 0xFF, (raw shr 8) and 0xFF, type, 0)
+    }
+
+    @Test
+    fun resetPersistsFlatAcrossAPowerCycle() = runBlocking {
+        val transport = PersistingTransport(persistedSeed(bytes(0xD8, 0xD8, 0, 0)))
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
+        assertEquals(1, transport.commitCount)
+        transport.powerCycle()
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            assertEquals(
+                "0000E803",
+                transport.state.getValue(Ew300Protocol.bandRegister(index)).joinToString("") { "%02X".format(it) },
+            )
+        }
+        assertEquals(
+            "D8D80000",
+            transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER).joinToString("") { "%02X".format(it) },
+        )
+    }
+
+    @Test
+    fun resetDoesNotClaimPersistenceWhenTheSaveIsRejected() = runBlocking {
+        val transport = PersistingTransport(persistedSeed(bytes(0xD8, 0xD8, 0, 0)), commitSucceeds = false)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result.toString(), result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        transport.powerCycle()
+        assertEquals(
+            "D8D80000",
+            transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER).joinToString("") { "%02X".format(it) },
+        )
+    }
     private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02X".format(it) }
 
     private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(

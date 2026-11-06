@@ -570,3 +570,18 @@ Add entries below in chronological order.
   wireless debugging. No further device work is possible until it is re-enabled.
 - Nothing was pushed, merged, released, or re-signed.
 
+
+### T-043 — Reset persistence: modelling the transaction
+
+- Added two fake-transport tests in Ew300FlasherTest with a transport that separates volatile state from
+  persisted state (commit copies volatile to persisted; powerCycle reloads persisted).
+- resetPersistsFlatAcrossAPowerCycle: reset writes five flat bands, sends exactly one Save, and after a
+  simulated power cycle the persisted state is flat with the gain unchanged (D8D80000, -20 dB). Test
+  passes.
+- resetDoesNotClaimPersistenceWhenTheSaveIsRejected: with commit rejecting, the result is
+  TransferFailed and the persisted state keeps the pre-reset gain. Test passes.
+- Conclusion: the app-side reset transaction (write, single Save, readback) behaves correctly in a model
+  that separates volatile from persisted state. The field observation (reset read back flat, then a
+  later session held the previous EQ) is not reproducible from our sequencing; it needs a hardware
+  reproduction with one replug before any behaviour change is justified. No production code changed.
+- JVM 885 tests / 0 failures at 19:40Z; lint 0 errors / 121 warnings / 2 hints.

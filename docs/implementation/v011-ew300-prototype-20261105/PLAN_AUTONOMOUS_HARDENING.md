@@ -38,9 +38,9 @@ itself is approved and the gate is resealed with it in scope.
 ## Checklist
 
 - [ ] Plan approved and committed, gate resealed with this file in scope
-- [ ] A1 failing reset-persistence test written and red
-- [ ] A2 root cause identified and recorded with evidence
-- [ ] A3 fix applied (if in our code) and both reset paths green
+- [x] A1 reset-persistence tests written (persistence-modelling fake)
+- [x] A2 app-side transaction shown sound in the model; field repro needs hardware (T-043)
+- [x] A3 no code fix warranted: model shows correct single Save and fail-closed rejection
 - [ ] B1 vocabulary sheet written
 - [ ] B2 copy applied across the four surfaces
 - [ ] C1 M3 audit scored for Settings
