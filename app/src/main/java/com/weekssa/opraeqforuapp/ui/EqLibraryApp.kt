@@ -1259,6 +1259,8 @@ fun EqLibraryApp(
                             onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
                             onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
                             onDirectEw300FlashEnabledChange = onDirectEw300FlashEnabledChange,
+                            ew300ConnectionState = ew300ConnectionState,
+                            onConnectEw300 = onConnectEw300,
                             hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                             onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
                             onMessage = ::showMessage,

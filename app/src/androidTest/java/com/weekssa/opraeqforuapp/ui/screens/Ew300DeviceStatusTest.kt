@@ -188,7 +188,7 @@ class Ew300DeviceStatusTest {
         composeRule.onNodeWithText("Flat").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("EQ response").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithContentDescription(
-            "EW300 EQ response graph from 20 hertz to 20 kilohertz with 0 active Peak bands. Response ranges from 0.0 to 0.0 decibels, with a zero-decibel reference line.",
+            "EW300 EQ response graph from 20 hertz to 20 kilohertz with 0 active bands. Response ranges from 0.0 to 0.0 decibels, with a zero-decibel reference line.",
         ).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Refresh").performScrollTo().assertIsEnabled().performClick()
         composeRule.runOnIdle { assertEquals(1, refreshCount) }

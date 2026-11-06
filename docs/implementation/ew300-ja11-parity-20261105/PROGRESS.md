@@ -76,6 +76,12 @@
 - [x] Pixel shelf engineering-control self-check: Low Shelf, High Shelf, and Flat each applied and read back exactly; zero Save in the sequence.
 - [x] 24-state blind runner withdrawn from the app; shelf state controls relabelled engineering-only and kept behind the parity build flag.
 - [x] Acoustic measurement path evaluated: no input device on this Mac, no rig available; shelf acoustics marked UNMEASURED.
+- [x] Library → Flash diagnosed: Direct Flash off by default, parity database empty, no shelf fallback, no prerequisite surface.
+- [x] Parity setup panel added (active output, Direct Flash, connection) with explicit steps and a Ready line.
+- [x] Flash eligibility reasons shared by My EQs and the managed-profile screen.
+- [x] Out-of-envelope shelves now fit to five Peak bands through the shared optimizer instead of failing.
+- [x] Routing tests added (saved EQ, managed profile, Direct Flash off, disconnected) plus shelf fallback tests.
+- [x] Pixel run: one Save flashed an AutoEq library profile, readback matched, one restoration Save returned flat/0 dB.
 
 ## Next action
 

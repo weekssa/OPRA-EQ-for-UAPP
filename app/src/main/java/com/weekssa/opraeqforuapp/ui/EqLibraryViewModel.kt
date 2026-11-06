@@ -2140,8 +2140,21 @@ class EqLibraryViewModel(
                 } else {
                     ""
                 }
+                val sourceHasShelf = profile.bands.orEmpty().any {
+                    it.type == "low_shelf" || it.type == "high_shelf"
+                }
+                val wroteNativeShelf = result.representation.bands.any {
+                    it.type == "low_shelf" || it.type == "high_shelf"
+                }
+                val fidelityMessage = when {
+                    sourceHasShelf && wroteNativeShelf ->
+                        "Native type 3/4 shelf words written (experimental; shelf acoustics unmeasured)."
+                    sourceHasShelf ->
+                        "Optimized: the source shelves were fitted to five Peak bands; no native shelf word was written."
+                    else -> "Five Peak bands written."
+                }
                 UiText.Dynamic(
-                    "Flash successful · SIMGOT EW300 DSP EQ was saved and verified.$reconnectMessage Final hardware readback matched. Playback-gain adjustment: ${"%+.1f".format(result.representation.playbackGainDb)} dB.",
+                    "Flash successful · SIMGOT EW300 DSP EQ was saved and verified.$reconnectMessage Final hardware readback matched. $fidelityMessage Playback-gain adjustment: ${"%+.1f".format(result.representation.playbackGainDb)} dB.",
                 )
             }
             is Kt02h20FlashResult.NotSuitable -> UiText.Dynamic(

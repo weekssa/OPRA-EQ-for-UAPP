@@ -650,17 +650,17 @@ private fun Ew300EqStatus(
                 onClick = { onShelfTestTarget(Ew300ShelfTestTarget.FLAT) },
                 enabled = canEdit,
                 modifier = Modifier.weight(1f),
-            ) { Text("Flat") }
+            ) { Text("Set Flat") }
             OutlinedButton(
                 onClick = { onShelfTestTarget(Ew300ShelfTestTarget.LOW_SHELF) },
                 enabled = canEdit,
                 modifier = Modifier.weight(1f),
-            ) { Text("Low Shelf") }
+            ) { Text("Set Low Shelf") }
             OutlinedButton(
                 onClick = { onShelfTestTarget(Ew300ShelfTestTarget.HIGH_SHELF) },
                 enabled = canEdit,
                 modifier = Modifier.weight(1f),
-            ) { Text("High Shelf") }
+            ) { Text("Set High Shelf") }
         }
     }
 

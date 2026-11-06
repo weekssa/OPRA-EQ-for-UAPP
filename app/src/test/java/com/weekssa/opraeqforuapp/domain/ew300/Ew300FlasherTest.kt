@@ -590,6 +590,42 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun shelfOutsideTheEnvelopeFallsBackToTheFivePeakFitWithOneSave() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+            experimentalShelfEnabled = true,
+        )
+        val profile = OpraEqProfile(
+            id = "out-of-envelope-shelf",
+            productId = "test",
+            author = "test",
+            details = null,
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = null,
+            bands = listOf(
+                OpraBand("low_shelf", 100.0, -9.0, 1.0, null),
+                OpraBand("peak_dip", 1_000.0, 0.0, 1.0, null),
+            ),
+        )
+
+        val result = flasher.flash(profile)
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+        val writtenTypes = (0 until Ew300Protocol.BAND_COUNT).map { index ->
+            transport.state.getValue(Ew300Protocol.bandRegister(index) + 1)[2].toInt() and 0xFF
+        }
+        assertTrue(writtenTypes.all { it == Ew300Protocol.TYPE_PEAK })
+        val bands = (result as com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+            .representation.bands
+        assertTrue(bands.none { it.type == "low_shelf" || it.type == "high_shelf" })
+    }
+
+    @Test
     fun shelfTestLowShelfWritesTheMeasuredBytesWithZeroSave() = runBlocking {
         val transport = FakeTransport()
         val flasher = Ew300Flasher(

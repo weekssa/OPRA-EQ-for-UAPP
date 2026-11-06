@@ -377,3 +377,29 @@ Add entries below in chronological order.
 - The acoustic result of those bytes is not measured. No capture device exists here, no published EW300 measurement uses these exact shelf writes, and the app curve is a prediction computed from the same parameters, so it cannot establish device DSP semantics.
 - Disposition: native shelves remain experimental and off by default in production; the app makes no acoustic claim and claims no full JA11 parity. Only a measurement rig, or at minimum a two-comparison region discrimination, could change this label.
 
+### T-025 — Library → EW300 Flash: why it was unavailable (parity package)
+
+- Date: 2026-11-05
+- Package: com.weekssa.opraeqforuapp.ew300parity, 0.10.0-ew300parity/22, APK eccd954e0dbc366a4d28d28a23158542e94933604c262e8bd42d23bfb22e29be
+- Route inspected: My EQs / EQ Library -> flashManagedProfile / flashSavedEq / flashGeneralEq -> flashHardwareProfile -> flashEw300Profile -> HardwareEqRepository.flashEw300 -> Ew300Flasher.flash. One route; no second flasher was added.
+- Active output at diagnosis: SIMGOT EW300 DSP (automatic, because the DAC was connected).
+- directEw300FlashEnabled at diagnosis: **false**. The parity package had never written a preferences file (files/datastore absent), so every Direct Flash flag was at its default.
+- EW300 connection state at diagnosis: Connected (app session), device present as 31B2:0111.
+- Parity database: 0 rows in saved_eqs, 0 in output_saved_eqs, 0 in managed_profiles, 0 in output_general_eqs. The parity package therefore had no library entry to flash at all.
+- Profile shape: not applicable until a profile existed; the catalog contains both Peak-only and shelf-bearing profiles, so the shelf fallback mattered.
+- Envelope: an out-of-envelope shelf profile previously returned NotSuitable ("outside the cut-only, Q 0.707 envelope"), which is the third blocker.
+- Production data: com.weekssa.opraeqforuapp is not debuggable, so its database cannot be read or copied by adb. Library entries can only move by export/import through the apps.
+- Conclusion: Flash was unavailable for three independent reasons — Direct Flash off, an empty parity library, and no shelf fallback — plus no single surface stating the prerequisites.
+
+### T-026 — Library → EW300 Flash on the Pixel, one Save, one restoration Save
+
+- Date: 2026-11-05
+- Package/APK: com.weekssa.opraeqforuapp.ew300parity, 0.10.0-ew300parity/22, eccd954e0dbc366a4d28d28a23158542e94933604c262e8bd42d23bfb22e29be; device Pixel 9 (tokay), Android 17, wireless ADB.
+- Setup: Settings -> Parity setup -> 1 Active output (SIMGOT EW300 DSP, Done) -> 2 Enable Direct Flash (Done) -> 3 Connect EW300 (Connected, Done); panel reported "Ready · Flash actions are enabled for saved EQs and managed profiles."
+- Library entry: EQ Library -> Simgot Audio -> EW300 (silver) -> AutoEq profile (Database/Creator Fahryst), "Optimized · 10 → 5 bands · full-response fit", tracked headroom -5.00 dB. Added to My EQs (1 selected).
+- Flash: My EQs -> EW300 (silver) -> Flash -> confirm. Result "Flash complete · EQ saved and verified. The DAC reconnected and the replacement session was verified." Exactly one Save.
+- Final readback: "Exact saved match", five Peak bands — 1: 6,474 Hz +5.5 dB Q 1.400; 2: 20,000 Hz -3.5 dB Q 0.375; 3: 176 Hz -1.5 dB Q 1.000; 4: 1,839 Hz -2.0 dB Q 1.400; 5: 26 Hz -1.5 dB Q 0.700; playback/global gain -5.0 dB (0x66, 55/60).
+- Shape: Peak-optimized, not native shelf — the source is a 10-band parametric profile fitted to the five-band bank.
+- Restoration: "Set Flat" (runtime, zero Save) plus output gain 0.0 dB (runtime, zero Save), then exactly one "Save EQ and output gain". Result "Saved in this session · final readback matched."; readback Flat, 0 active bands, five Peak 1 kHz/0 dB/Q1, gain 0.0 dB (60/60).
+- Save count for the session: 1 target Save + 1 restoration Save. No listening test was performed.
+

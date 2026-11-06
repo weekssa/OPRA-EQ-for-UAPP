@@ -1,6 +1,6 @@
 # EW300 / JA11 five-goal parity — readiness package
 
-Status: **five-goal test candidate built and locally tested; exact die KT0211L confirmed; microphone mute implemented; UAC mode CHIP-LIMITED; headset-disable open pending KT0211L GPIO/key/ADC research; native shelf protocol demonstrated byte for byte with shelf acoustics UNMEASURED; physical qualification pending.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
+Status: **five-goal test candidate built and locally tested; exact die KT0211L confirmed; microphone mute implemented; UAC mode CHIP-LIMITED; headset-disable open pending KT0211L GPIO/key/ADC research; native shelf protocol demonstrated byte for byte with shelf acoustics UNMEASURED; EQ Library → EW300 Flash usable from the parity package and verified on the Pixel with one Save plus one restoration Save.** No push, PR, merge, publication, signing change, or public hardware claim has occurred.
 
 ## Candidate identity
 
@@ -16,12 +16,12 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 
 - Path: app/build/outputs/apk/ew300Parity/app-ew300Parity.apk
 - File: app-ew300Parity.apk
-- SHA-256: 69af25b33ec6749f152f743abfe53b76f684e476ba1d028cf2cfdf4e54799524
+- SHA-256: 7f2f77ed97dc97d7fe2dcf9adac1f5a2fdad15f48a35a778dc3d5a28f0b130b6
 - Package: com.weekssa.opraeqforuapp.ew300parity
 - versionName: 0.10.0-ew300parity
 - versionCode: 22
 - Signer SHA-256: 945614206b73258162a2e0722ddcf4a53ae3018652e0fb65d2b9bcc3e38521a5 (Android debug certificate, local test signer)
-- Build time: 2026-11-06T00:57Z (UTC), rebuilt from the code head below
+- Build time: 2026-11-06T01:35Z (UTC), rebuilt from the code head below
 - Updates: disabled in the parity variant
 
 ## Five-goal status
@@ -36,6 +36,15 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 
 ## Exact-device evidence
 
+## EQ Library → Flash route (parity package)
+
+- Diagnosis: Flash was unusable for three independent reasons — the Direct Flash flag defaults to false and the parity package had never written preferences; the parity database held 0 saved EQs and 0 managed profiles; and an out-of-envelope shelf profile returned NotSuitable. No surface named the prerequisites.
+- Setup path: Settings → "Parity setup · Flash to SIMGOT EW300" shows three explicit steps (active output, Direct Flash, connection) with a Ready line. Nothing is enabled silently.
+- Eligibility: hardwareFlashUnavailableReason() is shared by My EQs and the managed-profile screen and names the exact blocker (no active output, Direct Flash off, not connected, or profile not saved for this output).
+- Fallback: native type 3/4 words are kept only inside the −6 dB / Q 0.707 envelope; every other profile is fitted to five Peak bands by the shared SIMGOT_EW300 optimizer and reported as Optimized. No shelf is silently dropped and no acoustic claim is made.
+- Library data: the parity package starts empty. Production (com.weekssa.opraeqforuapp) is not debuggable, so its database cannot be copied; entries move by export and import. The Pixel run used the in-app EQ Library catalog (Simgot Audio → EW300 (silver) → AutoEq).
+- Pixel result: one Save wrote the Peak-optimized AutoEq profile ("Exact saved match" on readback, five Peak bands, −5.0 dB tracked gain); one restoration Save returned Flat with 0 dB gain and final readback matched.
+
 - Configuration descriptor: 303 bytes, UAC1, AC interface 0, mic feature unit 2 (master mute), playback endpoint 0x01/interface 2 (44.1/48/96 kHz), capture endpoint 0x81/interface 1, HID interface 3.
 - UAC evidence JSON: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-uac-descriptor.json (file sha256 a65245351b68e4a5d750e623aa771cb9c385c85baa7283477e420cbcc034566b).
 - Volume evidence: /Users/stephenweeks/.codex/evidence/ew300/2026-11-05/ew300-reversible-volume.json (file sha256 6fd8e3682f5e6caf39fe71a5c4fa41f4816f804bbf9039f9520634abf2e5cebd; internal JSON sha256 9671c2d14737eed4e4d006e122e9f804824e9ebfa62469026fc03be461ee928c).
@@ -47,9 +56,9 @@ Status: **five-goal test candidate built and locally tested; exact die KT0211L c
 
 ## Tests
 
-- Debug JVM: 872 tests, 0 failures, including the shelf A/B envelope, exact-byte, zero-Save, and restore-on-mismatch tests.
+- Debug JVM: 878 tests, 0 failures, including the shelf A/B envelope, exact-byte, zero-Save, restore-on-mismatch, library Flash routing, and shelf-fallback tests.
 - Release EW300: 127 tests, 0 failures.
-- Emulator: Ew300FullParityFlowTest 3/3 on emulator-5554; prior parity flow 4/4.
+- Emulator: full parity instrumented suite 78/78 on emulator-5554 (API 36), including Ew300DeviceStatusTest after the shelf-control label change.
 - Emulator install/launch: parity APK installed and MainActivity resumed on emulator-5554; screenshot sha256 a9549528fe4b03644eef89013a21c4d3508543048c5316220791af350b6446d6.
 - Lint: 0 errors, 120 warnings, 3 hints.
 - Builds: debug, ew300Parity, ew300ParityAndroidTest.

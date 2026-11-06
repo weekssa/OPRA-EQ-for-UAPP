@@ -461,16 +461,15 @@ class Ew300Flasher(
         val hasNativeShelf = experimentalShelfEnabled && profile.bands.orEmpty().any {
             it.type == "low_shelf" || it.type == "high_shelf"
         }
-        val representation = if (hasNativeShelf) {
-            nativeShelfRepresentation(profile)
-                ?: return Kt02h20FlashResult.NotSuitable(
-                    "The experimental EW300 shelf target is incomplete or outside the cut-only, Q 0.707 envelope.",
-                )
-        } else {
-            when (val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)) {
-                is FiveBandOptimizationResult.NotSuitable -> return Kt02h20FlashResult.NotSuitable(result.reason)
-                is FiveBandOptimizationResult.Ready -> result.representation
-            }
+        // A shelf profile inside the prequalified envelope keeps its native type 3/4 words.
+        // Anything else is fitted to the five Peak bands with the shared SIMGOT_EW300 optimizer,
+        // so a library profile never fails only because its shelf sits outside that envelope.
+        val nativeShelf = if (hasNativeShelf) nativeShelfRepresentation(profile) else null
+        val representation = nativeShelf ?: when (
+            val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)
+        ) {
+            is FiveBandOptimizationResult.NotSuitable -> return Kt02h20FlashResult.NotSuitable(result.reason)
+            is FiveBandOptimizationResult.Ready -> result.representation
         }
         val target = completeBands(representation.bands)
         val baseline = transactionCoordinator.captureBaseline()
