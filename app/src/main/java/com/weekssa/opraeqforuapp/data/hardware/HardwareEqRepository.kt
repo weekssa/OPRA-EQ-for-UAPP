@@ -146,10 +146,13 @@ class HardwareEqRepository(
      * opening/replacing the USB session.
      */
     fun connectEw300() {
-        if (ew300ConnectionState.value is Kt02h20ConnectionState.Connected) {
-            scheduleEw300SnapshotRefresh()
-        } else {
-            dacSessionRepository.connectEw300()
+        when {
+            ew300ConnectionState.value !is Kt02h20ConnectionState.Connected ->
+                dacSessionRepository.connectEw300()
+            // A connected session whose last read failed is a handle the device no longer serves.
+            // Another read would fail the same way, so Connect re-opens it instead.
+            mutableEw300SnapshotState.value.readFailed -> dacSessionRepository.reconnectEw300()
+            else -> scheduleEw300SnapshotRefresh()
         }
     }
 

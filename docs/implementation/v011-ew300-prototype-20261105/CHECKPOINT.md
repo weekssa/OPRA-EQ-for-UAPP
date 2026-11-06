@@ -219,3 +219,14 @@ the row instead of an approximation; existing entries are never replaced.
   "1 already here." (T-051).
 - Design and limits: LIBRARY_TRANSFER.md. Production needs a build carrying this code before the
   owner's own library can be exported from it.
+## Session truthfulness (2026-11-06)
+
+A flash now retries one empty snapshot read (T-052), and a session that answered once and then
+stopped answering shows "Connection issue" with Connect, which re-opens the device instead of
+repeating the failed read (T-053). A failed first read after Save keeps Open My DAC, because that is
+the replacement session settling.
+
+- APK 6c376f6c943dbd008306ae9a9927d208a7d0ceace7675b4558a9b94e30f57f79, installed and
+  hash-verified on the Pixel.
+- Gates: JVM 897 / 0 failures, lint 0 errors / 118 warnings / 2 hints, instrumented 101/101.
+

@@ -49,6 +49,9 @@ class AndroidEw300UsbTransport(
 
     fun connect() = hid.connect()
 
+    /** Re-opens the device after its reads stopped answering; see the HID session contract. */
+    fun reconnect() = hid.reconnect()
+
     /**
      * Automatic reconnect has a second, invocation-time guard in addition to the repository
      * observer's StateFlow check. The observer can already have queued a connect callback when a

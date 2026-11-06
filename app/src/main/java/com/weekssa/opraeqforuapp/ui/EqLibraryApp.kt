@@ -211,6 +211,14 @@ private fun EqLibraryUiState.deviceContextSummary(rememberedHardwareTarget: DacD
     fun summary(status: String, action: DeviceContextAction, label: String) =
         DeviceContextSummary(device, title, status, isCurrent, action, label)
     return when {
+        // A session that answered before and has now stopped answering is not usable. Say so and
+        // offer Connect, which re-opens the device. A failed first read after Save keeps Open My
+        // DAC: that is a replacement session settling, and My DAC explains it.
+        connected && hardwareEq.readFailed && hardwareEq.bundle != null -> summary(
+            "Connection issue",
+            DeviceContextAction.CONNECT,
+            "Connect",
+        )
         connected -> summary(
             when {
                 isCurrent -> "Connected · State current"

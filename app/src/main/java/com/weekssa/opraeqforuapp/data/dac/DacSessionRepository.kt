@@ -150,6 +150,12 @@ class DacSessionRepository(
         ew300Transport.connect()
     }
 
+    /** Drops a live-but-unresponsive EW300 session and opens a fresh one. */
+    fun reconnectEw300() {
+        ew300ReconnectGate.beginManualConnect()
+        ew300Transport.reconnect()
+    }
+
     suspend fun <T> withExclusiveBlackPearlOperation(block: suspend () -> T): T =
         blackPearlOperationMutex.withLock { block() }
 

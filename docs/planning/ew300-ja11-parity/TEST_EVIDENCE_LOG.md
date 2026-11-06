@@ -732,3 +732,23 @@ Add entries below in chronological order.
   "Connected · Last read is stale". The bar should offer Connect once a hardware read has failed;
   that state change is not in this fix.
 
+### T-053 — A dead session now says so, and Connect re-opens the device
+
+- Gap from T-052: after a failed hardware read the bar still said "Connected · Last read is stale"
+  with Open My DAC, so the only offered action repeated a read that had just failed.
+- Change: when the session is connected, a read had succeeded, and a later read failed, the bar now
+  shows "Connection issue" and offers Connect. Connect in that state drops the session and opens a
+  new one (AndroidKt02h20HidSession.reconnect), because the ordinary Connect is idempotent by design
+  and would otherwise report Connected for a handle the device no longer serves.
+- Deliberately unchanged: a failed first read after Save keeps Open My DAC. That is the replacement
+  session settling, and the existing test
+  (automaticFallbackDuringSaveStrandsRunningFlashAndHidesEqWhileDeviceRecovers) encodes it. The first
+  draft of this change broke that test by treating both cases the same; the bar now distinguishes
+  them by whether a snapshot was ever published.
+- Tests: barOffersConnectWhenALiveSessionStopsAnswering (published snapshot, then readFailed shows
+  Connection issue and Connect fires), plus the untouched Save-replacement test.
+- Gates: JVM 897 / 0 failures; lint 0 errors / 118 warnings / 2 hints; instrumented 101/101 on
+  emulator-5580. APK 6c376f6c943dbd008306ae9a9927d208a7d0ceace7675b4558a9b94e30f57f79 installed on
+  the Pixel and hash-verified; the normal path still reads Connected · State current.
+- Not exercised on hardware: the reopen itself. Forcing a live session to stop answering cannot be
+  done on demand without damaging state, so the branch is proven at the UI and code level only.

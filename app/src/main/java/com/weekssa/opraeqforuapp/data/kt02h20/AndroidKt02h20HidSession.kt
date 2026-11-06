@@ -773,6 +773,18 @@ internal class AndroidKt02h20HidSession(
         scope.launch { mutex.withLock { closeSessionLocked() } }
     }
 
+    /**
+     * Drops the current session and opens a new one. This is the terminal recovery for a session
+     * whose reads stopped answering: [connect] is deliberately idempotent, so it would otherwise
+     * report Connected for a handle the device no longer serves.
+     */
+    fun reconnect() {
+        scope.launch {
+            mutex.withLock { closeSessionLocked() }
+            connect()
+        }
+    }
+
     private fun closeSessionLocked() {
         val current = session ?: return
         session = null

@@ -31,6 +31,7 @@ shows no bar, because it is configuration rather than listening.
 | Session error | Connection issue | Connect | retries |
 | Target device not attached | No DAC attached | Open My DAC | My DAC |
 | Direct Flash off | Direct Flash off | Open Settings | Settings |
+| Connected, read worked, next read failed | Connection issue | Connect | re-opens the device |
 
 Connect appears only where it can actually connect; nothing here writes to the device.
 
@@ -39,6 +40,11 @@ The table is ordered by precedence, not by independence. A connected device alwa
 Direct Flash is off. Enable it in Settings → SIMGOT EW300 DSP." The "Direct Flash off → Open Settings"
 row therefore applies only while the device is attached but not connected. Verified on the Pixel on
 2026-11-06 in both directions (T-049).
+
+The last row is narrower than it looks. A session that answered once and then stopped answering is a
+dead handle, so the bar says "Connection issue" and Connect re-opens the device rather than repeating
+a read that just failed. A failed *first* read keeps "Open My DAC": that is the replacement session
+that follows a Save, and My DAC is where the explanation lives (T-053).
 
 ## Out of scope
 

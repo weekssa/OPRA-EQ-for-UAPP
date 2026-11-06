@@ -666,6 +666,54 @@ class UiModernizationFlowsTest {
     }
 
     @Test
+    fun barOffersConnectWhenALiveSessionStopsAnswering() {
+        var connects = 0
+        val state = EqLibraryUiState(
+            catalogState = CatalogState.Loading,
+            appPreferences = AppPreferences(
+                exportTargets = ExportTargetPreferences().withActiveTarget(ExportDevice.SIMGOT_EW300),
+                directEw300FlashEnabled = true,
+            ),
+            dacRecognitionState = DacRecognitionState(
+                presentDeviceIds = setOf(DacDeviceId.SIMGOT_EW300),
+                recognizedDeviceIds = setOf(DacDeviceId.SIMGOT_EW300),
+            ),
+            ew300ConnectionState = Kt02h20ConnectionState.Connected,
+            // It answered before and has stopped answering: the bar must stop saying Connected.
+            ew300HardwareEqState = HardwareEqSnapshotState().publishCurrent(
+                requireNotNull(
+                    com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory.ew300(
+                        nativeBands = List(com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol.BAND_COUNT) {
+                            com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band(
+                                type = "peak_dip",
+                                frequencyHz = 1000.0,
+                                gainDb = 0.0,
+                                q = 1.0,
+                            )
+                        },
+                        globalGainDb = 0.0,
+                        sessionGeneration = 1L,
+                        verifiedAtEpochMillis = 1L,
+                    ),
+                ),
+            ).markReadFailed(),
+        )
+        composeRule.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                EqLibraryApp(
+                    state = state,
+                    actions = noOpEqLibraryActions(onConnectEw300 = { connects++ }),
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Connection issue").assertIsDisplayed()
+        composeRule.onNodeWithText("Connect").performClick()
+        composeRule.runOnIdle { assertEquals(1, connects) }
+    }
+
+    @Test
     fun barConnectTargetsTheSelectedDacWhileAnotherSessionIsOpen() {
         var fiioConnects = 0
         var ew300Connects = 0
