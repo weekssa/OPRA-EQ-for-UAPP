@@ -710,3 +710,25 @@ Add entries below in chronological order.
   this exporter, so the owner's transfer needs a build of production carrying it. The prototype side
   is now measured end to end; the production side is the same code once it ships.
 
+### T-052 — Field flash failure: one empty read aborted the baseline, now retried once
+
+- Report: the owner tapped Flash on the Pixel (build 0252dbce) and got "Flash failed · EW300 flash
+  was not applied: Couldn't read the EW300 PEQ state. Reconnect the DAC and try again." The bar
+  showed "Connected · Last read is stale".
+- Diagnosis: the flash path reads every snapshot register before writing
+  (Ew300TransactionCoordinator.captureBaseline). A single register returning empty or short made the
+  baseline null and the whole transaction abort. The read immediately after was fine: with the same
+  session, My EQs then reported "Connected · State current". No write, no Save and no gain change
+  occurred; the refusal was the safety rule working.
+- Not the cause: a session left over from an update. Installing over a live session on the same
+  build lands on "Not connected" and offers Connect, so that path already reports the truth.
+- Fix: a snapshot read is idempotent, so captureBaseline now re-reads a register once (120 ms apart)
+  before failing. Writes and Save are untouched and still single-shot; a read that keeps failing
+  still aborts with zero writes.
+- Tests: oneEmptyRegisterReadIsRetriedBeforeTheFlashGivesUp (one empty read, then success and exactly
+  one Save) and baselineReadFailureThatPersistsStillStopsEveryWriteAndSave (permanent failure, no
+  writes, no Save).
+- Remaining gap, recorded rather than hidden: after a failed baseline the session can still read
+  "Connected · Last read is stale". The bar should offer Connect once a hardware read has failed;
+  that state change is not in this fix.
+

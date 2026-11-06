@@ -107,7 +107,8 @@ OWNS: GATES.md,
   docs/implementation/v011-ew300-prototype-20261105/LIBRARY_TRANSFER.md,
   app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedEqDao.kt,
   app/src/main/java/com/weekssa/opraeqforuapp/data/library/SavedGeneralEqRepository.kt,
-  app/src/androidTest/java/com/weekssa/opraeqforuapp/data/library/LibraryBundleDatabaseTest.kt
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/data/library/LibraryBundleDatabaseTest.kt,
+  app/src/main/java/com/weekssa/opraeqforuapp/domain/ew300/Ew300TransactionCoordinator.kt
 amendment: 2026-11-06 owner-approved — shared context bar surface, AppContextSurfaces.kt, required by the My EQs / EQ Library stateful bar.
 amendment: 2026-11-06 owner-approved — library export/import slice: EqLibraryBundle.kt,
   EqLibraryBundleImporter.kt, their two JVM test files and LIBRARY_TRANSFER.md, so saved EQs, managed
@@ -118,3 +119,5 @@ amendment: 2026-11-06 owner-approved — same slice needs a one-shot read on Sav
   records instead of carrying the stored bytes.
 amendment: 2026-11-06 owner-approved — LibraryBundleDatabaseTest.kt proves the Room round trip
   (export rows, wipe, import rows, compare) on the emulator, which a JVM test cannot reach.
+amendment: 2026-11-06 owner-approved — the baseline read retries one failed register read, which
+  needs Ew300TransactionCoordinator.kt in scope; writes stay single-shot.

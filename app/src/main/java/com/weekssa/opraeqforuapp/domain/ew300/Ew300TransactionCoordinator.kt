@@ -1,5 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.ew300
 
+import kotlinx.coroutines.delay
+
 /**
  * Shared strict-read and volatile-restore boundary for every mutating EW300 transaction.
  *
@@ -49,6 +51,7 @@ data class Ew300RawBaseline(
 
 class Ew300TransactionCoordinator(
     private val transport: Ew300Transport,
+    private val readRetryDelayMillis: Long = 120L,
 ) {
     suspend fun captureBaseline(): Ew300RawBaseline? {
         val fingerprint = transport.deviceFingerprintKey ?: return null
@@ -56,9 +59,8 @@ class Ew300TransactionCoordinator(
         if (sessionGeneration <= 0L) return null
         val values = linkedMapOf<Int, ByteArray>()
         for (register in Ew300CapabilityBatch.snapshotRegisters()) {
-            val value = transport.readRegister(register)
-            if (value == null || value.size != 4) return null
-            values[register] = value.copyOf()
+            val value = readSnapshotRegister(register) ?: return null
+            values[register] = value
         }
         return Ew300RawBaseline(
             registers = values,
@@ -66,6 +68,16 @@ class Ew300TransactionCoordinator(
             sessionGeneration = sessionGeneration,
             detachGeneration = transport.detachGeneration,
         )
+    }
+
+    /**
+     * A snapshot read is idempotent, so one re-read is allowed when a register comes back empty or
+     * short. Writes are never retried: a failed write leaves the device in an unknown state.
+     */
+    private suspend fun readSnapshotRegister(register: Int): ByteArray? {
+        transport.readRegister(register)?.takeIf { it.size == 4 }?.let { return it.copyOf() }
+        if (readRetryDelayMillis > 0L) delay(readRetryDelayMillis)
+        return transport.readRegister(register)?.takeIf { it.size == 4 }?.copyOf()
     }
 
     suspend fun restoreVolatile(baseline: Ew300RawBaseline): Boolean {

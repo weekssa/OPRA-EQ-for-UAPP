@@ -22,6 +22,32 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun oneEmptyRegisterReadIsRetriedBeforeTheFlashGivesUp() = runBlocking {
+        val transport = FakeTransport(
+            transientMissingRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER,
+            transientMissingRegisterReads = 1,
+        )
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun baselineReadFailureThatPersistsStillStopsEveryWriteAndSave() = runBlocking {
+        val transport = FakeTransport(missingRegister = Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.DeviceUnavailable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
     fun incompleteStrictBaselinePreventsEveryWrite() = runBlocking {
         val transport = FakeTransport(missingRegister = 0x24)
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
@@ -838,6 +864,8 @@ class Ew300FlasherTest {
         private var transientReadFailuresAfterCommit: Int = 0,
         private val initialGain: ByteArray = bytes(0, 0, 0, 0),
         private val corruptWriteRegister: Int? = null,
+        private val transientMissingRegister: Int? = null,
+        private var transientMissingRegisterReads: Int = 0,
         corruptWriteRegisterTimes: Int = Int.MAX_VALUE,
     ) : Ew300Transport {
         private var corruptWritesRemaining = corruptWriteRegisterTimes
@@ -867,6 +895,10 @@ class Ew300FlasherTest {
         override suspend fun readRegister(register: Int): ByteArray? {
             if (writes.isNotEmpty()) readsAfterWrites++
             if (commitCount > 0) readsAfterCommit++
+            if (register == transientMissingRegister && transientMissingRegisterReads > 0) {
+                transientMissingRegisterReads--
+                return null
+            }
             if (commitCount > 0 && transientReadFailuresAfterCommit > 0) {
                 transientReadFailuresAfterCommit--
                 return null
