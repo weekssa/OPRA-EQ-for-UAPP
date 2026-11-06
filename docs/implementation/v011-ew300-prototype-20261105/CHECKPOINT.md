@@ -9,7 +9,7 @@
 | Base | origin/main 97e72cc065edb948c121431aeaeb0e5e73576456 |
 | Branch | codex/v0.11-ew300-prototype |
 | Worktree | /Users/stephenweeks/.codex/worktrees/v011-ew300-prototype/OPRA-EQ-development |
-| Code head | 57fd583651775f39aeef8efcf72958e5b8d05254 |
+| Code head | 4c486d01669445d4bf6ce972e33b881656a54472 |
 | versionName / versionCode | 0.11.0-beta.1 / 23 |
 | Package | com.weekssa.opraeqforuapp.v011beta |
 | Build type | v011beta (release-derived, unminified, update checks off) |
