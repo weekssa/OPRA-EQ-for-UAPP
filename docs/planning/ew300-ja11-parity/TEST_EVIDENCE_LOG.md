@@ -539,3 +539,11 @@ Add entries below in chronological order.
 - Validation: JVM 883 tests, 0 failures; lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 (05:48:46Z). Device check: the phone shows the new groups, the Default target picker opens from Change, and the Catalog row reports its last refresh with a Refresh action.
 - Screenshots: docs/screenshots/v011/settings-before-top-412dp.png and settings-after-top-412dp.png.
 
+
+### T-039 — Settings v2 density and large-text check
+
+- Captured Settings at 360 dp on emulator-5554 with font scale 1.0 / 1.3 / 2.0 (docs/screenshots/v011/settings-360dp-font*.png).
+- 2.0: labels wrap cleanly, the Default target value takes three lines, Change keeps its touch target; no clipping or horizontal scroll.
+- DAC status card: ten instrumented tests reach My DAC through its "Open My DAC" label, so removing the card requires migrating those navigation paths; the card was left in place this pass.
+- Re-validated after the decision: JVM 883 tests, 0 failures; lint 0 errors / 121 warnings / 2 hints; connected v011beta suite 84/84 (05:57:22Z). APK unchanged at 1e97db8e.
+
