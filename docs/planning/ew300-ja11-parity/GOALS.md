@@ -61,19 +61,24 @@ The controlling map is [CHIP_MAP.md](CHIP_MAP.md): all 256 registers read and cl
 ## v0.11 productized prototype — 2026-11-05
 
 Local prototype branch `codex/v0.11-ew300-prototype` from origin/main `97e72cc0`, version
-0.11.0-beta.1 (code 23), package `com.weekssa.opraeqforuapp.v011beta`. Phone-free validation only;
-Pixel qualification pending.
+0.11.0-beta.1 (code 23), package `com.weekssa.opraeqforuapp.v011beta`. Qualified on the emulator
+and on the owner's Pixel 9; the artifact on the phone is
+1f1ea2c174a09d84241f480536b7ea066130b49396d0b2bf51e1e77ad3400fb3.
 
 | Surface | Prototype state | Evidence |
 |---|---|---|
 | 0–60 volume (0x66) | INCLUDED | Probe bytes and live Pixel evidence from T-002/T-008; UI unchanged |
-| UAC1 microphone mute | INCLUDED | Exact descriptor and Mac GET/SET/restore from T-005 |
+| UAC1 microphone mute | EXCLUDED — EFFECT UNMEASURED | Exact descriptor and Mac GET/SET/restore from T-005, but no capture path reaches it from the Pixel and the owner heard no difference. The toggle was removed; About states the limitation |
 | Current sample rate | INCLUDED | UAC1 GET_CUR 96 kHz on the Pixel (T-012) and Mac 48 kHz |
 | Runtime Apply vs explicit Save | INCLUDED | JVM and instrumented suites; one Save per explicit action |
 | Library Flash to EW300 | INCLUDED | Route tests plus the Pixel Save/restore evidence (T-026, T-028) |
 | Five-Peak fallback | INCLUDED | Five-Peak fallback tests; out-of-envelope shelf fits five Peaks |
 | Read-only UAC status | INCLUDED | UAC descriptor tests; no mode switch claimed |
 | About identity | INCLUDED | Model, firmware state, USB identity, validation class |
+
+The My EQs / EQ Library context bar (target row plus a state-driven device block) is included and
+was verified on the Pixel: Connect, Open My DAC, Direct Flash off → Open Settings while
+disconnected, and No DAC attached while the display anchor holds (T-048 to T-050).
 | Headset-remote switch | EXCLUDED — CHIP-LIMITED | No USB/HID control on KT0211L |
 | UAC mode switch | EXCLUDED — CHIP-LIMITED | KT0211L is UAC 1.0 only |
 | Native shelf product controls | EXCLUDED — ENGINEERING ONLY | EW300_SHELF_EDITOR_ENABLED and EW300_ENGINEERING_CONTROLS are false in this build |

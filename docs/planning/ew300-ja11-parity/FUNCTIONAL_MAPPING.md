@@ -43,7 +43,7 @@ This table maps JA11 behavior to the EW300 implementation, exact register/byte e
 | M-19 | Read-only Mac probe | 0x52 only | 11-byte 0x4B frames | n/a | test_ew300_readonly_probe.py, self-test | VERIFIED_JVM (host) | full 256-register capture; sha256 f54de03c… | high | Never emits 0x57/0x53/0x43/0x08/0x54 |
 | M-20 | Separate experiment package | build variant | com.weekssa.opraeqforuapp.ew300parity | install/launch isolation | assembleEw300Parity, assembleEw300ParityAndroidTest | VERIFIED_BUILD | APK 20993f8b…; debug signer | high | Production flags remain false |
 | M-21 | 0–60 device volume | 0x66 stereo half-dB | 60 = 0 dB, 0 = −60 dB, 1 dB/step; 0 = 88880000, 30 = C4C40000, 60 = 00000000 | DEVICE 0–60 row/slider | Ew300VolumeControlTest, Ew300FlasherTest, Ew300FullParityFlowTest | VERIFIED_JVM / VERIFIED_EMULATOR / VERIFIED_MAC | Mac reversible bytes + JSON sha 9671c2d1… | high | EW300 mapping, not JA11 0x02 |
-| M-22 | Microphone mute | UAC1 feature unit 2, source 0x0201 | GET 0xA1/0x81/0x0100/0x0200/1; SET 0x21/0x01/…/1 | DEVICE microphone mute row | Ew300UacDescriptorTest, Ew300FullParityFlowTest | VERIFIED_MAC / VERIFIED_EMULATOR | Mac GET 0 → SET 1 → verify 1 → restore 0 | high | Real UAC control; Pixel acoustic check pending |
+| M-22 | Microphone mute | UAC1 feature unit 2, source 0x0201 | GET 0xA1/0x81/0x0100/0x0200/1; SET 0x21/0x01/…/1 | none in v0.11 — About carries the limitation | Ew300UacDescriptorTest, Ew300FullParityFlowTest | VERIFIED_MAC / VERIFIED_EMULATOR | Mac GET 0 → SET 1 → verify 1 → restore 0; no capture path reaches it from the Pixel | high | The control is real; the effect is unmeasured, so the toggle is removed |
 | M-23 | Headset remote switch | HID consumer report 0x01 | passive only; no disable control in descriptor/HID | DEVICE headset row | descriptor/HID evidence | BLOCKED | no headset feature unit; no exact disable control | high | Next: vendor APK/HID 0x54 static analysis |
 | M-24 | UAC mode switching | one configuration, UAC1 AC subclass 1 | no UAC2 alternate or mode selector; JA11 0x20 not transferable | DEVICE read-only UAC row | Ew300UacDescriptorTest | BLOCKED | exact 303-byte descriptor sha e955ae8c… | high | Next: vendor-only command research |
 | M-25 | Current sample rate | UAC1 GET_CUR playback endpoint 0x01 / interface 2 | 0xA2/0x81/0x0100/0x0102/3; idle 000000 | DEVICE/About current rate | Ew300UacDescriptorTest, Ew300FullParityFlowTest | VERIFIED_MAC (idle) / VERIFIED_EMULATOR | descriptor rates 44.1/48/96 kHz; idle returns 0 | medium | Active-stream/Pixel confirmation pending |
@@ -70,9 +70,11 @@ Update or add rows as the implementation evolves.
 
 Rows M-01 through M-26 describe the EW300 protocol and product surfaces. In the v0.11 prototype:
 
-- **Included:** M-01 volume mapping, M-02 microphone mute, M-04 sample rate, M-05 runtime Save,
+- **Included:** M-01 volume mapping, M-04 sample rate, M-05 runtime Save,
   M-14 capture, M-26 shelf-aware Flash (Peak-only in the product variant), M-27 library route,
   M-28 five-Peak fallback, plus read-only UAC status and About identity.
+- **Removed from the product surface:** M-22 microphone mute. The device accepts the request, but no
+  captured audio changed on the Pixel, so the row is gone and About states the limitation.
 - **Engineering-only (compiled off in the product variant):** native shelf editor chips, shelf A/B
   controls, the research setup panel.
 - **Excluded as chip-limited:** headset-remote control, UAC mode switching.
