@@ -12,6 +12,8 @@ Accepted plan: the owner v0.11 productized-prototype prompt (2026-11-05).
     "GATES.md",
     "app/build.gradle.kts",
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/MainActivityLifecycleTest.kt",
+    "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/ContextBarScreenshotTest.kt",
+    "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/ContextBarTestFixtures.kt",
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/Ew300DeviceScreenshotTest.kt",
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/Ew300DeviceStatusTest.kt",
     "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/Ew300FullParityFlowTest.kt",

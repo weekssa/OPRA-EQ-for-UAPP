@@ -94,5 +94,7 @@ OWNS: GATES.md,
   docs/screenshots/v011/settings-before-top-412dp.png,
   docs/implementation/v011-ew300-prototype-20261105/SESSION_HANDOFF.md,
   app/src/main/java/com/weekssa/opraeqforuapp/ui/components/AppContextSurfaces.kt,
-  docs/implementation/v011-ew300-prototype-20261105/CONTEXT_BAR_DESIGN.md,
+  docs/implementation/v011-ew300-prototype-20261105/CONTEXT_BAR_DESIGN.md,,
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/ContextBarTestFixtures.kt,
+  app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/ContextBarScreenshotTest.kt
 amendment: 2026-11-06 owner-approved — shared context bar surface, AppContextSurfaces.kt, required by the My EQs / EQ Library stateful bar.
