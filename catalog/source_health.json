@@ -39,11 +39,11 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": "cf9a976830304b2839eb6751f4a68e89d32bb5571f82277ce09822c61808e295",
-      "last_attempt_at": "2026-11-16T21:55:35Z",
-      "last_content_fingerprint": "7613c548d16d5ebfa598530071c6c6b54fd1cc48dd5a400554155a1dde4e0625",
+      "cursor": "1b1404daa7ab18843732cb4353fd799ce5ae34fd4ea4d5276931e0dbcc4cb264",
+      "last_attempt_at": "2026-11-18T20:23:01Z",
+      "last_content_fingerprint": "b554a9549c62dae1b0474804a7060eb405ab285c645d8f44f63b11bb7c5d28c6",
       "last_error": null,
-      "last_successful_scan_at": "2026-11-16T21:55:35Z",
+      "last_successful_scan_at": "2026-11-18T20:23:01Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -181,5 +181,6 @@
       "parser_version": "5",
       "source_id": "topping-community"
     }
-  ]
+  ],
+  "updated_at": "2026-11-18T20:23:01Z"
 }
