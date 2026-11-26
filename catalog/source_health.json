@@ -3,11 +3,11 @@
   "sources": [
     {
       "consecutive_failures": 0,
-      "cursor": "596eef5b015b9979637746a87463d18b1555c92ff9698b691001e580d04b78f6",
-      "last_attempt_at": "2026-11-19T20:56:40Z",
-      "last_content_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "cursor": "2b2117f20f3e3a5a4a5ba912b42d29916bb39a5e9b38aebeb0a4674f1d9fcbb8",
+      "last_attempt_at": "2026-11-26T21:53:23Z",
+      "last_content_fingerprint": "56f7674e1912213d5d533bb3f160015110fbbc7111fb861ae54fe2197956406c",
       "last_error": null,
-      "last_successful_scan_at": "2026-11-19T20:56:40Z",
+      "last_successful_scan_at": "2026-11-26T21:53:23Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -181,5 +181,6 @@
       "parser_version": "5",
       "source_id": "topping-community"
     }
-  ]
+  ],
+  "updated_at": "2026-11-26T21:53:24Z"
 }
